@@ -168,21 +168,34 @@
         const isFresh = (now - lastCryptoTickTime < 10000) && lastCryptoTickTime > 0;
 
         let newStatus = 'disconnected';
-        let statusText = 'Sin conexión';
+        let statusText = 'Desconectado';
+        let pillTitle = 'Sin conexión al feed de mercado';
 
         if (isSocketOpen && isFresh) {
             newStatus = 'connected';
-            statusText = 'Binance en vivo';
+            statusText = 'En vivo';
+            pillTitle = 'Feed de Binance conectado en vivo';
+            // Notificar conexión solo una vez por sesión sin repetir en cada recarga
+            if (!sessionStorage.getItem('pp_feed_notified')) {
+                sessionStorage.setItem('pp_feed_notified', 'true');
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('Conectado al feed de criptoactivos en vivo.', 'success');
+                }
+            }
         } else if (reconnectTimer !== null || (mainSocket && mainSocket.readyState === WebSocket.CONNECTING)) {
             newStatus = 'reconnecting';
-            statusText = 'Reconectando...';
+            statusText = 'Reconectando';
+            pillTitle = 'Reconectando con el feed de mercado...';
         } else {
             newStatus = 'disconnected';
-            statusText = 'Sin conexión';
+            statusText = 'Desconectado';
+            pillTitle = 'Sin conexión al feed de mercado';
         }
 
         status = newStatus;
         pill.className = `connection-status-pill ${newStatus}`;
+        pill.title = pillTitle;
+        pill.setAttribute('aria-label', pillTitle);
         const dotClass = newStatus === 'connected' ? 'online' : (newStatus === 'reconnecting' ? 'connecting' : 'offline');
         pill.innerHTML = `<span class="status-dot ${dotClass}"></span><span class="status-text" id="connection-status-text">${statusText}</span>`;
     }

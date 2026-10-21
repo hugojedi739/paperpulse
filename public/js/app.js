@@ -401,7 +401,7 @@ window.App = (function () {
                 const chgText = hasChg
                     ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                         ? window.Currency.formatPercent(chg)
-                        : `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}\u00A0%`)
+                        : `${chg >= 0 ? '+' : '−'}${Math.abs(Number(chg)).toFixed(2)}\u00A0%`)
                     : '—';
                 const mktBadge = s.exchange || s.market || s.category || (s.type === 'crypto' ? 'Binance' : 'Bolsa');
 
@@ -470,7 +470,7 @@ window.App = (function () {
                         if (icon) {
                             icon.className = added ? 'fas fa-star' : 'far fa-star';
                         }
-                        showToast(added ? `⭐ ${sym} añadido a tu Watchlist.` : `ℹ️ ${sym} retirado de tu Watchlist.`, 'info');
+                        showToast(added ? `${sym} añadido a tu Watchlist.` : `${sym} retirado de tu Watchlist.`, 'info');
                     }
                 });
             });
@@ -639,8 +639,6 @@ window.App = (function () {
         if (window.Charts && typeof window.Charts.loadSymbolData === 'function') {
             window.Charts.loadSymbolData(sym.id || sym.symbol);
         }
-
-        showToast(`📊 Activo seleccionado: ${sym.name} (${sym.symbol}).`, 'info');
     }
 
     /* ---------- Toast Notifications (Pausa al hover y botón cerrar) ---------- */
@@ -852,7 +850,7 @@ window.App = (function () {
             const changeText = hasValidChg
                 ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                     ? window.Currency.formatPercent(chg)
-                    : `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}\u00A0%`)
+                    : `${chg >= 0 ? '+' : '−'}${Math.abs(Number(chg)).toFixed(2)}\u00A0%`)
                 : '—';
 
             // Bloque I.7: Detectar estado de mercado cerrado para acciones
@@ -1437,7 +1435,7 @@ window.App = (function () {
                 }
                 const formattedLimit = window.Currency ? window.Currency.formatNativePrice(order.price, quote) : `${order.price} ${quote}`;
                 const formattedUnits = window.Currency ? window.Currency.formatCrypto(order.amount, order.symbol) : `${order.amount} ${order.symbol}`;
-                showToast(`📌 Orden Límite colocada: Comprar ${formattedUnits} a ${formattedLimit}. Se ejecutará cuando el precio alcance el nivel.`, 'info');
+                showToast(`Orden Límite colocada: Comprar ${formattedUnits} a ${formattedLimit}. Se ejecutará cuando el precio alcance el nivel.`, 'info');
                 return;
             }
 
@@ -1460,7 +1458,7 @@ window.App = (function () {
                 }
                 const formattedStop = window.Currency ? window.Currency.formatNativePrice(order.stopPrice, quote) : `${order.stopPrice} ${quote}`;
                 const formattedLimit = window.Currency ? window.Currency.formatNativePrice(order.limitPrice, quote) : `${order.limitPrice} ${quote}`;
-                showToast(`🛡️ Orden Stop-Limit armada: Se activará en ${formattedStop} y comprará en ${formattedLimit}.`, 'info');
+                showToast(`Orden Stop-Limit armada: Se activará en ${formattedStop} y comprará en ${formattedLimit}.`, 'info');
                 return;
             }
 
@@ -1477,7 +1475,7 @@ window.App = (function () {
                 });
             }
             const formattedUnits = window.Currency ? window.Currency.formatCrypto(order.amount, order.symbol) : `${order.amount} ${order.symbol}`;
-            showToast(`🎉 ¡Orden ejecutada con éxito! Has adquirido ${formattedUnits}.`, 'success');
+            showToast(`¡Orden ejecutada con éxito! Has adquirido ${formattedUnits}.`, 'success');
         }
 
         document.getElementById('confirm-btn-execute')?.addEventListener('click', () => {
@@ -1542,7 +1540,7 @@ window.App = (function () {
                 const modal = document.getElementById('demo-account-modal');
                 if (window.openModal) window.openModal(modal);
                 else modal?.classList.add('show');
-                showToast('💡 ¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
+                showToast('¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
                 return;
             }
 
@@ -1556,7 +1554,7 @@ window.App = (function () {
             if (!rawVal || isNaN(investedAmount) || investedAmount < 5) {
                 input?.classList.add('input-error');
                 input?.focus();
-                showToast(`⚠️ Introduce un importe válido (mínimo 5 ${activeCurr}) para ejecutar la compra.`, 'warning');
+                showToast(`Introduce un importe válido (mínimo 5 ${activeCurr}) para ejecutar la compra.`, 'warning');
                 return;
             }
             input?.classList.remove('input-error');
@@ -1585,7 +1583,7 @@ window.App = (function () {
                 const formattedAvail = (window.Currency && typeof window.Currency.format === 'function')
                     ? window.Currency.format(availableCashUsd)
                     : `${availableInActive.toFixed(2)} ${activeCurr}`;
-                showToast(`⚠️ Saldo de práctica insuficiente. Dispones de ${formattedAvail} en efectivo.`, 'error');
+                showToast(`Saldo de práctica insuficiente. Dispones de ${formattedAvail} en efectivo.`, 'error');
                 return;
             }
 
@@ -1622,7 +1620,7 @@ window.App = (function () {
                 const modal = document.getElementById('demo-account-modal');
                 if (window.openModal) window.openModal(modal);
                 else modal?.classList.add('show');
-                showToast('💡 ¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
+                showToast('¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
                 return;
             }
 
@@ -1633,7 +1631,7 @@ window.App = (function () {
             if (!rawAmount || isNaN(amount) || amount <= 0) {
                 amountInput?.classList.add('input-error');
                 amountInput?.focus();
-                showToast('⚠️ Introduce una cantidad válida para comprar (permite fracciones ej. 0.25).', 'warning');
+                showToast('Introduce una cantidad válida para comprar (permite fracciones ej. 0.25).', 'warning');
                 return;
             }
             amountInput?.classList.remove('input-error');
@@ -1655,7 +1653,7 @@ window.App = (function () {
                 if (!rawStop || isNaN(stopPrice) || stopPrice <= 0) {
                     stopInput?.classList.add('input-error');
                     stopInput?.focus();
-                    showToast(`⚠️ Introduce un precio de activación Stop válido en ${quote}.`, 'warning');
+                    showToast(`Introduce un precio de activación Stop válido en ${quote}.`, 'warning');
                     return;
                 }
                 stopInput?.classList.remove('input-error');
@@ -1670,7 +1668,7 @@ window.App = (function () {
                 if (!rawPrice || isNaN(limitPrice) || limitPrice <= 0) {
                     priceInput?.classList.add('input-error');
                     priceInput?.focus();
-                    showToast(`⚠️ Introduce un precio límite válido en ${quote}.`, 'warning');
+                    showToast(`Introduce un precio límite válido en ${quote}.`, 'warning');
                     return;
                 }
                 priceInput?.classList.remove('input-error');
@@ -1688,13 +1686,13 @@ window.App = (function () {
                 : totalInQuote;
 
             if (totalInUsd < 5) {
-                showToast('⚠️ El importe mínimo de la orden debe ser de al menos 5 € / $ de capital.', 'warning');
+                showToast('El importe mínimo de la orden debe ser de al menos 5 € / $ de capital.', 'warning');
                 return;
             }
 
             const availableCash = window.Store ? window.Store.getBalance() : 0;
             if (totalInUsd > availableCash) {
-                showToast(`⚠️ Saldo de práctica insuficiente. Coste: ${formatCurrency(totalInUsd)}, Disponible: ${formatCurrency(availableCash)}.`, 'error');
+                showToast(`Saldo de práctica insuficiente. Coste: ${formatCurrency(totalInUsd)}, Disponible: ${formatCurrency(availableCash)}.`, 'error');
                 return;
             }
 
@@ -1719,7 +1717,7 @@ window.App = (function () {
                 const modal = document.getElementById('demo-account-modal');
                 if (window.openModal) window.openModal(modal);
                 else modal?.classList.add('show');
-                showToast('💡 ¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
+                showToast('¿Quieres practicar con dinero ficticio? Elige tu capital y empieza.', 'info');
                 return;
             }
 
@@ -1732,7 +1730,7 @@ window.App = (function () {
                     window.Market.openClosePositionModal(posIdx);
                 }
             } else {
-                showToast(`ℹ️ No tienes posiciones abiertas de ${sym.symbol} para cerrar.`, 'info');
+                showToast(`No tienes posiciones abiertas de ${sym.symbol} para cerrar.`, 'info');
             }
         }
 
@@ -1996,7 +1994,7 @@ window.App = (function () {
                     <div class="alert-item-icon"><i class="fas fa-bell"></i></div>
                     <div class="alert-item-text">
                         <strong>${a.symbol} ${a.condition === 'above' ? '≥' : '≤'} ${nativePriceFormatted}${approxHtml}</strong>
-                        <span>${a.triggered ? '✅ Disparada' : '⏳ En espera de cotización'}</span>
+                        <span>${a.triggered ? 'Disparada' : 'En espera de cotización'}</span>
                     </div>
                 </div>
                 <button class="btn-del-alert" data-idx="${i}" title="Eliminar alerta"><i class="fas fa-trash"></i></button>
@@ -2057,7 +2055,7 @@ window.App = (function () {
             if (!rawTarget || isNaN(target) || target <= 0) {
                 targetInput?.classList.add('input-error');
                 targetInput?.focus();
-                showToast('⚠️ Introduce un precio objetivo válido para la alerta.', 'warning');
+                showToast('Introduce un precio objetivo válido para la alerta.', 'warning');
                 return;
             }
             targetInput?.classList.remove('input-error');
@@ -2078,7 +2076,7 @@ window.App = (function () {
             const approxText = (window.Currency && typeof window.Currency.formatConvertedApprox === 'function')
                 ? window.Currency.formatConvertedApprox(target, quote)
                 : '';
-            showToast(`🔔 Alerta creada: ${sym} cuando sea ${condition === 'above' ? '≥' : '≤'} ${nativeFormatted}${approxText ? ' (' + approxText + ')' : ''}`, 'success');
+            showToast(`Alerta creada: ${sym} cuando sea ${condition === 'above' ? '≥' : '≤'} ${nativeFormatted}${approxText ? ' (' + approxText + ')' : ''}`, 'success');
         });
 
         // Price Monitor Trigger
@@ -2362,11 +2360,11 @@ window.App = (function () {
                     window.Store.exportAccountDataJSON();
                     showToast('💾 Copia de seguridad exportada exitosamente en formato JSON.', 'success');
                 } else {
-                    showToast('⚠️ Motor de almacenamiento no disponible para exportar.', 'warning');
+                    showToast('Motor de almacenamiento no disponible para exportar.', 'warning');
                 }
             } catch (err) {
                 console.error('Error exportando datos:', err);
-                showToast(`❌ Error al exportar: ${err.message}`, 'error');
+                showToast(`Error al exportar: ${err.message}`, 'error');
             }
         });
 
@@ -2392,19 +2390,19 @@ window.App = (function () {
                     }
                     const res = window.Store.importAccountDataJSON(fileContent);
                     if (res && res.success) {
-                        showToast(`✅ Copia de seguridad restaurada correctamente (${res.tradesCount || 0} operaciones registradas).`, 'success');
+                        showToast(`Copia de seguridad restaurada correctamente (${res.tradesCount || 0} operaciones registradas).`, 'success');
                     } else {
-                        showToast(`⚠️ Archivo rechazado: ${res ? res.error : 'Estructura no válida'}`, 'error');
+                        showToast(`Archivo rechazado: ${res ? res.error : 'Estructura no válida'}`, 'error');
                     }
                 } catch (err) {
                     console.error('Error importando datos:', err);
-                    showToast(`❌ Error al importar archivo: ${err.message}`, 'error');
+                    showToast(`Error al importar archivo: ${err.message}`, 'error');
                 } finally {
                     e.target.value = '';
                 }
             };
             reader.onerror = () => {
-                showToast('❌ Error al leer el archivo seleccionado.', 'error');
+                showToast('Error al leer el archivo seleccionado.', 'error');
                 e.target.value = '';
             };
             reader.readAsText(file, 'utf-8');
@@ -2442,11 +2440,11 @@ window.App = (function () {
             try {
                 if (window.Store && typeof window.Store.clearAllUserData === 'function') {
                     window.Store.clearAllUserData();
-                    showToast('🗑️ Todos tus datos locales han sido borrados permanentemente (RGPD).', 'info');
+                    showToast('Todos tus datos locales han sido borrados permanentemente (RGPD).', 'info');
                 }
             } catch (err) {
                 console.error('Error al borrar datos RGPD:', err);
-                showToast('❌ Error al borrar los datos locales.', 'error');
+                showToast('Error al borrar los datos locales.', 'error');
             }
         });
 
@@ -2523,9 +2521,9 @@ window.App = (function () {
             }
 
             const messages = {
-                auto: '🌐 Efectos visuales: 3D dinámico activado',
-                reduced: '🌐 Efectos visuales: Modo reducido estático (1 fotograma)',
-                disabled: '🌐 Efectos visuales: Desactivado (modo 2D de bajo consumo)'
+                auto: 'Efectos visuales: 3D dinámico activado',
+                reduced: 'Efectos visuales: Modo reducido estático (1 fotograma)',
+                disabled: 'Efectos visuales: Desactivado (modo 2D de bajo consumo)'
             };
             showToast(messages[nextMode] || 'Ajuste visual actualizado', 'info');
         }
@@ -2664,7 +2662,7 @@ window.App = (function () {
             document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
             if (badgeCount) badgeCount.style.display = 'none';
             if (unreadTag) unreadTag.textContent = '0 nuevas';
-            showToast('🔔 Todas las notificaciones han sido marcadas como leídas.', 'success');
+            showToast('Todas las notificaciones han sido marcadas como leídas.', 'success');
         });
 
         configAlertsBtn?.addEventListener('click', (e) => {
@@ -2750,7 +2748,7 @@ window.App = (function () {
             updateMarginMetrics();
 
             if (isMargin) {
-                showToast(`⚡ Modo Margin Activado: Apalancamiento ${currentLev}x y préstamo demo activo.`, 'info');
+                showToast(`Modo Margin Activado: Apalancamiento ${currentLev}x y préstamo demo activo.`, 'info');
             } else {
                 showToast(`🪙 Modo Spot Activado: Operaciones 1:1 directas sin apalancamiento.`, 'info');
             }
@@ -2879,7 +2877,7 @@ window.App = (function () {
                 const sym = symbolMap[id];
                 if (sym) {
                     selectSymbol(sym);
-                    showToast(`📊 Gráfico y libro de órdenes de ${sym.name} (${sym.symbol}) cargados en Trading.`, 'info');
+                    showToast(`Gráfico y libro de órdenes de ${sym.name} (${sym.symbol}) cargados en Trading.`, 'info');
                 }
             });
         });
@@ -2892,7 +2890,7 @@ window.App = (function () {
                 const sym = symbolMap[id];
                 if (sym) {
                     selectSymbol(sym);
-                    showToast(`⚡ Operación rápida: Panel preparado para ${sym.symbol}/USDT.`, 'info');
+                    showToast(`Operación rápida: Panel preparado para ${sym.symbol}/USDT.`, 'info');
                 }
             });
         });
@@ -2930,7 +2928,7 @@ window.App = (function () {
                 for (const [cls, sym] of Object.entries(segMap)) {
                     if (seg.classList.contains(cls)) {
                         selectSymbol(sym);
-                        showToast(`📈 Distribución: ${sym.name} seleccionado en Terminal.`, 'info');
+                        showToast(`Distribución: ${sym.name} seleccionado en Terminal.`, 'info');
                         return;
                     }
                 }
@@ -3240,7 +3238,7 @@ window.App = (function () {
                 if (window.Store) {
                     window.Store.activatePracticeAccount(capUsd);
                 }
-                showToast(`🎉 ¡Cuenta de práctica activada con ${formatCurrency(selectedCapital)}!`, 'success');
+                showToast(`¡Cuenta de práctica activada con ${formatCurrency(selectedCapital)}!`, 'success');
                 if (window.Sound) window.Sound.play('trade');
             } else {
                 if (window.Store) {
@@ -3295,35 +3293,35 @@ window.App = (function () {
                 view: 'trading',
                 title: '1. Buscador Global de Activos',
                 desc: 'Escribe el nombre o ticker de cualquier acción o criptomoneda (Santander, BBVA, Apple o Bitcoin) para ver su cotización en vivo y cargar su gráfico.',
-                tip: '💡 <strong>Consejo:</strong> Puedes escribir directamente "BBVA" o "SAN" para operar con acciones españolas cotizadas en euros.'
+                tip: '<strong>Consejo:</strong> Puedes escribir directamente "BBVA" o "SAN" para operar con acciones españolas cotizadas en euros.'
             },
             {
                 targetSelector: '#quick-asset-switcher',
                 view: 'trading',
                 title: '2. Accesos Rápidos del Gráfico',
                 desc: 'Botones de un solo clic para alternar entre los activos más populares: BTC, ETH, SOL, NVDA, AAPL, y los nuevos botones de BBVA y Santander.',
-                tip: '💡 <strong>Consejo:</strong> Haz clic en BBVA para ver sus velas cotizadas en euros al instante.'
+                tip: '<strong>Consejo:</strong> Haz clic en BBVA para ver sus velas cotizadas en euros al instante.'
             },
             {
                 targetSelector: '.chart-card',
                 view: 'trading',
                 title: '3. Gráfico Técnico Profesional',
                 desc: 'Visualiza velas japonesas en tiempo real vía WebSocket. Puedes cambiar temporalidades (1m, 5m, 1h, 1D), consultar volumen y estudiar tendencias.',
-                tip: '💡 <strong>Consejo:</strong> Haz zoom con la rueda del ratón o arrastra horizontalmente para ver el histórico de precios.'
+                tip: '<strong>Consejo:</strong> Haz zoom con la rueda del ratón o arrastra horizontalmente para ver el histórico de precios.'
             },
             {
                 targetSelector: '.trading-panel',
                 view: 'trading',
                 title: '4. Panel de Operativa y Órdenes',
                 desc: 'Aquí ejecutas tus órdenes. En modo Fácil cuentas con importes rápidos de 20€ a 1.000€. En modo Pro dispones de órdenes Límite, Stop-Loss y multiplicador de apalancamiento.',
-                tip: '💡 <strong>Consejo:</strong> Todas las operaciones se descuentan de tu saldo de práctica virtual sin arriesgar dinero real.'
+                tip: '<strong>Consejo:</strong> Todas las operaciones se descuentan de tu saldo de práctica virtual sin arriesgar dinero real.'
             },
             {
                 targetSelector: '.demo-account-pill',
                 view: 'trading',
                 title: '5. Cuenta de Práctica y Saldo Demo',
                 desc: 'Indica tu capital de simulación. Haz clic sobre este botón para ajustar tu saldo desde 20€ hasta 125.000€ y entrenar tu gestión psicológica sin riesgo.',
-                tip: '💡 <strong>Consejo:</strong> Si te quedas sin saldo o quieres restablecer tu récord, puedes volver a ajustarlo cuando quieras.'
+                tip: '<strong>Consejo:</strong> Si te quedas sin saldo o quieres restablecer tu récord, puedes volver a ajustarlo cuando quieras.'
             }
         ];
 
@@ -3412,7 +3410,7 @@ window.App = (function () {
             if (spotlightFrame) spotlightFrame.style.display = 'none';
             window.removeEventListener('resize', updatePositions);
             window.removeEventListener('scroll', updatePositions);
-            showToast('🎉 ¡Mini Guía completada! Ya conoces las funciones esenciales para operar.', 'success');
+            showToast('¡Mini Guía completada! Ya conoces las funciones esenciales para operar.', 'success');
             playChime(true);
         }
 
@@ -3603,7 +3601,7 @@ window.App = (function () {
             if (navigator.onLine !== false) {
                 if (typeof showToast === 'function') showToast('🟢 Conexión activa.', 'success');
             } else {
-                if (typeof showToast === 'function') showToast('⚠️ Sigues sin conexión a internet.', 'warning');
+                if (typeof showToast === 'function') showToast('Sigues sin conexión a internet.', 'warning');
             }
         });
 
@@ -3687,7 +3685,6 @@ window.App = (function () {
                 clearTimeout(forceHideTimeout);
                 hideLoading();
                 state.initialized = true;
-                showToast('Terminal conectada a los mercados en tiempo real.', 'success');
             }
         }, 300);
     }

@@ -53,7 +53,7 @@ console.log('✓ Test 01: Módulos window.Store y window.Currency cargados');
 const posPct = window.Currency.formatPercent(2.31);
 const negPct = window.Currency.formatPercent(-1.45);
 assert.ok(posPct.includes('2,31') && posPct.includes('%'), 'Debe formatear +2,31 %');
-assert.ok(negPct.includes('-1,45') && negPct.includes('%'), 'Debe formatear -1,45 %');
+assert.ok((negPct.includes('-1,45') || negPct.includes('−1,45')) && negPct.includes('%'), 'Debe formatear −1,45 %');
 console.log('✓ Test 02: Formateo de porcentajes en español (+2,31 %, -1,45 %)');
 
 // Test 3: Volúmenes compactos

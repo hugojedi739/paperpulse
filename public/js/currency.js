@@ -138,12 +138,17 @@
         }
     }
 
-    // Formateador con signo explícito (+€250.00 / -€140.00)
+    // Formateador con signo explícito (+250,00 € / −140,00 €)
     function formatSigned(amountUsd, options = {}) {
         if (amountUsd == null || isNaN(amountUsd)) return format(0, options);
-        const isPos = amountUsd > 0;
-        const formatted = format(amountUsd, options);
-        return isPos ? `+${formatted}` : formatted;
+        const num = Number(amountUsd);
+        if (num > 0) {
+            return `+${format(num, options)}`;
+        } else if (num < 0) {
+            const absFmt = format(Math.abs(num), options);
+            return `−${absFmt}`;
+        }
+        return format(0, options);
     }
 
     // Formateador compacto ($1.2M, €850K)
@@ -196,12 +201,12 @@
         return 'USDT';
     }
 
-    // Formateador de números porcentuales (+2,31 % / -1,45 %) con formato de idioma y espacio
+    // Formateador de números porcentuales (+2,31 % / −1,45 %) con formato de idioma y espacio
     function formatPercent(pct) {
         if (pct == null || isNaN(pct)) return '0,00\u00A0%';
         const num = parseFloat(pct);
         const locale = getActiveLocale();
-        const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
+        const sign = num > 0 ? '+' : (num < 0 ? '−' : '');
         const formatted = Math.abs(num).toLocaleString(locale, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2

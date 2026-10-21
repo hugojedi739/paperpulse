@@ -162,12 +162,12 @@ window.Market = (function () {
             const text24 = has24
                 ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                     ? window.Currency.formatPercent(change24)
-                    : `${change24 >= 0 ? '+' : ''}${Number(change24).toFixed(2)}\u00A0%`)
+                    : `${change24 >= 0 ? '+' : '−'}${Math.abs(Number(change24)).toFixed(2)}\u00A0%`)
                 : '—';
             const text7d = has7d
                 ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                     ? window.Currency.formatPercent(change7d)
-                    : `${change7d >= 0 ? '+' : ''}${Number(change7d).toFixed(2)}\u00A0%`)
+                    : `${change7d >= 0 ? '+' : '−'}${Math.abs(Number(change7d)).toFixed(2)}\u00A0%`)
                 : '—';
 
             const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
@@ -178,6 +178,9 @@ window.Market = (function () {
                     ? window.Currency.formatAssetPrice(livePrice, quote)
                     : formatMoney(livePrice))
                 : '—';
+            const priceHtml = (priceFormatted && priceFormatted.includes(' '))
+                ? `${priceFormatted.split(' ')[0]} <span class="wli-quote">${priceFormatted.split(' ')[1]}</span>`
+                : priceFormatted;
 
             const volFormatted = coin.total_volume > 0
                 ? (window.Currency && typeof window.Currency.formatVolume === 'function'
@@ -330,9 +333,12 @@ window.Market = (function () {
                         ? window.Currency.formatAssetPrice(livePrice, quote)
                         : formatMoney(livePrice))
                     : '—';
+                const priceHtml = (priceFormatted && priceFormatted.includes(' '))
+                    ? `${priceFormatted.split(' ')[0]} <span class="wli-quote">${priceFormatted.split(' ')[1]}</span>`
+                    : priceFormatted;
 
                 const priceEl = itemEl.querySelector('.watchlist-price');
-                if (priceEl) priceEl.textContent = priceFormatted;
+                if (priceEl) priceEl.innerHTML = priceHtml;
 
                 const changeEl = itemEl.querySelector('.watchlist-change');
                 if (changeEl) {
@@ -340,7 +346,7 @@ window.Market = (function () {
                     changeEl.textContent = hasChange
                         ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                             ? window.Currency.formatPercent(change)
-                            : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
+                            : `${change >= 0 ? '+' : '−'}${Math.abs(Number(change)).toFixed(2)}\u00A0%`)
                         : '—';
                 }
 
@@ -390,6 +396,9 @@ window.Market = (function () {
                     ? window.Currency.formatAssetPrice(livePrice, quote)
                     : formatMoney(livePrice))
                 : '—';
+            const priceHtml = (priceFormatted && priceFormatted.includes(' '))
+                ? `${priceFormatted.split(' ')[0]} <span class="wli-quote">${priceFormatted.split(' ')[1]}</span>`
+                : priceFormatted;
 
             const chgText = hasChange
                 ? (window.Currency && typeof window.Currency.formatPercent === 'function'
@@ -417,7 +426,7 @@ window.Market = (function () {
                     </div>
                 </div>
                 <div class="watchlist-item-right">
-                    <span class="watchlist-price">${priceFormatted}</span>
+                    <span class="watchlist-price">${priceHtml}</span>
                     <div class="watchlist-change-row">
                         <span class="watchlist-change ${cls}">${chgText}</span>
                         ${isClosed ? '<span class="watchlist-closed-tag">CIERRE</span>' : ''}
@@ -795,7 +804,7 @@ window.Market = (function () {
                 <td class="price-cell">${amountFormatted} <span class="text-secondary">(${formatMoney(currentValue)})</span></td>
                 <td class="price-cell">${entryFormatted}</td>
                 <td class="price-cell">${currentFormatted}</td>
-                <td class="price-cell ${pnlCls}"><strong>${formatSignedMoney(pnlUsd)}</strong> (${pnlPct >= 0 ? '+' : '-'}${pnlPctFormatted}%)</td>
+                <td class="price-cell ${pnlCls}"><strong>${formatSignedMoney(pnlUsd)}</strong> (${pnlPct >= 0 ? '+' : '−'}${pnlPctFormatted}%)</td>
                 <td><button class="btn-close-pos" data-index="${idx}" title="Cerrar posición con confirmación"><i class="fas fa-times"></i> Cerrar</button></td>
             </tr>`;
         }).join('');
@@ -810,7 +819,7 @@ window.Market = (function () {
             const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
             const totalPctFormatted = Math.abs(totalPct).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             totalPnlEl.className = `pnl-summary-val ${isPos ? 'bullish' : 'bearish'}`;
-            totalPnlEl.textContent = `${formatSignedMoney(totalPnlUsd)} (${totalPct >= 0 ? '+' : '-'}${totalPctFormatted}%)`;
+            totalPnlEl.textContent = `${formatSignedMoney(totalPnlUsd)} (${totalPct >= 0 ? '+' : '−'}${totalPctFormatted}%)`;
         }
 
         tbody.querySelectorAll('.btn-close-pos').forEach(btn => {
@@ -850,7 +859,7 @@ window.Market = (function () {
         if (entryEl) entryEl.textContent = formatMoney(pos.entryPrice);
         if (exitEl) exitEl.textContent = formatMoney(currentPrice);
         if (pnlEl) {
-            pnlEl.textContent = `${formatSignedMoney(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+            pnlEl.textContent = `${formatSignedMoney(pnl)} (${pnlPct >= 0 ? '+' : '−'}${Math.abs(pnlPct).toFixed(2)}%)`;
             pnlEl.className = `cpm-pnl-pill ${isPos ? 'bullish' : 'bearish'}`;
         }
         if (reflectionInput) reflectionInput.value = '';

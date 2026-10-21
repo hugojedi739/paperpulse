@@ -654,7 +654,7 @@ window.Journal = (function () {
                     <td>
                         <div class="j-pnl-col ${pnlCls}">
                             <strong class="j-pnl-val">${fmtSignedMoney(t.pnl)}</strong>
-                            <span class="j-pnl-pct">(${t.pnl >= 0 ? '+' : '-'}${pnlPctStr}%)</span>
+                            <span class="j-pnl-pct">(${t.pnl >= 0 ? '+' : '−'}${pnlPctStr}%)</span>
                         </div>
                     </td>
                     <td>

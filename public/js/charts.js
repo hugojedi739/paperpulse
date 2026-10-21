@@ -584,9 +584,21 @@ window.Charts = (function () {
             }
         });
 
-        // Serie de Volumen
+        // Serie de Volumen con formato regional unificado (35,8 M, 18,8 K con coma y espacio)
         volumeSeries = tradingChart.addHistogramSeries({
-            priceFormat: { type: 'volume' },
+            priceFormat: {
+                type: 'custom',
+                formatter: (vol) => {
+                    if (window.Currency && typeof window.Currency.formatVolume === 'function') {
+                        return window.Currency.formatVolume(vol);
+                    }
+                    if (vol == null || isNaN(vol)) return '0';
+                    const num = Math.abs(Number(vol));
+                    if (num >= 1e6) return `${(num / 1e6).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u00A0M`;
+                    if (num >= 1e3) return `${(num / 1e3).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u00A0K`;
+                    return num.toLocaleString('es-ES');
+                }
+            },
             priceScaleId: 'volume',
         });
         tradingChart.priceScale('volume').applyOptions({

@@ -157,7 +157,7 @@ class TestRealAppCalculations(unittest.TestCase):
         neg = self.eval_js("window.Currency.formatPercent(-1.45)")
         self.assertTrue("2,31" in pos, f"Esperado '2,31' en {pos}")
         self.assertTrue("%" in pos, f"Esperado '%' en {pos}")
-        self.assertTrue("-1,45" in neg, f"Esperado '-1,45' en {neg}")
+        self.assertTrue("-1,45" in neg or "−1,45" in neg, f"Esperado '-1,45' o '−1,45' en {neg}")
 
     def test_03_compact_volume_formatting(self):
         """Verifica volúmenes compactos: 35,8 M y 520,0 K."""
