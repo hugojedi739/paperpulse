@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperPulse Terminal — Trading y Análisis Cuantitativo</title>
+    <meta name="description" content="PaperPulse Terminal — Plataforma avanzada de simulación de trading cuantitativo, análisis técnico en tiempo real y gestión de carteras de inversión.">
+    <link rel="canonical" href="http://localhost:8000/">
+
+    <!-- Open Graph / Redes Sociales -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:8000/">
+    <meta property="og:title" content="PaperPulse Terminal — Trading y Análisis Cuantitativo">
+    <meta property="og:description" content="Simulación de trading cuantitativo en tiempo real para criptoactivos y bolsas mundiales con motor cuantitativo paper trading.">
+    <meta property="og:image" content="/img/brand/og-preview.png">
+    <meta property="og:site_name" content="PaperPulse Terminal">
+    <meta property="og:locale" content="es_ES">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="http://localhost:8000/">
+    <meta name="twitter:title" content="PaperPulse Terminal — Trading y Análisis Cuantitativo">
+    <meta name="twitter:description" content="Simulación de trading cuantitativo en tiempo real para criptoactivos y bolsas mundiales.">
+    <meta name="twitter:image" content="/img/brand/og-preview.png">
+
+    <!-- Web App & PWA -->
+    <meta name="theme-color" content="#0b0e11">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Vendor Assets Locales (Sin dependencias externas ni rastreadores) -->
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css?v=9">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><rect width='36' height='36' rx='9' fill='%230b0e11'/><path d='M18 5L29 11.5V24.5L18 31L7 24.5V11.5L18 5Z' stroke='%2300d2ff' stroke-width='2.2' fill='none'/><circle cx='18' cy='18' r='3' fill='%2300d2ff'/></svg>">
+</head>
+<body>
+    <noscript>
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0b0e11;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:sans-serif;padding:24px;text-align:center;">
+            <h1 style="color:#00d2ff;margin-bottom:12px;">JavaScript Requerido</h1>
+            <p style="color:#94a3b8;max-width:520px;line-height:1.6;font-size:15px;">
+                PaperPulse Terminal requiere JavaScript habilitado para conectar con los feeds en vivo, calcular el motor cuantitativo y renderizar gráficos interactivos. Por favor, activa JavaScript en tu navegador.
+            </p>
+        </div>
+    </noscript>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <button class="nav-icon-btn nav-sidebar-toggle" id="nav-sidebar-toggle" aria-label="Alternar panel lateral" title="Alternar panel lateral (Expandir espacio de trabajo)">
+                <i class="fas fa-columns"></i>
+            </button>
+            <a href="#" class="logo" title="PaperPulse Terminal">
+                <div class="brand-logo-mark">
+                    <svg class="brand-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="paperPulseMarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00d2ff"/>
+                                <stop offset="100%" stop-color="#3a7bd5"/>
+                            </linearGradient>
+                            <linearGradient id="paperPulseMarkCore" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#00d2ff"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="36" height="36" rx="9" fill="url(#paperPulseMarkGrad)" fill-opacity="0.15"/>
+                        <path d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="url(#paperPulseMarkGrad)" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M18 10L25 14V22L18 26L11 22V14L18 10Z" fill="url(#paperPulseMarkGrad)" fill-opacity="0.25"/>
+                        <path d="M18 14L22 16.5V21.5L18 24L14 21.5V16.5L18 14Z" fill="url(#paperPulseMarkCore)"/>
+                        <circle cx="18" cy="18" r="2.5" fill="#ffffff"/>
+                    </svg>
+                </div>
+                <div class="logo-text-wrap">
+                    <span class="brand-title">PaperPulse</span>
+                    <span class="brand-tag">TERMINAL</span>
+                </div>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a class="nav-link active" href="#" role="button" data-view="dashboard" title="Dashboard">
+                <i class="fas fa-th-large"></i><span>Dashboard</span>
+            </a>
+            <a class="nav-link" href="#" role="button" data-view="trading" title="Trading">
+                <i class="fas fa-chart-line"></i><span>Trading</span>
+            </a>
+            <a class="nav-link" href="#" role="button" data-view="markets" title="Mercados">
+                <i class="fas fa-coins"></i><span>Mercados</span>
+            </a>
+            <a class="nav-link" href="#" role="button" data-view="news" title="Noticias">
+                <i class="fas fa-newspaper"></i><span>Noticias</span>
+            </a>
+            <a class="nav-link" href="#" role="button" data-view="journal" title="Diario">
+                <i class="fas fa-book-open"></i><span>Diario</span>
+            </a>
+        </div>
+        <div class="nav-actions">
+            <!-- Search Box -->
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" aria-label="Buscar criptomonedas o acciones" placeholder="Buscar..." autocomplete="off">
+                <kbd class="search-kbd-hint">/</kbd>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <!-- Mode Switcher (Beginner vs Pro) -->
+            <div class="mode-switch-pill" id="mode-switch-btn" title="Alternar entre modo fácil para principiantes y modo profesional">
+                <button class="mode-btn active" data-mode="beginner" aria-label="Modo Fácil" title="Modo Fácil"><i class="fas fa-leaf"></i> <span>Fácil</span></button>
+                <button class="mode-btn" data-mode="pro" aria-label="Modo Profesional" title="Modo Profesional"><i class="fas fa-sliders-h"></i> <span>Pro</span></button>
+            </div>
+            <!-- Estado de Cuenta / Modo Operativo -->
+            <div class="balance-pill demo-account-pill" id="demo-account-trigger" title="Estado de la cuenta: Clic para ver detalles o gestionar">
+                <span class="account-mode-tag mode-consulta" id="account-mode-tag" title="Modo Consulta: Solo visualización de mercados"><i class="fas fa-eye"></i> <span class="amt-text">Modo Consulta</span></span>
+                <span class="balance-amount balance-sensitive" id="total-balance" style="display: none;">—</span>
+                <button class="btn-balance-privacy" id="balance-privacy-btn" aria-label="Ocultar o mostrar saldo confidencial" title="Ocultar / Mostrar saldos" style="display: none;"><i class="fas fa-eye"></i></button>
+                <button class="btn-balance-reset" id="reset-balance-btn" aria-label="Ajustes de cuenta de práctica" title="Ajustes de cuenta de práctica" style="display: none;"><i class="fas fa-sliders-h"></i></button>
+                <button class="btn-start-practice-nav" id="btn-start-practice-nav" title="Activar cuenta de práctica con saldo ficticio"><i class="fas fa-play"></i> Practicar</button>
+            </div>
+            <!-- Connection Status (Binance WS Real-Time & Bolsa) -->
+            <div class="connection-status-pill disconnected" id="connection-status-pill" title="Estado de la conexión">
+                <span class="status-dot offline"></span>
+                <span class="status-text" id="connection-status-text">Sin conexión</span>
+            </div>
+            <!-- Theme Toggle -->
+            <button class="nav-icon-btn" id="theme-toggle-btn" aria-label="Alternar tema claro y oscuro" title="Alternar Modo Claro / Modo Oscuro">
+                <i class="fas fa-moon"></i>
+            </button>
+            <!-- Notifications Dropdown -->
+            <div class="notification-dropdown-wrap" id="notification-dropdown-wrap">
+                <button class="nav-icon-btn" id="notification-btn" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false" title="Notificaciones y Alertas de Mercado">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notif-badge-count" style="display: none;">0</span>
+                </button>
+                <div class="notification-dropdown-menu" id="notification-dropdown-menu">
+                    <div class="notif-dropdown-header">
+                        <div class="notif-header-title">
+                            <i class="fas fa-bell"></i>
+                            <strong>Notificaciones</strong>
+                            <span class="notif-count-tag" id="notif-unread-tag">0 nuevas</span>
+                        </div>
+                        <button class="btn-text-action" id="notif-mark-read-btn" title="Marcar todas como leídas">Marcar leídas</button>
+                    </div>
+                    <div class="notif-dropdown-list" id="notif-items-list">
+                        <div class="notif-empty-state" style="padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                            <i class="fas fa-bell-slash" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+                            No tienes notificaciones pendientes
+                        </div>
+                    </div>
+                    <div class="notif-dropdown-footer">
+                        <button class="notif-footer-btn" id="notif-configure-alerts-btn">
+                            <i class="fas fa-sliders-h"></i> Configurar Alertas de Precio
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- User Avatar & Profile Dropdown -->
+            <div class="avatar-dropdown-wrap" id="avatar-dropdown-wrap">
+                <div class="avatar" id="avatar-btn" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" aria-label="Mi Cuenta y Ajustes" title="Mi Cuenta y Ajustes">
+                    <i class="fas fa-user"></i>
+                    <span class="user-status-dot" title="Sesión activa y segura"></span>
+                </div>
+                <!-- Profile Dropdown Menu -->
+                <div class="user-dropdown-menu" id="user-dropdown-menu">
+                    <div class="user-profile-card">
+                        <div class="user-avatar-badge">
+                            <div class="user-avatar-circle"><i class="fas fa-user"></i></div>
+                            <span class="avatar-level-tag">PRO</span>
+                        </div>
+                        <div class="user-profile-details">
+                            <div class="user-profile-name">Operador</div>
+                            <div class="user-profile-account"><i class="fas fa-shield-alt"></i> Cuenta Demo Pro</div>
+                            <div class="user-profile-email">Cuenta local</div>
+                        </div>
+                    </div>
+                    <div class="user-balance-preview">
+                        <div class="ubp-row">
+                            <span class="ubp-label"><i class="fas fa-wallet"></i> Saldo Demo Total</span>
+                            <strong class="ubp-val" id="user-dropdown-balance">—</strong>
+                        </div>
+                        <div class="ubp-bar"><div class="ubp-fill" id="user-menu-margin-fill" style="width: 100%;"></div></div>
+                        <div class="ubp-footer">
+                            <span class="ubp-hint" id="user-menu-margin-hint">Margen disponible: 100%</span>
+                            <span class="ubp-status">Modo Práctica</span>
+                        </div>
+                    </div>
+                    <div class="user-menu-list">
+                        <!-- Sección Cuenta -->
+                        <div class="user-menu-group-title">Cuenta</div>
+                        <button class="user-menu-item" id="user-menu-demo-manage">
+                            <div class="umi-icon icon-trade"><i class="fas fa-wallet"></i></div>
+                            <div class="umi-text">
+                                <strong>Ajustar Capital de Práctica</strong>
+                                <span>Configurar saldo demo virtual</span>
+                            </div>
+                            <i class="fas fa-chevron-right umi-arrow"></i>
+                        </button>
+                        <button class="user-menu-item" id="user-menu-guide">
+                            <div class="umi-icon icon-guide"><i class="fas fa-book-open"></i></div>
+                            <div class="umi-text">
+                                <strong>Manual de Operativa</strong>
+                                <span>Guía de trading interactiva</span>
+                            </div>
+                            <i class="fas fa-chevron-right umi-arrow"></i>
+                        </button>
+
+                        <!-- Sección Preferencias -->
+                        <div class="user-menu-group-title">Preferencias</div>
+                        <div class="user-menu-currency-row">
+                            <div class="umc-label-row">
+                                <span class="ump-label"><i class="fas fa-coins"></i> Divisa:</span>
+                                <span class="active-currency-pill" id="active-currency-tag">EUR (€)</span>
+                            </div>
+                            <div class="currency-picker-group">
+                                <button class="currency-select-btn active" data-currency="EUR" title="Euro (€)"><span class="csb-sym">€</span> EUR</button>
+                                <button class="currency-select-btn" data-currency="USD" title="Dólar ($)"><span class="csb-sym">$</span> USD</button>
+                                <button class="currency-select-btn" data-currency="GBP" title="Libra (£)"><span class="csb-sym">£</span> GBP</button>
+                                <button class="currency-select-btn" data-currency="auto" title="Detección automática por región">Auto</button>
+                            </div>
+                        </div>
+                        <div class="user-menu-palette-row">
+                            <span class="ump-label"><i class="fas fa-palette"></i> Paleta:</span>
+                            <div class="theme-palette-picker" title="Personalizar tema de color">
+                                <button class="palette-btn active" data-color="cyan" title="Tema Cyber Cyan"><span class="dot-cyan"></span></button>
+                                <button class="palette-btn" data-color="gold" title="Tema Oro Clásico"><span class="dot-gold"></span></button>
+                                <button class="palette-btn" data-color="purple" title="Tema Web3 Violeta"><span class="dot-purple"></span></button>
+                            </div>
+                        </div>
+                        <button class="user-menu-item" id="user-menu-sound">
+                            <div class="umi-icon icon-sound"><i class="fas fa-volume-up" id="menu-sound-icon"></i></div>
+                            <div class="umi-text">
+                                <strong>Efectos de Audio</strong>
+                                <span id="menu-sound-label">Sonidos activados</span>
+                            </div>
+                            <span class="toggle-pill active" id="menu-sound-pill">ON</span>
+                        </button>
+                        <button class="user-menu-item" id="user-menu-density">
+                            <div class="umi-icon icon-density"><i class="fas fa-compress-alt"></i></div>
+                            <div class="umi-text">
+                                <strong>Escala de Pantalla</strong>
+                                <span id="menu-density-label">Modo Pro Compacto (Sin zoom)</span>
+                            </div>
+                            <span class="toggle-pill active" id="menu-density-pill">PRO</span>
+                        </button>
+                        <button class="user-menu-item" id="user-menu-fx" title="Ajustar efectos visuales y globo 3D">
+                            <div class="umi-icon icon-fx"><i class="fas fa-cube"></i></div>
+                            <div class="umi-text">
+                                <strong>Efectos Visuales</strong>
+                                <span id="menu-fx-label">Automático (3D)</span>
+                            </div>
+                            <span class="toggle-pill active" id="menu-fx-pill">AUTO</span>
+                        </button>
+
+                        <!-- Sección Datos & Privacidad -->
+                        <div class="user-menu-group-title">Datos & Privacidad</div>
+                        <button class="user-menu-item" id="user-menu-export" title="Descargar copia de seguridad en JSON de tus operaciones y ajustes">
+                            <div class="umi-icon icon-trade" style="background: rgba(0, 210, 255, 0.12); color: var(--accent-primary);"><i class="fas fa-file-export"></i></div>
+                            <div class="umi-text">
+                                <strong>Exportar Datos (JSON)</strong>
+                                <span>Copia de seguridad local</span>
+                            </div>
+                            <i class="fas fa-download umi-arrow"></i>
+                        </button>
+                        <button class="user-menu-item" id="user-menu-import" title="Restaurar operaciones y configuración desde un archivo JSON">
+                            <div class="umi-icon icon-trade" style="background: rgba(58, 123, 213, 0.15); color: #3a7bd5;"><i class="fas fa-file-import"></i></div>
+                            <div class="umi-text">
+                                <strong>Importar Datos (JSON)</strong>
+                                <span>Restaurar copia previa</span>
+                            </div>
+                            <i class="fas fa-upload umi-arrow"></i>
+                        </button>
+                        <input type="file" id="user-import-file-input" accept=".json,application/json" style="display: none;">
+
+                        <!-- Sección Legal y Sesión -->
+                        <div class="user-menu-group-title">Información & Sesión</div>
+                        <button class="user-menu-item" id="user-menu-legal">
+                            <div class="umi-icon"><i class="fas fa-balance-scale"></i></div>
+                            <div class="umi-text">
+                                <strong>Aviso Legal & Privacidad</strong>
+                                <span>Simulación educativa y datos</span>
+                            </div>
+                            <i class="fas fa-chevron-right umi-arrow"></i>
+                        </button>
+                        <button class="user-menu-item" id="user-menu-reset">
+                            <div class="umi-icon icon-reset"><i class="fas fa-sync-alt"></i></div>
+                            <div class="umi-text">
+                                <strong>Restablecer Saldo Demo</strong>
+                                <span>Restablecer saldo inicial</span>
+                            </div>
+                            <i class="fas fa-chevron-right umi-arrow"></i>
+                        </button>
+                        <button class="user-menu-item danger-item" id="user-menu-clear-all" title="Eliminar permanentemente todos los datos locales (Derecho al olvido RGPD)">
+                            <div class="umi-icon icon-reset" style="background: rgba(239, 68, 68, 0.15); color: var(--danger);"><i class="fas fa-user-slash"></i></div>
+                            <div class="umi-text">
+                                <strong style="color: var(--danger);">Borrar Mis Datos (RGPD)</strong>
+                                <span style="color: rgba(239, 68, 68, 0.85);">Eliminar historial y cuenta local</span>
+                            </div>
+                            <i class="fas fa-trash-alt umi-arrow" style="color: var(--danger);"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="nav-icon-btn mobile-menu-btn" id="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+    </nav>
+
+    <!-- ========== BANNER GLOBAL SIN CONEXIÓN ========== -->
+    <div id="global-offline-banner" class="global-offline-banner" style="display: none;" role="alert" aria-live="assertive">
+        <div class="offline-banner-content">
+            <i class="fas fa-wifi-slash"></i>
+            <span><strong>Sin conexión a internet:</strong> Mostrando los últimos datos guardados. La reconexión se intentará automáticamente.</span>
+        </div>
+        <button type="button" class="btn-offline-retry" id="btn-offline-retry" aria-label="Reconectar">
+            <i class="fas fa-redo"></i> Reconectar
+        </button>
+    </div>
+
+    <!-- ========== LIVE MARKET TICKER TAPE (WALL STREET RIBBON) ========== -->
+    <div class="market-ticker-tape" id="market-ticker-tape" title="Cinta de cotizaciones en tiempo real (Pausa al pasar el cursor)">
+        <div class="ticker-tape-track" id="ticker-tape-track">
+            <!-- Populated dynamically with live asset quotes -->
+        </div>
+    </div>
+
+    <!-- ========== APP LAYOUT ========== -->
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-star"></i> Watchlist</h3>
+                    <div class="sidebar-header-actions">
+                        <button class="btn-icon" id="add-watchlist" title="Personalizar favoritos"><i class="fas fa-plus"></i></button>
+                        <button class="btn-icon" id="sidebar-collapse-btn" title="Ocultar panel lateral (Expandir gráficos)"><i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+                <div class="watchlist" id="watchlist-list"></div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-briefcase"></i> Portfolio</h3>
+                </div>
+                <div class="portfolio-mini" id="portfolio-mini"></div>
+            </div>
+            <div class="sidebar-section sidebar-pulse-section">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-heartbeat"></i> Pulso del Mercado</h3>
+                    <span class="badge badge-success" style="font-size: 10px;">L2 ONLINE</span>
+                </div>
+                <div class="sidebar-market-pulse" id="sidebar-market-pulse">
+                    <div class="smp-metric">
+                        <div class="smp-label"><i class="fas fa-tachometer-alt"></i> Sentimiento (Greed):</div>
+                        <div class="smp-val"><strong>—</strong> <span class="smp-sub">(No disponible)</span></div>
+                    </div>
+                    <div class="smp-bar-wrap">
+                        <div class="smp-bar" style="width: 0%;"></div>
+                    </div>
+                    <div class="smp-grid">
+                        <div class="smp-mini-card">
+                            <span class="smp-mini-title">Dominio BTC</span>
+                            <strong class="smp-mini-val">—</strong>
+                        </div>
+                        <div class="smp-mini-card">
+                            <span class="smp-mini-title">Vol. 24h</span>
+                            <strong class="smp-mini-val">—</strong>
+                        </div>
+                    </div>
+                    <div class="smp-status-row">
+                        <span class="smp-dot-live"></span>
+                        <span>Feed de Mercado</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- ===== DASHBOARD VIEW ===== -->
+            <div id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <div class="header-title-row">
+                        <div>
+                            <h1>Dashboard</h1>
+                            <p class="view-subtitle">Resumen de tu actividad y estado del mercado</p>
+                        </div>
+                        <div class="header-action-group">
+                            <button class="btn btn-primary btn-glow" id="dash-quick-trade-btn" title="Ir a la pantalla de trading">
+                                <i class="fas fa-bolt"></i> <span>Operar Ahora</span>
+                            </button>
+                            <div class="live-status-badge" id="dash-live-market-status">
+                                <span class="live-pulse" id="dash-live-pulse"></span>
+                                <span id="dash-market-status-text">Conectando con mercados...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Institutional Simulation Environment Banner -->
+                <div class="beginner-banner" id="beginner-welcome-banner">
+                    <div class="banner-icon"><i class="fas fa-terminal"></i></div>
+                    <div class="banner-content">
+                        <h4>Terminal de Simulación de Mercados L2</h4>
+                        <p>Operando en <strong>Entorno de Práctica PaperPulse</strong> con capital virtual, ejecución en tiempo real vía WebSocket Binance y asistente cuantitativo integrado.</p>
+                    </div>
+                    <div class="banner-actions">
+                        <button class="btn-banner-action" id="banner-learn-btn"><i class="fas fa-book-open"></i> Manual de Operativa</button>
+                        <button class="banner-close-btn" id="banner-close-btn" title="Ocultar aviso"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card" data-help-title="Portfolio Total" data-help-text="Es el valor patrimonial neto total: suma tu efectivo disponible en USDT más el valor a cotización de mercado de todas las criptomonedas y acciones que posees actualmente." data-help-tip="Si el mercado sube, el valor de tus activos en cartera aumentará automáticamente este total.">
+                        <div class="stat-icon bullish-bg"><i class="fas fa-wallet"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-label-wrap">
+                                <span class="stat-label">Portfolio Total</span>
+                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Portfolio Total" data-help-title="Portfolio Total" data-help-text="Es el valor patrimonial neto total: suma tu efectivo disponible en USDT más el valor a cotización de mercado de todas las criptomonedas y acciones que posees actualmente." data-help-tip="Si el mercado sube, el valor de tus activos en cartera aumentará automáticamente este total."></i>
+                            </div>
+                            <span class="stat-value" id="stat-portfolio">—</span>
+                            <span class="stat-change muted" id="stat-portfolio-change">—</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-help-title="Ganancia Hoy (P&L)" data-help-text="Beneficio neto no realizado generado en tus posiciones abiertas durante las últimas 24 horas. Indica el rendimiento intradía de tus activos." data-help-tip="Para consolidar ganancias a tu saldo en efectivo, ejecuta una venta (Take Profit).">
+                        <div class="stat-icon accent-bg"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-label-wrap">
+                                <span class="stat-label">Ganancia Hoy</span>
+                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Ganancia Hoy" data-help-title="Ganancia Hoy (P&L)" data-help-text="Beneficio neto no realizado generado en tus posiciones abiertas durante las últimas 24 horas. Indica el rendimiento intradía de tus activos." data-help-tip="Para consolidar ganancias a tu saldo en efectivo, ejecuta una venta (Take Profit)."></i>
+                            </div>
+                            <span class="stat-value" id="stat-profit">—</span>
+                            <span class="stat-change muted" id="stat-profit-change">—</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-help-title="Operaciones Totales" data-help-text="Contador de órdenes de compra y venta completadas en la sesión actual. Refleja tu volumen de actividad en el mercado." data-help-tip="El trading consistente se basa en la calidad del análisis técnico, no en operar compulsivamente.">
+                        <div class="stat-icon info-bg"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-label-wrap">
+                                <span class="stat-label">Operaciones</span>
+                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Operaciones Totales" data-help-title="Operaciones Totales" data-help-text="Contador de órdenes de compra y venta completadas en la sesión actual. Refleja tu volumen de actividad en el mercado." data-help-tip="El trading consistente se basa en la calidad del análisis técnico, no en operar compulsivamente."></i>
+                            </div>
+                            <span class="stat-value" id="stat-trades">—</span>
+                            <span class="stat-change muted" id="stat-trades-sub">—</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-help-title="Tasa de Acierto (Win Rate)" data-help-text="Porcentaje de operaciones que han cerrado con beneficio neto sobre el total ejecutado. Un ratio superior al 55% con gestión de riesgo profesional es excelente." data-help-tip="Los operadores profesionales priorizan cortar pérdidas rápido y dejar correr las ganancias ganadoras.">
+                        <div class="stat-icon warning-bg"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-label-wrap">
+                                <span class="stat-label">Tasa de Acierto (Win Rate)</span>
+                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Tasa de Acierto" data-help-title="Tasa de Acierto (Win Rate)" data-help-text="Porcentaje de operaciones que han cerrado con beneficio neto sobre el total ejecutado. Un ratio superior al 55% con gestión de riesgo profesional es excelente." data-help-tip="Los operadores profesionales priorizan cortar pérdidas rápido y dejar correr las ganancias ganadoras."></i>
+                            </div>
+                            <span class="stat-value" id="stat-winrate">—</span>
+                            <span class="stat-change muted" id="stat-winrate-change">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card dashboard-chart-card">
+                        <div class="card-header">
+                            <div class="card-title-wrap">
+                                <h3><i class="fas fa-chart-area"></i> Rendimiento del Portfolio</h3>
+                                <span class="portfolio-ret-badge" id="stat-portfolio-ret">—</span>
+                            </div>
+                            <div class="chart-timeframes">
+                                <button class="tf-btn active" data-period="1D">1D</button>
+                                <button class="tf-btn" data-period="1W">1S</button>
+                                <button class="tf-btn" data-period="1M">1M</button>
+                                <button class="tf-btn" data-period="3M">3M</button>
+                                <button class="tf-btn" data-period="1Y">1A</button>
+                            </div>
+                        </div>
+                        <div class="card-body chart-card-body">
+                            <!-- 1. Gráfico del Portfolio -->
+                            <div id="portfolio-chart" class="chart-container"></div>
+
+                            <!-- 2. Métricas Clave de Desempeño del Periodo -->
+                            <div class="portfolio-perf-strip">
+                                <div class="pps-item">
+                                    <span class="pps-label">Máximo Periodo</span>
+                                    <strong class="pps-val" id="pps-ath">—</strong>
+                                </div>
+                                <div class="pps-item">
+                                    <span class="pps-label">Mínimo Periodo</span>
+                                    <strong class="pps-val" id="pps-atl">—</strong>
+                                </div>
+                                <div class="pps-item">
+                                    <span class="pps-label">Beneficio Total</span>
+                                    <strong class="pps-val" id="pps-pnl">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Tarjeta Independiente: Desglose y Distribución de Activos en Cartera -->
+                    <div class="card portfolio-holdings-card">
+                        <div class="card-header">
+                            <div class="phs-title">
+                                <i class="fas fa-pie-chart"></i>
+                                <h3>Distribución de Cartera & Tenencias</h3>
+                            </div>
+                            <span class="phs-subtitle">0 Activos en Posesión</span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Barra Segmentada de Asignación de Capital -->
+                            <div class="asset-alloc-bar" title="Distribución de activos en cartera">
+                                <div class="aab-seg seg-usdt" style="width: 100%;" title="Efectivo Disponible: 100%"></div>
+                            </div>
+
+                            <!-- Cuadrícula de Tarjetas de Activos en Tenencia -->
+                            <div class="holdings-grid" id="portfolio-holdings-grid">
+                                <div class="portfolio-empty-hint" style="grid-column: 1 / -1; padding: 28px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                                    <i class="fas fa-wallet" style="margin-bottom: 8px; font-size: 24px; opacity: 0.5; display: block;"></i>
+                                    Sin activos en cartera aún.<br>
+                                    <span style="font-size: 12px; opacity: 0.8;">Las posiciones que adquieras en la terminal aparecerán aquí con sus cotizaciones en vivo.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== WORLD MARKETS 3D CARD (MERCADOS DEL MUNDO) ===== -->
+                    <div class="card world-markets-card" id="world-markets-card">
+                        <div class="card-header">
+                            <div class="wm-title-wrap">
+                                <h3><i class="fas fa-globe-americas"></i> Sesiones y Mercados Mundiales</h3>
+                                <span class="wm-live-tag" id="wm-live-status-tag">
+                                    <span class="live-pulse"></span> <span id="wm-active-count-text">Calculando sesiones...</span>
+                                </span>
+                            </div>
+                            <div class="wm-header-actions">
+                                <span class="wm-tz-hint"><i class="fas fa-clock"></i> Zonas horarias oficiales</span>
+                                <button class="btn-icon-subtle" id="wm-fx-toggle-btn" title="Alternar Modo de Efectos (3D Dinámico / 3D Estático / 2D Esquema)" aria-label="Alternar Efectos Visuales">
+                                    <i class="fas fa-cube"></i> <span id="wm-fx-status-text" style="font-size: 11px; margin-left: 4px; font-weight: 600;">3D</span>
+                                </button>
+                                <button class="btn-icon-subtle" id="wm-reset-cam-btn" title="Restablecer vista del globo" aria-label="Restablecer orientación del globo">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body wm-card-body">
+                            <!-- Visor 3D Interactivo -->
+                            <div class="globe-viewport-container" id="globe-viewport-container">
+                                <canvas id="globe-canvas" class="globe-canvas" aria-hidden="true"></canvas>
+                                <!-- Fallback Estático 2D para efectos desactivados o sin WebGL -->
+                                <div id="globe-fallback" class="globe-fallback" style="display:none;" aria-hidden="true">
+                                    <div class="globe-fallback-inner">
+                                        <svg viewBox="0 0 240 240" class="globe-fallback-svg">
+                                            <defs>
+                                                <radialGradient id="fbGlobeGrad" cx="50%" cy="50%" r="50%">
+                                                    <stop offset="65%" stop-color="var(--accent-primary)" stop-opacity="0.14"/>
+                                                    <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0.02"/>
+                                                </radialGradient>
+                                            </defs>
+                                            <circle cx="120" cy="120" r="95" fill="url(#fbGlobeGrad)" stroke="var(--border)" stroke-width="1.5"/>
+                                            <ellipse cx="120" cy="120" rx="95" ry="34" fill="none" stroke="var(--border)" stroke-dasharray="3,3" stroke-width="1"/>
+                                            <ellipse cx="120" cy="120" rx="45" ry="95" fill="none" stroke="var(--border)" stroke-dasharray="3,3" stroke-width="1"/>
+                                            <line x1="25" y1="120" x2="215" y2="120" stroke="var(--border)" stroke-width="1.2"/>
+                                            <line x1="120" y1="25" x2="120" y2="215" stroke="var(--border)" stroke-width="1.2"/>
+                                            <!-- Puntos de mercados -->
+                                            <circle cx="82" cy="100" r="5" fill="var(--accent-primary)"/>
+                                            <circle cx="125" cy="95" r="5" fill="#0ecb81"/>
+                                            <circle cx="180" cy="130" r="5" fill="var(--accent-primary)"/>
+                                        </svg>
+                                        <span class="globe-fallback-label"><i class="fas fa-globe"></i> Vista Esquemática 2D</span>
+                                    </div>
+                                </div>
+                                <div class="globe-overlay-hint" id="globe-overlay-hint">
+                                    <i class="fas fa-mouse"></i> <span>Arrastra para rotar · Selecciona un mercado en la lista</span>
+                                </div>
+                            </div>
+
+                            <!-- Lista Accesible de Mercados y Horarios -->
+                            <div class="markets-list-container">
+                                <div class="markets-list-header">
+                                    <span class="mlh-col mlh-name">Mercado</span>
+                                    <span class="mlh-col mlh-time">Hora Local</span>
+                                    <span class="mlh-col mlh-status">Estado y Sesión</span>
+                                </div>
+                                <ul class="markets-list" id="markets-list" role="list">
+                                    <li class="markets-loading-item">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Conectando con mercados oficiales...
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card top-movers-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-fire"></i> Top Movers</h3>
+                            <div class="mover-tabs">
+                                <button class="mover-tab active" data-type="gainers">Ganadores</button>
+                                <button class="mover-tab" data-type="losers">Perdedores</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="movers-list" class="movers-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Market Sentiment Card (Calculated from real 24h market breadth) -->
+                    <div class="card sentiment-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-compass"></i> Termómetro de Mercado</h3>
+                            <span class="sentiment-pill neutral" id="sentiment-pill">—</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="sentiment-track">
+                                <div class="sentiment-bar-fill" id="sentiment-bar-fill" style="width: 50%;"></div>
+                            </div>
+                            <div class="sentiment-labels">
+                                <span>Predominio Vendedor</span>
+                                <span>Neutral</span>
+                                <span>Predominio Comprador</span>
+                            </div>
+                            <p class="sentiment-tip" id="sentiment-tip">
+                                <i class="fas fa-info-circle"></i> <strong>Para principiantes:</strong> Calculando amplitud de mercado en tiempo real según cotizaciones oficiales...
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card recent-news-card">
+                        <div class="card-header">
+                            <h3>Últimas Noticias</h3>
+                            <a class="see-all-link" href="#" data-view="news">Ver todas <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="card-body">
+                            <div id="dashboard-news" class="news-mini-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TRADING VIEW ===== -->
+            <div id="trading-view" class="view">
+                <div class="trading-layout">
+                    <div class="chart-section">
+                        <div class="chart-toolbar">
+                            <div class="toolbar-left-row">
+                                <div class="symbol-info">
+                                    <div class="symbol-title-row">
+                                        <span class="current-symbol" id="current-symbol">BTC/USDT</span>
+                                        <span class="chart-scale-badge" id="chart-scale-badge">escala en USDT</span>
+                                    </div>
+                                    <div class="symbol-price-row">
+                                        <span class="current-price" id="current-price">—</span>
+                                        <span class="converted-price-pill" id="converted-price-pill" style="display:none;">—</span>
+                                        <span class="price-change text-secondary" id="price-change">—</span>
+                                    </div>
+                                </div>
+                                <div class="quick-asset-switcher" id="quick-asset-switcher">
+                                    <button class="quick-asset-btn active" data-id="bitcoin" data-symbol="BTC" data-name="Bitcoin">BTC</button>
+                                    <button class="quick-asset-btn" data-id="ethereum" data-symbol="ETH" data-name="Ethereum">ETH</button>
+                                    <button class="quick-asset-btn" data-id="solana" data-symbol="SOL" data-name="Solana">SOL</button>
+                                    <button class="quick-asset-btn" data-id="nvidia" data-symbol="NVDA" data-name="NVIDIA Corp.">NVDA</button>
+                                    <button class="quick-asset-btn" data-id="apple" data-symbol="AAPL" data-name="Apple Inc.">AAPL</button>
+                                    <button class="quick-asset-btn" data-id="bbva" data-symbol="BBVA" data-name="Banco Bilbao Vizcaya">BBVA</button>
+                                    <button class="quick-asset-btn" data-id="santander" data-symbol="SAN" data-name="Banco Santander">SAN</button>
+                                </div>
+                            </div>
+                            <div class="ticker-24h-stats">
+                                <div class="stat-mini-item">
+                                    <span class="stat-mini-label">24h Máx</span>
+                                    <span class="stat-mini-val bullish" id="stat-24h-high">—</span>
+                                </div>
+                                <div class="stat-mini-item">
+                                    <span class="stat-mini-label">24h Mín</span>
+                                    <span class="stat-mini-val bearish" id="stat-24h-low">—</span>
+                                </div>
+                                <div class="stat-mini-item">
+                                    <span class="stat-mini-label">24h Vol</span>
+                                    <span class="stat-mini-val" id="stat-24h-vol">—</span>
+                                </div>
+                                <div class="ws-status-badge" id="chart-status-badge" title="Estado de la conexión del gráfico en tiempo real">
+                                    <span class="ws-pulse" id="chart-status-pulse"></span>
+                                    <span id="chart-status-text">Desconectado</span>
+                                </div>
+                            </div>
+                            <div class="chart-controls">
+                                <div class="chart-intervals">
+                                    <button class="interval-btn" data-interval="1">1m</button>
+                                    <button class="interval-btn" data-interval="5">5m</button>
+                                    <button class="interval-btn" data-interval="15">15m</button>
+                                    <button class="interval-btn active" data-interval="60">1h</button>
+                                    <button class="interval-btn" data-interval="240">4h</button>
+                                    <button class="interval-btn" data-interval="D">1D</button>
+                                    <button class="interval-btn" data-interval="W">1S</button>
+                                </div>
+                                <div class="chart-indicators">
+                                    <button class="indicator-btn" data-indicator="ma" title="Media Móvil: promedio de precios pasados para ver la tendencia"><i class="fas fa-wave-square"></i> MA</button>
+                                    <button class="indicator-btn" data-indicator="ema" title="Media Exponencial: reacciona más rápido a cambios de precio"><i class="fas fa-wave-square"></i> EMA</button>
+                                    <button class="indicator-btn" data-indicator="bb" title="Bandas de Bollinger: miden la volatilidad y zonas extremas"><i class="fas fa-arrows-alt-v"></i> BB</button>
+                                    <button class="indicator-btn active" data-indicator="volume" title="Volumen: cantidad de transacciones"><i class="fas fa-chart-bar"></i> Vol</button>
+                                    <button class="indicator-btn alert-tool-btn" id="open-alert-modal-btn" title="Configurar alerta de precio en tiempo real"><i class="fas fa-bell"></i> Alerta</button>
+                                    <button class="indicator-btn" id="chart-fit-btn" title="Auto-ajustar escala temporal y de precios"><i class="fas fa-compress-arrows-alt"></i> Ajustar</button>
+                                    <button class="indicator-btn" id="chart-type-toggle-btn" title="Alternar entre Velas Japonesas y Gráfico de Área"><i class="fas fa-chart-area"></i> Área</button>
+                                    <button class="indicator-btn" id="chart-fullscreen-btn" title="Pantalla completa del gráfico"><i class="fas fa-expand"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="main-chart" class="main-chart-container">
+                            <div id="chart-ohlc-legend" class="chart-ohlc-legend"></div>
+                        </div>
+                    </div>
+
+                    <div class="trading-panel">
+                        <!-- Mode Selector Tabs inside Panel -->
+                        <div class="panel-mode-tabs">
+                            <button class="panel-mode-tab active" id="tab-quick-buy" data-tab="quick"><i class="fas fa-bolt"></i> Compra Fácil</button>
+                            <button class="panel-mode-tab" id="tab-advanced-trade" data-tab="advanced"><i class="fas fa-sliders-h"></i> Avanzado</button>
+                        </div>
+
+                        <!-- 1. COMPRA FÁCIL (BEGINNER FRIENDLY) -->
+                        <div class="quick-trade-panel" id="quick-trade-panel">
+                            <div class="quick-trade-header">
+                                <span class="quick-trade-title">Inversión Instantánea</span>
+                                <span class="badge badge-buy"><i class="fas fa-shield-alt"></i> Sin Comisiones</span>
+                            </div>
+
+                            <div class="quick-preset-label" id="quick-preset-label">Selecciona importe a invertir:</div>
+                            <div class="quick-amount-presets" id="quick-amount-presets">
+                                <button class="btn-preset active" data-amount="50">50 €</button>
+                                <button class="btn-preset" data-amount="100">100 €</button>
+                                <button class="btn-preset" data-amount="250">250 €</button>
+                                <button class="btn-preset" data-amount="500">500 €</button>
+                                <button class="btn-preset" data-amount="1000">1.000 €</button>
+                            </div>
+
+                            <div class="form-group custom-amount-group">
+                                <label>O introduce otra cantidad:</label>
+                                <div class="input-group">
+                                    <input type="number" id="quick-usd-input" value="50" min="5" step="5">
+                                    <span class="input-suffix" id="quick-input-suffix">EUR</span>
+                                </div>
+                                <div class="input-approx-note" id="quick-input-approx" style="font-size:11px; color:var(--text-muted); margin-top:4px; display:none;"></div>
+                            </div>
+
+                            <!-- Calculation Feedback Box -->
+                            <div class="quick-calc-box">
+                                <div class="calc-row">
+                                    <span class="calc-label">Recibirás aprox:</span>
+                                    <span class="calc-val" id="quick-receive-val">—</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span class="calc-label">Precio de mercado:</span>
+                                    <span class="calc-sub" id="quick-unit-price">—</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span class="calc-label">Ejecución:</span>
+                                    <span class="calc-tag"><i class="fas fa-check-circle"></i> Inmediata al mejor precio</span>
+                                </div>
+                            </div>
+
+                            <div class="quick-action-buttons">
+                                <button class="btn btn-buy btn-glow" id="quick-buy-btn">
+                                    <i class="fas fa-arrow-up"></i> <span>Ejecutar Compra</span> <kbd class="btn-kbd">B</kbd>
+                                </button>
+                                <button class="btn btn-sell" id="quick-sell-btn">
+                                    <i class="fas fa-arrow-down"></i> <span>Cerrar a Mercado</span> <kbd class="btn-kbd">S</kbd>
+                                </button>
+                            </div>
+
+                            <div class="beginner-hint-box">
+                                <i class="fas fa-info-circle"></i> <span>Compras al precio de mercado actual. Tus activos se añadirán inmediatamente a tu portfolio demo.</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. MODO AVANZADO (PRO USERS) -->
+                        <div class="advanced-trade-panel" id="advanced-trade-panel" style="display: none;">
+                            <div class="order-tabs">
+                                <button class="order-tab active" data-type="spot" id="order-tab-spot"><i class="fas fa-coins"></i> Spot</button>
+                                <button class="order-tab" data-type="margin" id="order-tab-margin"><i class="fas fa-bolt"></i> Margin 10x</button>
+                            </div>
+
+                            <!-- Opciones Didácticas de Margin Trading -->
+                            <div class="margin-options-box" id="margin-trade-options" style="display: none;">
+                                <div class="margin-badge-banner">
+                                    <i class="fas fa-bolt"></i>
+                                    <span><strong>Modo Margin Activo</strong> · Multiplica tu capital con préstamo virtual</span>
+                                </div>
+                                <div class="margin-leverage-row">
+                                    <span class="leverage-label">Apalancamiento:</span>
+                                    <div class="leverage-pills" id="leverage-pills">
+                                        <button class="lev-pill" data-lev="2">2x</button>
+                                        <button class="lev-pill active" data-lev="3">3x</button>
+                                        <button class="lev-pill" data-lev="5">5x</button>
+                                        <button class="lev-pill" data-lev="10">10x</button>
+                                    </div>
+                                </div>
+                                <div class="margin-metrics-grid">
+                                    <div class="margin-metric-item">
+                                        <span class="mm-label">Poder Adquisitivo</span>
+                                        <strong class="mm-val" id="margin-borrow-cap">—</strong>
+                                    </div>
+                                    <div class="margin-metric-item">
+                                        <span class="mm-label">Liq. Estimada</span>
+                                        <strong class="mm-val" id="margin-liq-price">—</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="order-form">
+                                <div class="form-group">
+                                    <div class="label-with-tip">
+                                        <label>Tipo de Orden</label>
+                                        <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Tipos de Órdenes" data-help-title="Tipos de Órdenes" data-help-text="Market: Compra o vende al instante al mejor precio del momento. Limit: Fijas un precio exacto y solo se ejecuta si el mercado llega a él. Stop-Limit: Se activa automáticamente para proteger tu capital si el mercado cae a tu precio de stop." data-help-tip="Usa órdenes Limit para comprar en soportes sin pagar comisiones de spread excesivas."></i>
+                                    </div>
+                                    <select id="order-type" class="form-select">
+                                        <option value="market" selected>Market (Inmediata)</option>
+                                        <option value="limit">Limit (Precio fijo)</option>
+                                        <option value="stop-limit">Stop-Limit (Protección)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="order-stop-group" style="display: none;">
+                                    <label>Precio Stop (Disparo)</label>
+                                    <div class="input-group">
+                                        <input type="number" id="order-stop-price" placeholder="0.00" step="0.01">
+                                        <span class="input-suffix" id="order-stop-suffix">USDT</span>
+                                    </div>
+                                    <div class="input-approx-note" id="order-stop-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px; display:none;"></div>
+                                </div>
+                                <div class="form-group" id="order-price-group" style="display: none;">
+                                    <label>Precio Límite</label>
+                                    <div class="input-group">
+                                        <input type="number" id="order-price" placeholder="0.00" step="0.01" disabled>
+                                        <span class="input-suffix" id="order-price-suffix">USDT</span>
+                                    </div>
+                                    <div class="input-approx-note" id="order-price-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px; display:none;"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Cantidad</label>
+                                    <div class="input-group">
+                                        <input type="number" id="order-amount" placeholder="0.00" step="0.0001">
+                                        <span class="input-suffix" id="amount-suffix">BTC</span>
+                                    </div>
+                                </div>
+                                <div class="amount-shortcuts">
+                                    <button class="shortcut-btn" data-pct="25">25%</button>
+                                    <button class="shortcut-btn" data-pct="50">50%</button>
+                                    <button class="shortcut-btn" data-pct="75">75%</button>
+                                    <button class="shortcut-btn" data-pct="100">100%</button>
+                                </div>
+                                <div class="form-group">
+                                    <label>Total</label>
+                                    <div class="input-group">
+                                        <input type="number" id="order-total" placeholder="0.00" readonly>
+                                        <span class="input-suffix" id="order-total-suffix">USDT</span>
+                                    </div>
+                                    <div class="input-approx-note" id="order-total-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px;"></div>
+                                </div>
+                                <div class="order-buttons">
+                                    <button class="btn btn-buy" id="buy-btn">
+                                        <i class="fas fa-arrow-up"></i> <span>Comprar</span> <kbd class="btn-kbd">B</kbd>
+                                    </button>
+                                    <button class="btn btn-sell" id="sell-btn">
+                                        <i class="fas fa-arrow-down"></i> <span>Vender</span> <kbd class="btn-kbd">S</kbd>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Book Section with Beginner Tooltips -->
+                        <div class="order-book-section">
+                            <div class="ob-title-wrap">
+                                <h4><i class="fas fa-book"></i> Libro de Órdenes</h4>
+                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Libro de Órdenes" data-help-title="Libro de Órdenes (Order Book)" data-help-text="Muestra en tiempo real las intenciones de los operadores: órdenes de venta arriba (en rojo) y órdenes de compra abajo (en verde) esperando ser ejecutadas." data-help-tip="El número central es el Spread (la diferencia de precio entre el comprador más alto y el vendedor más bajo)."></i>
+                            </div>
+                            <div class="order-book-header">
+                                <span>Precio (USDT)</span>
+                                <span>Cantidad</span>
+                                <span>Total</span>
+                            </div>
+                            <div id="asks-list" class="asks-list"></div>
+                            <div class="spread-bar" title="Spread: Diferencia entre la mejor oferta de venta y la mejor de compra">
+                                <span class="spread-price" id="spread-price">—</span>
+                                <span class="spread-usd" id="spread-value">—</span>
+                            </div>
+                            <div id="bids-list" class="bids-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Streamlined Trading Dock (Tabs: Posiciones, Historial, Simulador, Sentimiento) -->
+                <div class="card trading-dock-card">
+                    <div class="trading-dock-header">
+                        <div class="dock-tabs">
+                            <button class="dock-tab-btn active" data-dock="positions">
+                                <i class="fas fa-layer-group"></i> <span>Posiciones Abiertas</span>
+                                <span class="dock-badge" id="active-positions-count">0</span>
+                            </button>
+                            <button class="dock-tab-btn" data-dock="history">
+                                <i class="fas fa-history"></i> <span>Historial de Operaciones</span>
+                            </button>
+                            <button class="dock-tab-btn" data-dock="calculator">
+                                <i class="fas fa-calculator"></i> <span>Simulador de Ganancias</span>
+                            </button>
+                            <button class="dock-tab-btn" data-dock="sentiment">
+                                <i class="fas fa-users"></i> <span>Sentimiento de la Comunidad</span>
+                            </button>
+                        </div>
+                        <div class="dock-summary-pill">
+                            <span class="pnl-summary-label">P&L No Realizado:</span>
+                            <span class="pnl-summary-val" id="total-unrealized-pnl">—</span>
+                        </div>
+                    </div>
+
+                    <div class="dock-panes-body">
+                        <!-- Pane 1: Posiciones Activas -->
+                        <div class="dock-pane active" id="dock-pane-positions">
+                            <div class="table-responsive">
+                                <table class="data-table positions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Activo</th>
+                                            <th>Tamaño</th>
+                                            <th>Precio Entrada</th>
+                                            <th>Precio Actual</th>
+                                            <th>Ganancia/Pérdida (P&L)</th>
+                                            <th>Acción Rápida</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="positions-body">
+                                        <!-- Populated dynamically by Market module -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pane 2: Historial de Operaciones -->
+                        <div class="dock-pane" id="dock-pane-history">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora</th>
+                                            <th>Par</th>
+                                            <th>Tipo</th>
+                                            <th>Precio</th>
+                                            <th>Cantidad</th>
+                                            <th>Total</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trades-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pane 3: Simulador de Ganancias -->
+                        <div class="dock-pane" id="dock-pane-calculator">
+                            <div class="dock-simulator-wrap">
+                                <div class="dock-sim-desc">
+                                    <h4><i class="fas fa-chart-pie"></i> Calculadora Rápida de Rentabilidad</h4>
+                                    <p>Descubre cuánto beneficio obtendrías antes de comprar estimando el precio objetivo al que deseas vender.</p>
+                                </div>
+                                <div class="dock-sim-grid">
+                                    <div class="sim-inputs">
+                                        <div class="form-group">
+                                            <label>Si invierto hoy:</label>
+                                            <div class="input-group">
+                                                <input type="number" id="sim-invest-input" value="100" step="10">
+                                                <span class="input-suffix">USD</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Y el precio alcanza:</label>
+                                            <div class="input-group">
+                                                <input type="number" id="sim-target-price" placeholder="0.00" step="100">
+                                                <span class="input-suffix">USD</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="sim-result-box">
+                                        <div class="sim-row">
+                                            <span>Ganancia Neta Estimada:</span>
+                                            <strong class="sim-profit-val text-secondary" id="sim-profit-val">—</strong>
+                                        </div>
+                                        <div class="sim-row">
+                                            <span>Valor Total Final:</span>
+                                            <strong class="sim-total-val" id="sim-total-val">—</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pane 4: Sentimiento de la Comunidad -->
+                        <div class="dock-pane" id="dock-pane-sentiment">
+                            <div class="dock-sentiment-wrap">
+                                <div class="sentiment-vote-info">
+                                    <span class="vote-question"><i class="fas fa-users"></i> Pronóstico de la Comunidad para las próximas 24 horas:</span>
+                                    <span class="vote-stats-badge" id="community-bull-pct">—</span>
+                                </div>
+                                <div class="community-track">
+                                    <div class="comm-bull-fill" id="comm-bull-fill" style="width: 50%;"></div>
+                                </div>
+                                <div class="community-vote-actions">
+                                    <button class="btn-vote btn-vote-bull" id="btn-vote-bull">
+                                        <i class="fas fa-arrow-up"></i> Votar Alcista (<span id="bull-votes-count">0</span>)
+                                    </button>
+                                    <button class="btn-vote btn-vote-bear" id="btn-vote-bear">
+                                        <i class="fas fa-arrow-down"></i> Votar Bajista (<span id="bear-votes-count">0</span>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== MARKETS VIEW ===== -->
+            <div id="markets-view" class="view">
+                <div class="view-header">
+                    <h1>Mercados</h1>
+                    <p class="view-subtitle">Explora criptomonedas, acciones y más</p>
+                </div>
+                <div class="markets-controls">
+                    <div class="market-tabs">
+                        <button class="market-tab active" data-category="all">Todos</button>
+                        <button class="market-tab" data-category="crypto">🪙 Crypto</button>
+                        <button class="market-tab" data-category="stocks">📊 Acciones</button>
+                        <button class="market-tab" data-category="forex">💱 Forex</button>
+                    </div>
+                    <div class="search-box search-box-inline">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="market-search" placeholder="Buscar mercado...">
+                    </div>
+                </div>
+                <div class="markets-table-wrap">
+                    <table class="data-table markets-table" id="markets-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="rank">#</th>
+                                <th class="sortable" data-sort="name">Nombre</th>
+                                <th class="sortable" data-sort="price">Precio</th>
+                                <th class="sortable" data-sort="change">24h %</th>
+                                <th class="sortable" data-sort="change7d">7d %</th>
+                                <th class="sortable" data-sort="cap">Cap. de Mercado</th>
+                                <th class="sortable" data-sort="volume">Volumen 24h</th>
+                                <th>Gráfico 7d</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="markets-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== NEWS VIEW ===== -->
+            <div id="news-view" class="view">
+                <div class="view-header">
+                    <h1>Noticias del Mercado</h1>
+                    <p class="view-subtitle">Mantente informado con las últimas noticias financieras</p>
+                </div>
+                <div class="news-filters">
+                    <button class="news-filter active" data-category="all">📰 Todas</button>
+                    <button class="news-filter" data-category="crypto">🪙 Crypto</button>
+                    <button class="news-filter" data-category="stocks">📊 Acciones</button>
+                    <button class="news-filter" data-category="economy">🏦 Economía</button>
+                    <button class="news-filter" data-category="analysis">📈 Análisis</button>
+                </div>
+                <div class="news-grid" id="news-grid"></div>
+            </div>
+
+            <!-- ===== JOURNAL VIEW (DIARIO DE TRADING AUTOMATIZADO) ===== -->
+            <div id="journal-view" class="view">
+                <div class="view-header">
+                    <div class="header-title-row">
+                        <div>
+                            <h1><i class="fas fa-book-open"></i> Diario de Trading Automatizado</h1>
+                            <p class="view-subtitle">Registro profesional de operaciones, estadísticas cuantitativas y factor de beneficio en tiempo real</p>
+                        </div>
+                        <div class="journal-header-actions">
+                            <button class="btn-journal-action" id="btn-export-journal" title="Descargar registro en archivo CSV para Excel">
+                                <i class="fas fa-file-csv"></i> <span>Exportar CSV</span>
+                            </button>
+                            <button class="btn-journal-action btn-journal-danger" id="btn-reset-journal" title="Restablecer el diario al estado inicial">
+                                <i class="fas fa-history"></i> <span>Restablecer Diario</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cuadrícula Simplificada de Métricas Clave (KPIs Hero) -->
+                <div class="journal-kpi-grid streamlined">
+                    <!-- KPI 1: P&L Neto Total -->
+                    <div class="journal-kpi-card" data-help-title="P&L Neto Acumulado" data-help-text="Ganancia o pérdida nuta total de todas las operaciones cerradas en la terminal de práctica.">
+                        <div class="jkc-header">
+                            <span class="jkc-label"><i class="fas fa-wallet"></i> P&L Neto Total</span>
+                        </div>
+                        <div class="jkc-main">
+                            <span class="jkc-val-hero" id="journal-net-pnl">—</span>
+                        </div>
+                        <div class="jkc-footer">
+                            <span class="jkc-subtext" id="journal-pnl-sub">Calculando P&L...</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: Win Rate (%) -->
+                    <div class="journal-kpi-card" data-help-title="Tasa de Acierto (Win Rate)" data-help-text="Porcentaje de operaciones que cerraron en positivo sobre el total de operaciones completadas.">
+                        <div class="jkc-header">
+                            <span class="jkc-label"><i class="fas fa-bullseye"></i> Tasa de Acierto</span>
+                            <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Tasa de Acierto" data-help-title="Tasa de Acierto (Win Rate)" data-help-text="Porcentaje de operaciones que cerraron en positivo sobre el total de operaciones completadas."></i>
+                        </div>
+                        <div class="jkc-main">
+                            <span class="jkc-val-hero" id="journal-win-rate">—</span>
+                            <div class="mini-progress-track">
+                                <div class="mini-progress-fill" id="journal-winrate-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="jkc-footer">
+                            <span class="jkc-subtext" id="journal-win-ratio">Cargando métricas...</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: Profit Factor -->
+                    <div class="journal-kpi-card" data-help-title="Factor de Beneficio (Profit Factor)" data-help-text="Relación entre beneficio bruto y pérdida bruta. Un valor > 1.5 indica solidez matemática.">
+                        <div class="jkc-header">
+                            <span class="jkc-label"><i class="fas fa-chart-pie"></i> Factor de Beneficio</span>
+                            <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Factor de Beneficio" data-help-title="Factor de Beneficio (Profit Factor)" data-help-text="Relación entre beneficio bruto y pérdida bruta. Un valor > 1.5 indica solidez matemática."></i>
+                        </div>
+                        <div class="jkc-main">
+                            <span class="jkc-val-hero" id="journal-profit-factor">—</span>
+                            <span class="kpi-sub-badge neutral" id="journal-pf-badge">Calculando...</span>
+                        </div>
+                        <div class="jkc-footer">
+                            <span class="jkc-subtext">Beneficio Bruto / Pérdida Bruta</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4: Racha y Consistencia -->
+                    <div class="journal-kpi-card">
+                        <div class="jkc-header">
+                            <span class="jkc-label"><i class="fas fa-fire"></i> Racha y Disciplina</span>
+                        </div>
+                        <div class="jkc-main">
+                            <span class="jkc-val-hero accent" id="journal-streak-val">—</span>
+                            <span id="journal-rr-ratio" style="display:none;">—</span>
+                            <span id="journal-rr-sub" style="display:none;"></span>
+                        </div>
+                        <div class="jkc-footer">
+                            <span class="jkc-subtext" id="journal-streak-sub">Calculando racha actual...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analítica Visual en Fila Compacta (Equity Curve + Heatmap) -->
+                <div class="journal-visuals-row">
+                    <!-- Gráfico de Curva de Capital (Equity Curve) -->
+                    <div class="card journal-chart-card">
+                        <div class="card-header">
+                            <div class="card-title-wrap">
+                                <h3><i class="fas fa-chart-line"></i> Curva de Capital (Equity Curve)</h3>
+                                <span class="badge badge-filled">Práctica en Tiempo Real</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="equity-canvas-wrap">
+                                <canvas id="journal-equity-canvas" height="180"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calendario de Rendimiento Diario (P&L Heatmap) -->
+                    <div class="card journal-calendar-card">
+                        <div class="card-header">
+                            <div class="card-title-wrap">
+                                <h3><i class="fas fa-calendar-alt"></i> P&L Diario (Últimos 14 Días)</h3>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="calendar-grid" id="journal-calendar-grid">
+                                <!-- Generado dinámicamente por Journal -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Historial Automatizado de Operaciones -->
+                <div class="card journal-table-card">
+                    <div class="card-header">
+                        <div class="card-title-wrap">
+                            <h3><i class="fas fa-list-alt"></i> Historial de Operaciones Cerradas</h3>
+                            <span class="badge badge-pending" id="journal-trades-count">Cargando...</span>
+                        </div>
+                        <div class="journal-filter-controls">
+                            <div class="journal-filter-tabs">
+                                <button class="journal-filter-btn active" data-filter="ALL">Todas</button>
+                                <button class="journal-filter-btn" data-filter="WIN">Ganadoras</button>
+                                <button class="journal-filter-btn" data-filter="LOSS">Perdedoras</button>
+                                <button class="journal-filter-btn" data-filter="BREAKEVEN">Neutras</button>
+                                <button class="journal-filter-btn" data-filter="CRYPTO">Cripto</button>
+                                <button class="journal-filter-btn" data-filter="STOCKS">Acciones</button>
+                            </div>
+                            <div class="journal-search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="journal-search-input" placeholder="Filtrar por par, setup o nota...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table journal-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID & Fecha</th>
+                                        <th>Activo</th>
+                                        <th>Tipo / Duración</th>
+                                        <th>Entrada & Salida</th>
+                                        <th>Cantidad & Valor</th>
+                                        <th>P&L Neto</th>
+                                        <th>Resultado</th>
+                                        <th>Setup / Estrategia</th>
+                                        <th>Anotación / Reflexión</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="journal-trades-body">
+                                    <!-- Populated dynamically by Journal module -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="journal-empty-state" id="journal-empty-state" style="display: none;">
+                            <i class="fas fa-filter"></i>
+                            <p>No se encontraron operaciones con los filtros seleccionados.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== PIE DE PÁGINA: AVISO LEGAL & SIMULACIÓN EDUCATIVA ===== -->
+            <footer class="app-legal-footer" role="contentinfo">
+                <div class="legal-footer-content">
+                    <div class="legal-disclaimer-text">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <span><strong>Aviso Legal y de Riesgo:</strong> PaperPulse Terminal es un simulador interactivo de mercados financieros con fines formativos y cuantitativos. No constituye asesoramiento financiero ni recomendación de inversión. Las operaciones utilizan saldo virtual. Las cotizaciones pueden presentar retardo respecto a los mercados oficiales.</span>
+                    </div>
+                    <div class="legal-links">
+                        <button type="button" class="btn-link-legal" id="btn-open-legal-modal">Aviso Legal & Privacidad</button>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- ========== CHAT WIDGET ========== -->
+    <div id="chat-widget" class="chat-widget">
+        <button id="chat-toggle" class="chat-toggle" aria-label="Abrir asistente de mercado PaperPulse AI" title="Abrir PaperPulse Intelligence">
+            <i class="fas fa-brain"></i>
+            <span class="chat-badge" id="chat-badge" style="display:none">1</span>
+        </button>
+        <div class="chat-panel" id="chat-panel">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fas fa-brain"></i>
+                    <div>
+                        <span class="chat-name">PaperPulse Intelligence</span>
+                        <span class="chat-status"><span class="status-dot"></span> Online</span>
+                    </div>
+                </div>
+                <button class="btn-icon" id="chat-close" aria-label="Cerrar asistente"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="message-avatar"><i class="fas fa-brain"></i></div>
+                    <div class="message-content">
+                        <p>¡Hola! 👋 Soy <strong>PaperPulse Intelligence</strong>, el motor de análisis y liquidez del terminal.</p>
+                        <p>Puedo asistirte en tiempo real con:</p>
+                        <ul>
+                            <li>📊 Estructura de mercado y dinámica de Order Flow</li>
+                            <li>📈 Análisis técnico multinivel (RSI, EMAs, MACD)</li>
+                            <li>💡 Gestión cuantitativa del riesgo y dimensionamiento de posición</li>
+                            <li>📰 Contexto macroeconómico y resúmenes de noticias</li>
+                        </ul>
+                        <p>¿Qué activo o estrategia deseas analizar hoy?</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-suggestions" id="chat-suggestions">
+                <button class="suggestion-btn">¿Cómo está BTC hoy?</button>
+                <button class="suggestion-btn">👶 Explícame cómo empezar</button>
+                <button class="suggestion-btn">📊 ¿Cómo leer las velas?</button>
+                <button class="suggestion-btn">💡 Estrategia para no perder</button>
+                <button class="suggestion-btn">Análisis del mercado</button>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Pregunta lo que sea en lenguaje normal..." autocomplete="off">
+                <button id="chat-send-btn" class="chat-send" title="Enviar">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL MANUAL DE OPERATIVA DE MERCADOS ========== -->
+    <div id="guide-modal" class="guide-modal">
+        <div class="guide-modal-content">
+            <div class="guide-modal-header">
+                <div class="guide-header-title">
+                    <i class="fas fa-book-open guide-logo-icon"></i>
+                    <div>
+                        <h2>Manual de Operativa y Mercados Financieros</h2>
+                        <p class="guide-subtitle">Estructura de precios, dinámica de liquidez y gestión cuantitativa del riesgo</p>
+                    </div>
+                </div>
+                <button class="btn-icon" id="guide-close-btn"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="guide-steps-grid">
+                <!-- Paso 1: Selección de Activos & Volatilidad -->
+                <div class="guide-step-card" id="guide-card-assets">
+                    <div class="step-badge">Paso 1</div>
+                    <div class="step-icon step-blue"><i class="fas fa-coins"></i></div>
+                    <h3>Selección de Activos & Volatilidad</h3>
+                    <p class="guide-step-desc">Elige el tipo de mercado según tu horizonte temporal y tolerancia al riesgo:</p>
+                    
+                    <div class="guide-interactive-box">
+                        <div class="guide-tab-toggle" id="guide-asset-tabs">
+                            <button type="button" class="g-tab-btn active" data-target="crypto">
+                                <i class="fab fa-bitcoin"></i> Criptomonedas
+                            </button>
+                            <button type="button" class="g-tab-btn" data-target="stocks">
+                                <i class="fas fa-chart-line"></i> Acciones Wall St
+                            </button>
+                        </div>
+                        <div class="guide-tab-panel active" id="guide-panel-crypto">
+                            <div class="guide-metric-row"><span>Horario:</span> <strong>24/7 continuo (Criptomonedas sin festivos)</strong></div>
+                            <div class="guide-metric-row"><span>Rango diario:</span> <strong class="bullish">Alta volatilidad (±3% a ±10%)</strong></div>
+                            <div class="guide-metric-row"><span>Drivers:</span> <span>Liquidez on-chain, sentimiento macro</span></div>
+                            <div class="guide-tab-hint"><i class="fas fa-lightbulb"></i> Ideal para <strong>Day Trading y Scalping</strong> con liquidez continua.</div>
+                        </div>
+                        <div class="guide-tab-panel" id="guide-panel-stocks" style="display:none;">
+                            <div class="guide-metric-row"><span>Horario:</span> <strong>Lunes a Viernes (según festivos oficiales de cada bolsa)</strong></div>
+                            <div class="guide-metric-row"><span>Rango diario:</span> <strong class="text-accent">Moderado (±1% a ±3%)</strong></div>
+                            <div class="guide-metric-row"><span>Drivers:</span> <span>Resultados trimestrales (Earnings), tipos de la Fed</span></div>
+                            <div class="guide-tab-hint"><i class="fas fa-lightbulb"></i> Ideal para <strong>Swing Trading e Inversión Cuantitativa</strong>.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Lectura de Velas & Tendencia -->
+                <div class="guide-step-card" id="guide-card-candles">
+                    <div class="step-badge">Paso 2</div>
+                    <div class="step-icon step-green"><i class="fas fa-chart-bar"></i></div>
+                    <h3>Anatomía de Velas Japonesas</h3>
+                    <p class="guide-step-desc">Cada vela resume la subasta de precios entre compradores y vendedores:</p>
+                    
+                    <div class="guide-interactive-box">
+                        <div class="guide-tab-toggle" id="guide-candle-tabs">
+                            <button type="button" class="g-tab-btn active" data-candle="bull">
+                                <i class="fas fa-arrow-up"></i> Vela Verde (Alcista)
+                            </button>
+                            <button type="button" class="g-tab-btn" data-candle="bear">
+                                <i class="fas fa-arrow-down"></i> Vela Roja (Bajista)
+                            </button>
+                        </div>
+                        <div class="guide-candle-demo" id="guide-candle-container">
+                            <div class="candle-visual-wrap">
+                                <div class="candle-svg-box candle-bullish" id="guide-candle-visual">
+                                    <div class="c-wick c-wick-top" title="Precio Máximo alcanzado"></div>
+                                    <div class="c-body">
+                                        <span class="c-tag c-tag-top" id="c-tag-top">Cierre</span>
+                                        <span class="c-tag c-tag-bottom" id="c-tag-bottom">Apertura</span>
+                                    </div>
+                                    <div class="c-wick c-wick-bottom" title="Precio Mínimo alcanzado"></div>
+                                </div>
+                            </div>
+                            <div class="candle-explanation-box" id="guide-candle-explanation">
+                                <strong class="bullish" id="guide-candle-title">Predominio Comprador (Bullish)</strong>
+                                <p id="guide-candle-text">El precio <strong>cierra por encima de la apertura</strong>. Los compradores tuvieron la iniciativa y absorbieron toda la oferta vendedora.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 3: Tipos de Ejecución (Market vs Limit) -->
+                <div class="guide-step-card" id="guide-card-execution">
+                    <div class="step-badge">Paso 3</div>
+                    <div class="step-icon step-gold"><i class="fas fa-bolt"></i></div>
+                    <h3>Tipos de Ejecución: Market vs Limit</h3>
+                    <p class="guide-step-desc">Determina cómo entra tu capital en el Libro de Órdenes:</p>
+                    
+                    <div class="guide-interactive-box">
+                        <div class="guide-tab-toggle" id="guide-order-tabs">
+                            <button type="button" class="g-tab-btn active" data-order="market">
+                                <i class="fas fa-bolt"></i> Orden Market
+                            </button>
+                            <button type="button" class="g-tab-btn" data-order="limit">
+                                <i class="fas fa-hourglass-half"></i> Orden Limit
+                            </button>
+                        </div>
+                        <div class="guide-order-demo" id="guide-order-demo">
+                            <div class="guide-order-pill badge badge-buy" id="guide-order-status-pill">
+                                <i class="fas fa-check-circle"></i> Ejecución Inmediata
+                            </div>
+                            <div class="guide-order-details" id="guide-order-details">
+                                <p><strong>¿Cómo funciona?</strong> Se cruza de inmediato contra el mejor precio disponible del Ask/Bid. Entras al segundo sin esperar.</p>
+                                <div class="guide-metric-row"><span>Prioridad:</span> <strong>Rapidez absoluta (No perder el tren)</strong></div>
+                                <div class="guide-metric-row"><span>Condición:</span> <span>Aceptas el spread actual del mercado</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 4: Gestión Estricta del Riesgo -->
+                <div class="guide-step-card" id="guide-card-risk">
+                    <div class="step-badge">Paso 4</div>
+                    <div class="step-icon step-purple"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Gestión de Riesgo: Regla del 1-2%</h3>
+                    <p class="guide-step-desc">La regla matemática profesional para proteger tu capital de drawdowns:</p>
+                    
+                    <div class="guide-interactive-box">
+                        <div class="guide-risk-header">
+                            <span>Simular riesgo por operación:</span>
+                        </div>
+                        <div class="guide-risk-pills" id="guide-risk-pills">
+                            <button type="button" class="g-risk-pill active" data-pct="1">1% (Óptimo)</button>
+                            <button type="button" class="g-risk-pill" data-pct="2">2% (Moderado)</button>
+                            <button type="button" class="g-risk-pill" data-pct="5">5% (Agresivo)</button>
+                        </div>
+                        <div class="guide-risk-results" id="guide-risk-results">
+                            <div class="guide-metric-row">
+                                <span>Pérdida máxima por trade:</span>
+                                <strong class="bullish" id="guide-risk-max-val">—</strong>
+                            </div>
+                            <div class="guide-risk-verdict" id="guide-risk-verdict">
+                                <i class="fas fa-shield-check text-bullish"></i> <strong>Modo Profesional:</strong> Tu cuenta soportaría hasta 50 operaciones negativas seguidas sin quebrar.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-modal-footer">
+                <div class="guide-footer-tip">
+                    <i class="fas fa-robot"></i> Asistencia en vivo: Consulta a <strong>PaperPulse AI</strong> para análisis técnico, soportes clave y resúmenes de volatilidad.
+                </div>
+                <div class="guide-footer-actions-row">
+                    <button class="btn btn-secondary guide-btn-understood" id="guide-start-btn">
+                        <i class="fas fa-check"></i> Entendido, Iniciar Operativa
+                    </button>
+                    <button class="btn btn-primary guide-btn-tour" id="btn-start-interactive-tour">
+                        <i class="fas fa-route"></i> <span>Mini Guía Interactiva (Paso a Paso)</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL CONFIRMACIÓN DE ORDEN (ERROR PREVENTION) ========== -->
+    <div id="order-confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <h3><i class="fas fa-receipt"></i> Confirmar Operación</h3>
+                <button class="btn-icon" id="confirm-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <div class="confirm-badge-row">
+                    <span class="confirm-op-type badge badge-buy" id="confirm-op-badge">COMPRA SPOT</span>
+                    <span class="confirm-asset-title" id="confirm-asset-title">—</span>
+                </div>
+                <div class="confirm-details-box">
+                    <div class="confirm-row">
+                        <span class="c-label">Importe a Invertir:</span>
+                        <strong class="c-val" id="confirm-usd-amt">—</strong>
+                    </div>
+                    <div class="confirm-row">
+                        <span class="c-label">Cantidad a Recibir:</span>
+                        <strong class="c-val bullish" id="confirm-crypto-amt">—</strong>
+                    </div>
+                    <div class="confirm-row">
+                        <span class="c-label">Precio de Ejecución:</span>
+                        <span class="c-sub" id="confirm-exec-price">—</span>
+                    </div>
+                    <div class="confirm-row">
+                        <span class="c-label">Comisión Estimada:</span>
+                        <span class="c-sub text-success">Cuenta de Práctica</span>
+                    </div>
+                    <div class="confirm-row confirm-row-border">
+                        <span class="c-label">Saldo de Práctica Restante:</span>
+                        <span class="c-sub" id="confirm-remaining-balance">—</span>
+                    </div>
+                </div>
+                <p class="confirm-disclaimer">
+                    <i class="fas fa-info-circle"></i> Operación simulada en modo educativo. Se ejecutará inmediatamente al mejor precio disponible.
+                </p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-secondary" id="confirm-btn-cancel">Cancelar</button>
+                <button class="btn btn-buy btn-glow" id="confirm-btn-execute"><i class="fas fa-check-circle"></i> Confirmar y Ejecutar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL LECTOR DE NOTICIAS (FULL READING EXPERIENCE) ========== -->
+    <div id="news-reader-modal" class="news-modal">
+        <div class="news-modal-content">
+            <div class="news-modal-header">
+                <span class="news-category-badge" id="news-modal-cat">Crypto</span>
+                <button class="btn-icon" id="news-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="news-modal-body">
+                <div class="news-modal-img-wrap">
+                    <img id="news-modal-img" src="" alt="">
+                </div>
+                <h2 class="news-modal-title" id="news-modal-title"></h2>
+                <div class="news-modal-meta">
+                    <span id="news-modal-author"><i class="fas fa-user-edit"></i> Autor</span>
+                    <span id="news-modal-source"><i class="fas fa-newspaper"></i> Fuente</span>
+                    <span id="news-modal-date"><i class="fas fa-clock"></i> Fecha</span>
+                </div>
+                <div class="news-modal-text" id="news-modal-text"></div>
+            </div>
+            <div class="news-modal-footer">
+                <button class="btn btn-secondary" id="news-modal-btn-close">Cerrar Noticia</button>
+                <button class="btn btn-primary" id="news-modal-trade-btn"><i class="fas fa-chart-line"></i> Operar este Activo en Trading</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL AVISO LEGAL, TÉRMINOS Y PRIVACIDAD ========== -->
+    <div id="legal-privacy-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+        <div class="guide-modal-content" style="max-width: 680px;">
+            <div class="guide-modal-header">
+                <div class="guide-header-title">
+                    <span class="guide-badge"><i class="fas fa-shield-alt"></i> Normativa & Cumplimiento</span>
+                    <h2 id="legal-modal-title">Aviso Legal, Términos y Privacidad</h2>
+                </div>
+                <button class="guide-close-btn" id="legal-modal-close" aria-label="Cerrar modal">&times;</button>
+            </div>
+            <div class="guide-modal-body" style="padding: 24px; font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-balance-scale text-accent"></i> 1. Simulación Educativa sin Asesoramiento Financiero
+                    </h4>
+                    <p>PaperPulse Terminal es un software interactivo desarrollado exclusivamente con fines formativos, de simulación cuantitativa y práctica analítica. En ningún caso las cotizaciones, gráficos, órdenes simuladas ni los análisis generados por PaperPulse AI deben interpretarse como asesoramiento financiero, gestión de carteras, recomendación personalizada ni inducción a la compra o venta de instrumentos financieros según la Directiva MiFID II o legislaciones aplicables.</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-database text-accent"></i> 2. Fuentes de Datos y Retardo
+                    </h4>
+                    <p>Los datos de cotizaciones cripto se obtienen en tiempo real a través de los canales públicos de Binance. Los datos de renta variable y bolsa proceden de APIs de mercado con fines demostrativos y pueden presentar retardos de hasta 15 minutos o diferir de las cotizaciones oficiales de contratación en tiempo real.</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-user-shield text-accent"></i> 3. Privacidad y Almacenamiento Local (Zero-Tracking)
+                    </h4>
+                    <p>PaperPulse Terminal opera bajo una política estricta de privacidad: no recopila datos bancarios, no vende información a terceros ni utiliza cookies publicitarias. Tu saldo virtual, historial de órdenes y configuraciones se almacenan localmente en tu propio navegador mediante <code>localStorage</code>.</p>
+                </div>
+                <div>
+                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-chart-line text-warning"></i> 4. Advertencia de Alto Riesgo en Mercados Reales
+                    </h4>
+                    <p style="margin-bottom: 0;">El trading en mercados financieros reales (acciones, derivados, futuros y criptoactivos) conlleva un riesgo elevado de pérdida de capital. Nunca operes con dinero real que no puedas permitirte perder íntegramente.</p>
+                </div>
+            </div>
+            <div class="guide-modal-footer" style="display:flex; justify-content:flex-end;">
+                <button type="button" class="btn btn-primary" id="legal-modal-btn-understand">Entendido y Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL ALERTAS DE PRECIO (PRICE ALERTS) ========== -->
+    <div id="price-alerts-modal" class="alerts-modal">
+        <div class="alerts-modal-content">
+            <div class="alerts-modal-header">
+                <h3><i class="fas fa-bell"></i> Alertas de Precio en Tiempo Real</h3>
+                <button class="btn-icon" id="alerts-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="alerts-modal-body">
+                <div class="alert-create-box">
+                    <h4>Nueva Alerta</h4>
+                    <div class="alert-inputs-row">
+                        <div class="form-group">
+                            <label>Activo:</label>
+                            <select id="alert-asset-select" class="form-select">
+                                <option value="bitcoin">Bitcoin (BTC)</option>
+                                <option value="ethereum">Ethereum (ETH)</option>
+                                <option value="solana">Solana (SOL)</option>
+                                <option value="nvidia">NVIDIA (NVDA)</option>
+                                <option value="apple">Apple (AAPL)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Condición:</label>
+                            <select id="alert-condition-select" class="form-select">
+                                <option value="above">Sube por encima de (≥)</option>
+                                <option value="below">Cae por debajo de (≤)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="alert-target-label">Precio Objetivo (en divisa del gráfico):</label>
+                            <div class="input-group">
+                                <input type="number" id="alert-target-input" placeholder="0.00" step="50">
+                                <span class="input-suffix" id="alert-target-suffix">USDT</span>
+                            </div>
+                            <div class="input-approx-note" id="alert-target-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px;"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-save-alert">
+                        <i class="fas fa-plus-circle"></i> Guardar Alerta
+                    </button>
+                </div>
+
+                <div class="active-alerts-section">
+                    <h4>Alertas Configuradas (<span id="alerts-count-badge">0</span>)</h4>
+                    <div class="alerts-list" id="alerts-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL GESTIÓN Y ACTIVACIÓN DE CUENTA DE PRÁCTICA ========== -->
+    <div id="demo-account-modal" class="confirm-modal demo-account-modal" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+        <div class="confirm-modal-content demo-modal-card">
+            <div class="confirm-modal-header">
+                <div class="cm-title-wrap">
+                    <span class="badge badge-practice" id="demo-modal-badge"><i class="fas fa-graduation-cap"></i> Simulación PaperPulse</span>
+                    <h3 id="demo-modal-title">Cuenta de Práctica</h3>
+                </div>
+                <button class="btn-icon" id="demo-modal-close" aria-label="Cerrar modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <!-- Estado para cuenta activa -->
+                <div class="demo-status-banner" id="demo-modal-active-banner">
+                    <div class="dsb-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="dsb-info">
+                        <strong>Patrimonio Virtual (Equity):</strong>
+                        <span class="dsb-amount" id="demo-modal-balance-val">—</span>
+                        <p id="demo-modal-status-text">Cotizaciones en tiempo real con capital ficticio para entrenar tu operativa sin riesgo financiero.</p>
+                    </div>
+                </div>
+
+                <div class="demo-edu-box">
+                    <div class="deb-item">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>Sin riesgo de dinero real:</strong>
+                            <span>Simula entradas, salidas y ratios de riesgo sin comprometer fondos personales.</span>
+                        </div>
+                    </div>
+                    <div class="deb-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <strong>Tus datos permanecen intactos:</strong>
+                            <span>Tu Watchlist de favoritos, alertas de precios y búsquedas nunca se borran si reinicias o cierras la cuenta.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-recharge-section">
+                    <label class="drs-label" id="demo-capital-label">Elige tu capital para practicar:</label>
+                    <p class="drs-hint">Recomendamos comenzar con un capital similar al que usarías en la realidad:</p>
+                    <div class="demo-amount-pills" id="demo-amount-pills">
+                        <button class="demo-pill-btn" data-amount="500">500 €</button>
+                        <button class="demo-pill-btn active" data-amount="1000">1.000 € (Recomendado)</button>
+                        <button class="demo-pill-btn" data-amount="5000">5.000 €</button>
+                    </div>
+                    <div class="demo-custom-row">
+                        <input type="number" id="demo-custom-input" placeholder="O ingresa cantidad propia (mín. 20 €)" min="20" max="1000000" step="50" aria-label="Cantidad propia">
+                        <button class="btn btn-outline" id="btn-apply-custom-demo">Fijar</button>
+                    </div>
+                </div>
+
+                <!-- Aviso de reinicio / cierre -->
+                <div class="demo-reset-warning" id="demo-reset-warning" style="display:none; margin-top: 14px; padding: 10px 14px; background: rgba(246, 70, 93, 0.08); border: 1px solid rgba(246, 70, 93, 0.2); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle text-warning"></i> <strong>Nota al restablecer:</strong> Se restablecerá tu saldo y se cerrarán las posiciones abiertas. Tu Watchlist y alertas se conservarán.
+                </div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-outline" id="demo-modal-btn-cancel">Cancelar</button>
+                <button class="btn btn-ghost text-danger" id="demo-modal-btn-close-account" style="display: none;" title="Volver a Modo Consulta">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar cuenta de práctica
+                </button>
+                <button class="btn btn-primary" id="demo-modal-btn-primary">
+                    <i class="fas fa-play"></i> Empezar a practicar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL EDICIÓN DE REFLEXIÓN / NOTA DEL TRADER ========== -->
+    <div id="journal-note-modal" class="confirm-modal journal-note-modal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <div class="cm-title-wrap">
+                    <span class="badge badge-pending"><i class="fas fa-pen"></i> Registro Diario</span>
+                    <h3 id="j-modal-title">Anotaciones de la Operación</h3>
+                </div>
+                <button class="btn-icon" id="j-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <input type="hidden" id="j-modal-trade-id">
+                <div class="form-group">
+                    <label>Estrategia / Setup utilizado:</label>
+                    <input type="text" id="j-modal-setup" class="form-select" style="background-image:none;" placeholder="Ej: Ruptura EMA 50, Retroceso Fibonacci, Scalping 5m...">
+                </div>
+                <div class="form-group" style="margin-top: 12px;">
+                    <label>Estado Emocional & Psicología:</label>
+                    <select id="j-modal-emotion" class="form-select">
+                        <option value="Disciplinado">🎯 Disciplinado (Seguí el plan a rajatabla)</option>
+                        <option value="Confiado">💪 Confiado (Buen análisis y timing)</option>
+                        <option value="Dudoso">🤔 Dudoso (Dudé antes de entrar/salir)</option>
+                        <option value="FOMO">⚡ FOMO (Miedo a perderse el movimiento)</option>
+                        <option value="Venganza">🔥 Venganza (Querer recuperar pérdidas rápido)</option>
+                        <option value="Impaciente">⏱️ Impaciente (Cerré antes de tiempo)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 12px;">
+                    <label>Reflexión del Trader & Lección aprendida:</label>
+                    <textarea id="j-modal-notes" class="form-select" style="background-image:none; height: 100px; resize: vertical;" rows="4" placeholder="¿Respetaste tu Stop Loss? ¿Hubo FOMO o indisciplina? ¿Qué hiciste bien en esta operación?"></textarea>
+                </div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-outline" id="j-modal-btn-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="j-modal-btn-save">
+                    <i class="fas fa-save"></i> Guardar en el Diario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL CONFIRMACIÓN DE CIERRE DE POSICIÓN & REFLEXIÓN ========== -->
+    <div id="close-position-confirm-modal" class="confirm-modal close-position-confirm-modal">
+        <div class="confirm-modal-content cpm-modal-card">
+            <div class="confirm-modal-header">
+                <div class="cm-title-wrap">
+                    <span class="badge badge-sell"><i class="fas fa-hand-holding-usd"></i> Cerrar Posición</span>
+                    <h3>Confirmar Salida de Mercado</h3>
+                </div>
+                <button class="btn-icon" id="cpm-modal-close" title="Cerrar ventana"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <div class="cpm-summary-card">
+                    <div class="cpm-asset-row">
+                        <strong id="cpm-asset-title">—</strong>
+                        <span id="cpm-pnl-val" class="cpm-pnl-pill">—</span>
+                    </div>
+                    <div class="cpm-prices-grid">
+                        <div class="cpm-price-item">
+                            <span class="cpm-label">Precio Entrada</span>
+                            <strong id="cpm-entry-val">—</strong>
+                        </div>
+                        <div class="cpm-price-item">
+                            <span class="cpm-label">Precio Salida Actual</span>
+                            <strong id="cpm-exit-val">—</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px;">
+                    <label>Estrategia / Setup Utilizado:</label>
+                    <select id="cpm-setup-select" class="form-select">
+                        <option value="Ruptura de Resistencia">Ruptura de Resistencia / Soporte</option>
+                        <option value="Retroceso Fibonacci">Retroceso Fibonacci (0.618)</option>
+                        <option value="Cruce de Medias EMAs">Cruce de Medias EMAs (20/50)</option>
+                        <option value="Scalping 5m Order Flow">Scalping 5m Order Flow</option>
+                        <option value="Sobrecompra / Sobreventa RSI">Sobrecompra / Sobreventa RSI</option>
+                        <option value="Swing Trading Fundamental">Swing Trading Fundamental</option>
+                        <option value="Operación Rápida de Prueba">Operación Rápida de Prueba</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label>Estado Emocional & Psicología:</label>
+                    <select id="cpm-emotion-select" class="form-select">
+                        <option value="Disciplinado">🎯 Disciplinado (Seguí el plan a rajatabla)</option>
+                        <option value="Confiado">💪 Confiado (Buen análisis y timing)</option>
+                        <option value="Dudoso">🤔 Dudoso (Dudé antes de entrar/salir)</option>
+                        <option value="Impaciente">⏳ Impaciente (Cerré antes de tiempo)</option>
+                        <option value="FOMO">⚡ FOMO (Miedo a perder la oportunidad)</option>
+                        <option value="Venganza">🔥 Venganza (Querer recuperar pérdidas)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label>¿Qué aprendiste en esta operación? (Para tu Diario de Trading):</label>
+                    <textarea id="cpm-reflection-input" class="form-select" style="background-image:none; height: 80px; resize: vertical;" placeholder="Ej: Respeté mi Stop Loss, entré con buen volumen, no dejé correr las ganancias..."></textarea>
+                </div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-outline" id="cpm-btn-cancel">Cancelar</button>
+                <button class="btn btn-sell" id="cpm-btn-confirm">
+                    <i class="fas fa-check"></i> Confirmar Cierre & Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL DE CONFIRMACIÓN DE REINICIO DE SALDO / DIARIO ========== -->
+    <div id="reset-confirm-modal" class="confirm-modal reset-confirm-modal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <div class="cm-title-wrap">
+                    <span class="badge badge-sell"><i class="fas fa-exclamation-triangle"></i> Confirmación Requerida</span>
+                    <h3 id="rcm-title">¿Restablecer Entorno Demo?</h3>
+                </div>
+                <button class="btn-icon" id="rcm-modal-close" title="Cerrar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <p id="rcm-desc" style="color: var(--text-secondary); line-height: 1.5; font-size: 13px;">
+                    Esta acción restablecerá tu capital demo al saldo inicial y cancelará las órdenes abiertas en este entorno.
+                </p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-outline" id="rcm-btn-cancel">Cancelar</button>
+                <button class="btn btn-sell" id="rcm-btn-confirm">
+                    <i class="fas fa-sync-alt"></i> Confirmar Reinicio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL AÑADIR A WATCHLIST ========== -->
+    <div id="add-watchlist-modal" class="confirm-modal add-watchlist-modal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <div class="cm-title-wrap">
+                    <span class="badge badge-buy"><i class="fas fa-star"></i> Favoritos</span>
+                    <h3>Personalizar Watchlist</h3>
+                </div>
+                <button class="btn-icon" id="awm-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Haz clic en los activos que deseas seguir en tu panel lateral:</p>
+                <div class="watchlist-picker-grid" id="watchlist-picker-grid">
+                    <!-- Dinámicamente poblado con activos disponibles -->
+                </div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-outline" id="awm-btn-cancel">Cerrar</button>
+                <button class="btn btn-primary" id="awm-btn-save">
+                    <i class="fas fa-check"></i> Guardar Favoritos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== BARRA DE PESTAÑAS INFERIOR PARA MÓVIL (<= 768px) ========== -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegación Móvil">
+        <button class="mbn-item active" data-view="dashboard" aria-label="Ir a Dashboard">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+        </button>
+        <button class="mbn-item" data-view="trading" aria-label="Ir a Trading">
+            <i class="fas fa-chart-line"></i>
+            <span>Trading</span>
+        </button>
+        <button class="mbn-item" data-view="markets" aria-label="Ir a Mercados">
+            <i class="fas fa-coins"></i>
+            <span>Mercados</span>
+        </button>
+        <button class="mbn-item" data-view="news" aria-label="Ir a Noticias">
+            <i class="fas fa-newspaper"></i>
+            <span>Noticias</span>
+        </button>
+        <button class="mbn-item" data-view="journal" aria-label="Ir a Diario">
+            <i class="fas fa-book-open"></i>
+            <span>Diario</span>
+        </button>
+    </nav>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loader">
+            <div class="loader-ring"></div>
+            <div class="loader-text">
+                <span class="loader-logo">
+                    <span class="brand-title" style="letter-spacing: 2px;">PaperPulse</span>
+                    <span class="brand-tag" style="margin-left: 6px;">TERMINAL</span>
+                </span>
+                <span>Iniciando motor de liquidez y cotizaciones...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MINI GUÍA INTERACTIVA PASO A PASO (TOUR SPOTLIGHT) ========== -->
+    <div id="tour-spotlight-frame" class="tour-spotlight-frame"></div>
+    <div id="tour-tooltip-box" class="tour-tooltip-card">
+        <div class="tour-card-header">
+            <div class="tour-header-left">
+                <div class="tour-badge-row">
+                    <span class="tour-step-badge" id="tour-step-badge">Paso 1 de 5</span>
+                    <span class="badge badge-info"><i class="fas fa-lightbulb"></i> Mini Guía</span>
+                </div>
+                <h3 class="tour-step-title" id="tour-step-title">1. Buscador de Activos</h3>
+            </div>
+            <button class="tour-btn-close" id="tour-btn-close" title="Cerrar Guía">&times;</button>
+        </div>
+        <div class="tour-card-body">
+            <p class="tour-step-desc" id="tour-step-desc"></p>
+            <div class="tour-step-tip" id="tour-step-tip"></div>
+        </div>
+        <div class="tour-card-footer">
+            <button class="btn btn-xs btn-ghost" id="tour-btn-skip">Omitir</button>
+            <div class="tour-footer-nav">
+                <button class="btn btn-xs btn-outline" id="tour-btn-prev">Anterior</button>
+                <div class="tour-dots" id="tour-dots"></div>
+                <button class="btn btn-xs btn-primary" id="tour-btn-next">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL CONFIRMACIÓN BORRAR MIS DATOS (RGPD) ========== -->
+    <div id="clear-data-confirm-modal" class="confirm-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="cdm-title">
+        <div class="confirm-modal-content" style="max-width: 480px;">
+            <div class="confirm-modal-header">
+                <h3 id="cdm-title"><i class="fas fa-shield-alt" style="color: var(--danger); margin-right: 8px;"></i> Borrar Mis Datos (RGPD)</h3>
+                <button class="btn-icon" id="clear-data-modal-close" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="confirm-modal-body">
+                <p style="margin-bottom: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary);">
+                    En cumplimiento del Reglamento General de Protección de Datos (RGPD), puedes ejercer tu <strong>derecho de supresión / olvido</strong> en cualquier momento.
+                </p>
+                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--text-secondary);">
+                    <strong style="color: var(--danger); display: block; margin-bottom: 6px;"><i class="fas fa-exclamation-triangle"></i> Esta acción es permanente e irreversible:</strong>
+                    <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
+                        <li>Se eliminarán permanentemente todas las operaciones de tu Diario.</li>
+                        <li>Se cancelarán las órdenes y posiciones abiertas.</li>
+                        <li>Se restablecerá el saldo de práctica al estado inicial.</li>
+                        <li>Se borrarán tus alertas de precio y listas de favoritos.</li>
+                    </ul>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+                    Tip: Si sólo deseas respaldar tu información para transferirla a otro dispositivo, usa <strong>Exportar Datos (JSON)</strong>.
+                </p>
+            </div>
+            <div class="confirm-modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+                <button class="btn btn-secondary" id="clear-data-cancel-btn">Cancelar</button>
+                <button class="btn btn-danger" id="clear-data-confirm-btn"><i class="fas fa-trash-alt"></i> Sí, borrar definitivamente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts con Vendor Local y Cache Buster ?v=8 -->
+    <script src="vendor/lightweight-charts/lightweight-charts.standalone.production.js?v=8"></script>
+    <script src="vendor/three/three.min.js?v=8"></script>
+    <script src="js/store.js?v=8"></script>
+    <script src="js/currency.js?v=8"></script>
+    <script src="js/pricefeed.js?v=8"></script>
+    <script src="js/journal.js?v=8"></script>
+    <script src="js/app.js?v=8"></script>
+    <script src="js/charts.js?v=8"></script>
+    <script src="js/market.js?v=8"></script>
+    <script src="js/news.js?v=8"></script>
+    <script src="js/globe.js?v=8"></script>
+    <script src="js/chat.js?v=8"></script>
+</body>
+</html>

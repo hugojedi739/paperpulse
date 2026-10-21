@@ -1,0 +1,18 @@
+# ==============================================================================
+# PaperPulse Terminal — Dependencias de Producción
+# ==============================================================================
+# Instalación en entorno de despliegue:
+#   python -m venv venv
+#   source venv/bin/activate  (Linux/Mac) o .\venv\Scripts\Activate.ps1 (Windows)
+#   pip install -r requirements.txt
+#
+# Despliegue con Uvicorn / Systemd / Docker:
+#   uvicorn server:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers
+# ==============================================================================
+
+anthropic==1.13.0
+starlette==1.7.0
+uvicorn==0.54.0
+requests==2.34.2
+websockets==16.1.1
+yfinance==1.7.0
