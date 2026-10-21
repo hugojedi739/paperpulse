@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>PaperPulse Terminal — Trading y Análisis Cuantitativo</title>
     <meta name="description" content="PaperPulse Terminal — Plataforma avanzada de simulación de trading cuantitativo, análisis técnico en tiempo real y gestión de carteras de inversión.">
     <link rel="canonical" href="http://localhost:8000/">
@@ -95,11 +95,16 @@
             </a>
         </div>
         <div class="nav-actions">
-            <!-- Search Box -->
-            <div class="search-box">
+            <!-- Mobile Search Toggle Button (Bloque H.1 y H.6) -->
+            <button class="nav-icon-btn mobile-search-btn" id="mobile-search-toggle-btn" aria-label="Buscar criptomonedas o acciones" title="Buscar activos">
                 <i class="fas fa-search"></i>
+            </button>
+            <!-- Search Box -->
+            <div class="search-box" id="main-search-box">
+                <i class="fas fa-search search-main-icon"></i>
                 <input type="text" id="search-input" aria-label="Buscar criptomonedas o acciones" placeholder="Buscar..." autocomplete="off">
                 <kbd class="search-kbd-hint">/</kbd>
+                <button class="search-mobile-close-btn" id="search-mobile-close-btn" aria-label="Cerrar búsqueda" style="display:none;"><i class="fas fa-times"></i></button>
                 <div class="search-results" id="search-results"></div>
             </div>
             <!-- Mode Switcher (Beginner vs Pro) -->
@@ -201,6 +206,17 @@
                             </div>
                             <i class="fas fa-chevron-right umi-arrow"></i>
                         </button>
+
+                        <!-- Sección Modo de Interfaz (Bloque H.6 - accesible en móvil) -->
+                        <div class="user-menu-group-title">Modo de Interfaz</div>
+                        <div class="user-menu-mode-group">
+                            <button class="user-menu-mode-btn active" data-mode="beginner" id="user-menu-mode-beginner">
+                                <i class="fas fa-leaf"></i> <span>Modo Fácil</span>
+                            </button>
+                            <button class="user-menu-mode-btn" data-mode="pro" id="user-menu-mode-pro">
+                                <i class="fas fa-sliders-h"></i> <span>Modo Pro</span>
+                            </button>
+                        </div>
 
                         <!-- Sección Preferencias -->
                         <div class="user-menu-group-title">Preferencias</div>
@@ -859,23 +875,28 @@
                             </div>
                         </div>
 
-                        <!-- Order Book Section with Beginner Tooltips -->
-                        <div class="order-book-section">
+                        <!-- Order Book Section with Beginner Tooltips & Collapsible Mobile (Bloque H.4) -->
+                        <div class="order-book-section" id="order-book-section">
                             <div class="ob-title-wrap">
                                 <h4><i class="fas fa-book"></i> Libro de Órdenes</h4>
-                                <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Libro de Órdenes" data-help-title="Libro de Órdenes (Order Book)" data-help-text="Muestra en tiempo real las intenciones de los operadores: órdenes de venta arriba (en rojo) y órdenes de compra abajo (en verde) esperando ser ejecutadas." data-help-tip="El número central es el Spread (la diferencia de precio entre el comprador más alto y el vendedor más bajo)."></i>
+                                <div class="ob-title-actions">
+                                    <i class="fas fa-question-circle tooltip-hint" tabindex="0" role="button" aria-label="Ayuda sobre Libro de Órdenes" data-help-title="Libro de Órdenes (Order Book)" data-help-text="Muestra en tiempo real las intenciones de los operadores: órdenes de venta arriba (en rojo) y órdenes de compra abajo (en verde) esperando ser ejecutadas." data-help-tip="El número central es el Spread (la diferencia de precio entre el comprador más alto y el vendedor más bajo)."></i>
+                                    <button class="ob-collapse-btn" id="ob-collapse-btn" aria-label="Colapsar o expandir libro de órdenes" title="Colapsar o expandir"><i class="fas fa-chevron-up"></i></button>
+                                </div>
                             </div>
-                            <div class="order-book-header">
-                                <span id="ob-price-header">Precio (USDT)</span>
-                                <span>Cantidad</span>
-                                <span>Total</span>
+                            <div class="order-book-content" id="order-book-content">
+                                <div class="order-book-header">
+                                    <span id="ob-price-header">Precio (USDT)</span>
+                                    <span>Cantidad</span>
+                                    <span>Total</span>
+                                </div>
+                                <div id="asks-list" class="asks-list"></div>
+                                <div class="spread-bar" title="Spread: Diferencia entre la mejor oferta de venta y la mejor de compra">
+                                    <span class="spread-price" id="spread-price">—</span>
+                                    <span class="spread-usd" id="spread-value">—</span>
+                                </div>
+                                <div id="bids-list" class="bids-list"></div>
                             </div>
-                            <div id="asks-list" class="asks-list"></div>
-                            <div class="spread-bar" title="Spread: Diferencia entre la mejor oferta de venta y la mejor de compra">
-                                <span class="spread-price" id="spread-price">—</span>
-                                <span class="spread-usd" id="spread-value">—</span>
-                            </div>
-                            <div id="bids-list" class="bids-list"></div>
                         </div>
                     </div>
                 </div>
@@ -1007,6 +1028,19 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Fixed Mobile Trading Action Bar (Bloque H.4: Barra fija inferior en móvil con Comprar/Vender o Practicar) -->
+                <div class="mobile-trading-action-bar" id="mobile-trading-action-bar">
+                    <button class="btn btn-buy mobile-trade-btn" id="mobile-trade-buy-btn">
+                        <i class="fas fa-arrow-up"></i> <span>Comprar</span>
+                    </button>
+                    <button class="btn btn-sell mobile-trade-btn" id="mobile-trade-sell-btn">
+                        <i class="fas fa-arrow-down"></i> <span>Vender</span>
+                    </button>
+                    <button class="btn btn-primary mobile-trade-practice-btn" id="mobile-trade-practice-btn" style="display: none;">
+                        <i class="fas fa-play"></i> <span>Empezar a practicar</span>
+                    </button>
                 </div>
             </div>
 

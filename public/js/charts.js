@@ -465,6 +465,17 @@ window.Charts = (function () {
             volStr = `<span class="ohlc-sep">|</span> <span>Vol:</span> <span class="ohlc-val ${cls}">${volFormatted}</span>`;
         }
 
+        // Bloque H.3: En móvil (< 600px) leyenda ultra-compacta de una línea que no tapa el eje de precios
+        if (window.innerWidth <= 600) {
+            ohlcLegendEl.innerHTML = `
+                <span class="ohlc-sym">${displayPair}</span>
+                <span class="ohlc-sep">·</span>
+                <span class="ohlc-val ${cls}">Cie: <strong>${formatChartPrice(closeVal)}</strong></span>
+                <span class="ohlc-val ${cls}">(${pctStr})</span>
+            `;
+            return;
+        }
+
         ohlcLegendEl.innerHTML = `
             <span class="ohlc-sym">${displayPair} · ${intervalLabel}</span>
             <span class="ohlc-sep">|</span>

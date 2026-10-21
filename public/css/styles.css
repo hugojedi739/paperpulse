@@ -3222,19 +3222,106 @@ body.density-compact .card-body {
     }
 }
 
-/* Teléfonos y Dispositivos Móviles (<= 768px) */
+/* ==========================================================================
+   Teléfonos y Dispositivos Móviles (<= 768px) — Bloque H
+   ========================================================================== */
 @media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
     .navbar {
         padding: 0 8px;
+        justify-content: space-between;
+        overflow: hidden;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    .mobile-search-btn {
+        display: inline-flex !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        width: 44px !important;
+        height: 44px !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 16px;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
     }
     .search-box {
         display: none !important;
+    }
+    .navbar.mobile-search-active .search-box {
+        display: flex !important;
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        top: 6px;
+        bottom: 6px;
+        z-index: 10020;
+        width: auto;
+        background: var(--bg-card);
+        border: 1px solid var(--accent-primary);
+        border-radius: 20px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+        padding: 0 12px;
+    }
+    .navbar.mobile-search-active .search-box input {
+        width: 100% !important;
+        font-size: 14px;
+    }
+    .navbar.mobile-search-active .search-mobile-close-btn {
+        display: inline-flex !important;
+        min-width: 36px;
+        min-height: 36px;
+        width: 36px;
+        height: 36px;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 15px;
     }
     .nav-links {
         display: none !important;
     }
     .mobile-menu-btn {
         display: none !important;
+    }
+    .mode-switch-pill {
+        display: none !important;
+    }
+    .connection-status-pill {
+        display: none !important;
+    }
+    .balance-pill {
+        display: none !important;
+    }
+    .brand-tag {
+        display: none !important;
+    }
+    .nav-brand {
+        gap: 6px;
+    }
+    .nav-actions {
+        gap: 4px;
+    }
+    .nav-icon-btn,
+    .avatar,
+    .nav-sidebar-toggle {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        width: 44px !important;
+        height: 44px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     .stats-grid {
         grid-template-columns: 1fr;
@@ -3255,12 +3342,175 @@ body.density-compact .card-body {
         align-items: flex-start;
         gap: 8px;
     }
+    /* Pastillas y barras con pista de scroll (Bloque H.2) */
+    .quick-asset-switcher {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        gap: 6px;
+        padding: 2px 20px 4px 2px;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .quick-asset-btn {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 0 14px !important;
+        scroll-snap-align: start;
+        font-size: 13px !important;
+        font-weight: 700;
+    }
     .chart-intervals,
     .chart-indicators {
+        display: flex;
         overflow-x: auto;
         max-width: 100%;
         flex-wrap: nowrap;
+        white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 4px;
+        padding: 2px 20px 4px 2px;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .interval-btn,
+    .indicator-btn {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+    }
+    .ticker-24h-stats {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 12px;
+        padding: 2px 18px 2px 2px;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    /* Gráfico al 45-50% de la pantalla y leyenda de una línea (Bloque H.3) */
+    .main-chart-container {
+        height: clamp(340px, 48vh, 480px) !important;
+        min-height: 320px;
+    }
+    .chart-ohlc-legend {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: calc(100% - 70px) !important;
+        font-size: 10px !important;
+        padding: 3px 8px !important;
+        top: 8px !important;
+        left: 8px !important;
+        gap: 4px !important;
+    }
+    /* Barra fija inferior de trading (Bloque H.4) */
+    .mobile-trading-action-bar {
+        display: flex !important;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+        z-index: 9980;
+        background: rgba(18, 24, 38, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--border);
+        padding: 8px 12px;
+        gap: 8px;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
+        box-sizing: border-box;
+    }
+    .mobile-trading-action-bar .btn {
+        flex: 1;
+        min-height: 44px !important;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 8px;
+    }
+    body.light-theme .mobile-trading-action-bar {
+        background: rgba(255, 255, 255, 0.96);
+        border-color: rgba(0, 0, 0, 0.08);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    }
+    /* Libro de órdenes colapsable (Bloque H.4) */
+    .ob-title-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .ob-title-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .ob-collapse-btn {
+        min-width: 44px;
+        min-height: 44px;
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: transform 0.2s ease;
+    }
+    .order-book-section.collapsed .order-book-content {
+        display: none !important;
+    }
+    .order-book-section.collapsed .ob-collapse-btn i {
+        transform: rotate(180deg);
+    }
+    /* Touch targets barra inferior y etiquetas (Bloque H.5 & H.7) */
+    .mobile-bottom-nav {
+        display: flex;
+        height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    }
+    .mbn-item {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        font-size: 11.5px !important;
+    }
+    .mbn-item i {
+        font-size: 18px !important;
+        margin-bottom: 2px;
+    }
+    body {
+        padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    /* Botón flotante del chat (Bloque H.8: no tapa botones ni libro) */
+    .chat-widget {
+        bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 12px !important;
+        z-index: 9970;
+    }
+    .chat-toggle {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 19px !important;
+    }
+    .chat-panel {
+        width: calc(100vw - 20px);
+        right: -4px;
+        height: min(520px, 75vh);
     }
     .markets-controls {
         flex-direction: column;
@@ -3269,15 +3519,26 @@ body.density-compact .card-body {
     .market-tabs {
         overflow-x: auto;
         width: 100%;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+    }
+    .market-tab {
+        min-height: 44px !important;
+        min-width: 44px !important;
     }
     .news-filters {
         overflow-x: auto;
         flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
     }
-    .chat-panel {
-        width: calc(100vw - 20px);
-        right: -4px;
-        height: 75vh;
+    .news-filter {
+        min-height: 44px !important;
+        min-width: 44px !important;
     }
 }
 
@@ -3285,32 +3546,17 @@ body.density-compact .card-body {
 @media (max-width: 576px) {
     .brand-title {
         font-size: 15px;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .brand-logo-mark {
         width: 24px;
         height: 24px;
     }
-    .mode-switch-pill {
+    #theme-toggle-btn {
         display: none !important;
-    }
-    .connection-status-pill {
-        display: none !important;
-    }
-    .balance-pill {
-        padding: 0 8px;
-        gap: 4px;
-    }
-    .balance-amount {
-        max-width: 85px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .btn-start-practice-nav {
-        padding: 4px 8px;
-        font-size: 11px;
-    }
-    .btn-start-practice-nav span {
-        display: none;
     }
     .stat-card {
         padding: 10px;
@@ -3320,9 +3566,6 @@ body.density-compact .card-body {
     }
     .current-price {
         font-size: 16px;
-    }
-    .main-chart-container {
-        height: 300px;
     }
     .order-buttons {
         gap: 6px;
@@ -3371,16 +3614,13 @@ body.density-compact .card-body {
     }
 }
 
-/* Dispositivos Móviles Extra Pequeños (<= 420px) */
-@media (max-width: 420px) {
+/* Dispositivos Móviles Extra Pequeños (<= 390px) */
+@media (max-width: 390px) {
     .brand-title {
         display: none !important;
     }
-    .balance-pill {
-        padding: 0 6px;
-    }
     .navbar {
-        padding: 0 6px;
+        padding: 0 4px;
     }
 }
 
@@ -7836,6 +8076,41 @@ body.light-theme .btn-icon-subtle {
 .user-menu-group-title:first-child {
     border-top: none;
     margin-top: 0;
+}
+
+.user-menu-mode-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 6px 16px 10px 16px;
+}
+
+.user-menu-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+.user-menu-mode-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.user-menu-mode-btn.active {
+    background: rgba(0, 210, 255, 0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
 }
 
 /* ============================================

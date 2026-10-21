@@ -20,8 +20,12 @@ def capture(url, out_path, width=1280, height=800, theme="dark"):
         "--no-sandbox",
         "--disable-gpu",
         "--hide-scrollbars",
-        full_url
     ]
+    if width <= 500:
+        cmd.extend([
+            "--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        ])
+    cmd.append(full_url)
     try:
         subprocess.run(cmd, check=True, capture_output=True, timeout=20)
         if os.path.exists(tmp_out):

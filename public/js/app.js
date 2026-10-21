@@ -204,7 +204,7 @@ window.App = (function () {
         }
     }
 
-    /* ---------- Mobile Menu ---------- */
+    /* ---------- Mobile Menu & Mobile Enhancements (Bloque H) ---------- */
     function setupMobileMenu() {
         const btn = document.getElementById('mobile-menu-btn');
         const nav = document.querySelector('.nav-links');
@@ -212,6 +212,84 @@ window.App = (function () {
             btn.addEventListener('click', () => nav.classList.toggle('mobile-open'));
             nav.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', () => nav.classList.remove('mobile-open')));
         }
+
+        // Bloque H.6: Botón de búsqueda en barra móvil
+        const mobSearchBtn = document.getElementById('mobile-search-toggle-btn');
+        const mobSearchClose = document.getElementById('search-mobile-close-btn');
+        const navbar = document.querySelector('.navbar');
+        const searchInput = document.getElementById('search-input');
+
+        if (mobSearchBtn && navbar) {
+            mobSearchBtn.addEventListener('click', () => {
+                navbar.classList.add('mobile-search-active');
+                if (mobSearchClose) mobSearchClose.style.display = 'inline-flex';
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.dispatchEvent(new Event('focus'));
+                }
+            });
+        }
+        if (mobSearchClose && navbar) {
+            mobSearchClose.addEventListener('click', () => {
+                navbar.classList.remove('mobile-search-active');
+                mobSearchClose.style.display = 'none';
+                const searchResults = document.getElementById('search-results');
+                if (searchResults) searchResults.classList.remove('show');
+            });
+        }
+
+        // Bloque H.4: Libro de órdenes colapsable
+        const obCollapseBtn = document.getElementById('ob-collapse-btn');
+        const obSection = document.getElementById('order-book-section');
+        if (obCollapseBtn && obSection) {
+            obCollapseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                obSection.classList.toggle('collapsed');
+            });
+        }
+
+        // Bloque H.4: Barra fija inferior en móvil (Comprar, Vender, Practicar)
+        const mobBuy = document.getElementById('mobile-trade-buy-btn');
+        const mobSell = document.getElementById('mobile-trade-sell-btn');
+        const mobPractice = document.getElementById('mobile-trade-practice-btn');
+
+        if (mobPractice) {
+            mobPractice.addEventListener('click', () => {
+                startPracticeAccount();
+            });
+        }
+        if (mobBuy) {
+            mobBuy.addEventListener('click', () => {
+                const tradingPanel = document.querySelector('.trading-panel');
+                if (tradingPanel) {
+                    tradingPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                const tabQuick = document.getElementById('tab-quick-buy');
+                if (tabQuick) tabQuick.click();
+                const quickInput = document.getElementById('quick-usd-input');
+                if (quickInput) quickInput.focus();
+            });
+        }
+        if (mobSell) {
+            mobSell.addEventListener('click', () => {
+                const tradingPanel = document.querySelector('.trading-panel');
+                if (tradingPanel) {
+                    tradingPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                const tabAdv = document.getElementById('tab-advanced-trade');
+                if (tabAdv) tabAdv.click();
+                const sellBtn = document.getElementById('sell-btn');
+                if (sellBtn) sellBtn.focus();
+            });
+        }
+
+        // Bloque H.6: Selector de modo Fácil / Pro en menú de usuario
+        const userModeBtns = document.querySelectorAll('.user-menu-mode-btn');
+        userModeBtns.forEach(b => {
+            b.addEventListener('click', () => {
+                setTradeMode(b.dataset.mode, true);
+            });
+        });
     }
 
     /* ---------- Universal Asset Catalog & Search Engine ---------- */
@@ -908,10 +986,10 @@ window.App = (function () {
         }
     }
 
-    /* ---------- Trade Mode Unification (Navbar + Panel) ---------- */
+    /* ---------- Trade Mode Unification (Navbar + User Menu + Panel) ---------- */
     function setTradeMode(mode, notify = false) {
         state.uiMode = mode;
-        const modeButtons = document.querySelectorAll('#mode-switch-btn .mode-btn');
+        const modeButtons = document.querySelectorAll('#mode-switch-btn .mode-btn, .user-menu-mode-btn');
         modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
 
         const quickPanel = document.getElementById('quick-trade-panel');
@@ -978,8 +1056,8 @@ window.App = (function () {
     }
 
     function setupBeginnerFeatures() {
-        // Mode Switcher (Navbar Easy vs Pro)
-        const modeButtons = document.querySelectorAll('#mode-switch-btn .mode-btn');
+        // Mode Switcher (Navbar Easy vs Pro + Menú de Usuario)
+        const modeButtons = document.querySelectorAll('#mode-switch-btn .mode-btn, .user-menu-mode-btn');
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 setTradeMode(btn.dataset.mode, true);
@@ -2868,6 +2946,14 @@ window.App = (function () {
             if (panelModeTabs) panelModeTabs.style.display = 'none';
             if (quickPanel) quickPanel.style.display = 'none';
             if (advPanel) advPanel.style.display = 'none';
+
+            // Barra fija móvil: en modo consulta mostrar Practicar
+            const mobBuy = document.getElementById('mobile-trade-buy-btn');
+            const mobSell = document.getElementById('mobile-trade-sell-btn');
+            const mobPractice = document.getElementById('mobile-trade-practice-btn');
+            if (mobBuy) mobBuy.style.display = 'none';
+            if (mobSell) mobSell.style.display = 'none';
+            if (mobPractice) mobPractice.style.display = 'inline-flex';
         } else {
             // Cuenta de Práctica Activa
             const curBalance = window.Store ? window.Store.getBalance() : 0;
@@ -2905,6 +2991,14 @@ window.App = (function () {
             if (typeof setTradeMode === 'function') {
                 setTradeMode(state.uiMode || 'beginner', false);
             }
+
+            // Barra fija móvil: cuenta activa muestra Comprar y Vender
+            const mobBuy = document.getElementById('mobile-trade-buy-btn');
+            const mobSell = document.getElementById('mobile-trade-sell-btn');
+            const mobPractice = document.getElementById('mobile-trade-practice-btn');
+            if (mobBuy) mobBuy.style.display = 'inline-flex';
+            if (mobSell) mobSell.style.display = 'inline-flex';
+            if (mobPractice) mobPractice.style.display = 'none';
         }
     }
 
