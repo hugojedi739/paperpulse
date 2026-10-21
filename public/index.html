@@ -1052,10 +1052,11 @@
                 </div>
                 <div class="markets-controls">
                     <div class="market-tabs">
-                        <button class="market-tab active" data-category="all">Todos</button>
-                        <button class="market-tab" data-category="crypto">🪙 Crypto</button>
+                        <!-- Bloque D.4: Cripto primero (único en vivo). Forex oculto sin datos -->
+                        <button class="market-tab active" data-category="crypto">🪙 Cripto</button>
+                        <button class="market-tab" data-category="all">🌐 Todos</button>
                         <button class="market-tab" data-category="stocks">📊 Acciones</button>
-                        <button class="market-tab" data-category="forex">💱 Forex</button>
+                        <button class="market-tab" data-category="forex" style="display: none;">💱 Forex</button>
                     </div>
                     <div class="search-box search-box-inline">
                         <i class="fas fa-search"></i>
@@ -1066,15 +1067,15 @@
                     <table class="data-table markets-table" id="markets-table">
                         <thead>
                             <tr>
-                                <th class="sortable" data-sort="rank">#</th>
-                                <th class="sortable" data-sort="name">Nombre</th>
-                                <th class="sortable" data-sort="price">Precio</th>
-                                <th class="sortable" data-sort="change">24h %</th>
-                                <th class="sortable" data-sort="change7d">7d %</th>
-                                <th class="sortable" data-sort="cap">Cap. de Mercado</th>
-                                <th class="sortable" data-sort="volume">Volumen 24h</th>
-                                <th>Gráfico 7d</th>
-                                <th>Acción</th>
+                                <th class="sortable col-rank" data-sort="rank">#</th>
+                                <th class="sortable col-name" data-sort="name">Nombre</th>
+                                <th class="sortable col-price" data-sort="price">Precio</th>
+                                <th class="sortable col-24h" data-sort="change">24h %</th>
+                                <th class="sortable col-7d" data-sort="change7d">7d %</th>
+                                <th class="sortable col-cap" data-sort="cap">Cap. de Mercado</th>
+                                <th class="sortable col-vol" data-sort="volume">Volumen 24h</th>
+                                <th class="col-spark">Gráfico 7d</th>
+                                <th class="col-action">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="markets-body"></tbody>

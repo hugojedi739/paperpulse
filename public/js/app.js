@@ -195,6 +195,13 @@ window.App = (function () {
         if (urlView && ['dashboard', 'trading', 'markets', 'news', 'journal'].includes(urlView)) {
             setTimeout(() => switchView(urlView), 50);
         }
+        const urlCat = urlParams.get('category');
+        if (urlCat) {
+            setTimeout(() => {
+                const tab = document.querySelector(`.market-tab[data-category="${urlCat}"]`);
+                if (tab) tab.click();
+            }, 350);
+        }
         const urlSymbol = urlParams.get('symbol');
         if (urlSymbol) {
             const found = ALL_CATALOG_SYMBOLS.find(s => s.symbol.toUpperCase() === urlSymbol.toUpperCase() || s.id.toLowerCase() === urlSymbol.toLowerCase());
@@ -780,18 +787,22 @@ window.App = (function () {
         TRX: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#EC0623"/><path fill="#FFF" d="M7 8l18 3.5-12 14.5L7 8zm2.4 2.1l4 9.8 8.8-10.7-12.8.9z"/></svg>`,
         POL: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#8247E5"/><path fill="#FFF" d="M20.5 13.5l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2zm-9 0l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2zm4.5-5l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2z"/></svg>`,
         MATIC: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#8247E5"/><path fill="#FFF" d="M20.5 13.5l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2zm-9 0l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2zm4.5-5l3.5 2v4l-3.5 2-3.5-2v-4l3.5-2z"/></svg>`,
-        AAPL: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#2B313A"/><path fill="#FFF" d="M18.8 8.1c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.6.8-3.5 1.8-.7.9-1.4 2.3-1.2 3.7 1.3.1 2.6-.7 3.5-1.7zm3.2 7c0-3 2.5-4.5 2.6-4.6-1.4-2-3.6-2.3-4.3-2.4-1.8-.2-3.6 1.1-4.5 1.1-.9 0-2.4-1.1-4-1-2 .1-3.9 1.2-5 3-2.1 3.7-1.5 9.2 1.5 13.5 1.5 2.1 3.1 4.4 5.4 4.3 2.2-.1 3-1.4 5.7-1.4 2.6 0 3.3 1.4 5.6 1.4 2.4 0 3.9-2.1 5.3-4.2 1.6-2.4 2.4-4.8 2.4-4.9-.1-.1-4.4-1.7-4.4-6.8z"/></svg>`,
-        NVDA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#12151A"/><path fill="#76B900" d="M13.2 8.5c-3 0-5.4 2.4-5.4 5.4s2.4 5.4 5.4 5.4c2.3 0 4.2-1.4 5-3.5h-2.2c-.6 1-1.5 1.6-2.8 1.6-1.8 0-3.3-1.4-3.3-3.3s1.4-3.3 3.3-3.3c1.2 0 2.2.7 2.8 1.6h2.2c-.8-2-2.7-3.5-5-3.5zm0-2.4c-4.3 0-7.8 3.5-7.8 7.8s3.5 7.8 7.8 7.8c3.4 0 6.2-2.1 7.3-5.1h-2.3c-1 1.8-2.9 3.1-5 3.1-3.2 0-5.7-2.6-5.7-5.7s2.6-5.7 5.7-5.7c2.1 0 4 1.3 5 3.1h2.3c-1.1-3-3.9-5.3-7.3-5.3z"/></svg>`,
-        TSLA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#12151A"/><path fill="#E82127" d="M16 8.5c3.2 0 6.1.9 8.4 2.4l.8-2.2C22.6 7.1 19.4 6.3 16 6.3S9.4 7.1 6.8 8.7l.8 2.2c2.3-1.5 5.2-2.4 8.4-2.4zm0 3.7c1.8 0 3.7.3 5.3 1l.7-2C20.2 10.4 18.1 10 16 10s-4.2.4-6 1.2l.7 2c1.6-.7 3.5-1 5.3-1zm-1.1 4.5v8.5h2.2V16.7h3.8l.8-2.2H10.3l.8 2.2h3.8z"/></svg>`,
-        MSFT: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#1F2329"/><rect x="8.5" y="8.5" width="6.5" height="6.5" fill="#F25022"/><rect x="17" y="8.5" width="6.5" height="6.5" fill="#7FBA00"/><rect x="8.5" y="17" width="6.5" height="6.5" fill="#00A4EF"/><rect x="17" y="17" width="6.5" height="6.5" fill="#FFB900"/></svg>`,
-        AMZN: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#12151A"/><path fill="#FF9900" d="M9 20.5c4.5 2.5 10 2.5 14 0 .3-.2.6.2.3.4-4.5 3-10.5 3-14.6 0-.3-.2 0-.6.3-.4zm13.5.2c.4-.2.8.2.7.5-.3.8-1.5 1.5-2.5 1.5-.3 0-.4-.3-.2-.5.7-.5 1.5-1.1 2-1.5z"/><path fill="#FFF" d="M17.5 10.2c-1.5 0-2.7.8-3.1 1.8h-.1V10.5H12v6.8h2.3v-3.7c0-1.1.7-1.8 1.8-1.8 1 0 1.6.7 1.6 1.8v3.7H20v-4.1c0-2-1.1-3.2-2.5-3.2z"/></svg>`,
-        SAN: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#EC0000"/><path fill="#FFF" d="M16 6.5c-2.3 3.6-5.4 6.5-5.4 9.8 0 3.3 2.5 5.7 5.4 5.7s5.4-2.4 5.4-5.7c0-3.3-3.1-6.2-5.4-9.8zm0 13c-1.5 0-2.8-1.3-2.8-3 0-1.7 1.8-3.5 2.8-5 1 1.5 2.8 3.3 2.8 5 0 1.7-1.3 3-2.8 3z"/></svg>`,
-        BBVA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#004481"/><text x="16" y="20" fill="#FFF" font-size="9" font-family="sans-serif" font-weight="900" text-anchor="middle">BBVA</text></svg>`,
-        ITX: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#111827"/><text x="16" y="20" fill="#FFF" font-size="9" font-family="sans-serif" font-weight="900" text-anchor="middle">ITX</text></svg>`,
-        IBEX: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#991B1B"/><text x="16" y="20" fill="#FDE047" font-size="8" font-family="sans-serif" font-weight="900" text-anchor="middle">IBEX</text></svg>`,
+        // Bloque D.5: Círculos con iniciales e iconos propios, sin reproducir marcas de terceros
+        AAPL: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#334155"/><text x="16" y="20.5" fill="#FFF" font-size="9.5" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">AAPL</text></svg>`,
+        NVDA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#15803d"/><text x="16" y="20.5" fill="#FFF" font-size="9" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">NVDA</text></svg>`,
+        TSLA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#b91c1c"/><text x="16" y="20.5" fill="#FFF" font-size="9.5" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">TSLA</text></svg>`,
+        MSFT: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#0284c7"/><text x="16" y="20.5" fill="#FFF" font-size="9" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">MSFT</text></svg>`,
+        AMZN: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#d97706"/><text x="16" y="20.5" fill="#FFF" font-size="9" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">AMZN</text></svg>`,
+        SAN: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#dc2626"/><text x="16" y="20.5" fill="#FFF" font-size="10" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">SAN</text></svg>`,
+        BBVA: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#0369a1"/><text x="16" y="20.5" fill="#FFF" font-size="9" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">BBVA</text></svg>`,
+        ITX: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#1e293b"/><text x="16" y="20.5" fill="#FFF" font-size="10" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">ITX</text></svg>`,
+        TEF: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#0891b2"/><text x="16" y="20.5" fill="#FFF" font-size="10" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">TEF</text></svg>`,
+        IBE: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#166534"/><text x="16" y="20.5" fill="#FFF" font-size="10" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">IBE</text></svg>`,
+        REP: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#c2410c"/><text x="16" y="20.5" fill="#FFF" font-size="10" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">REP</text></svg>`,
+        IBEX: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#991B1B"/><text x="16" y="20.5" fill="#FDE047" font-size="8.5" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">IBEX</text></svg>`,
         GOLD: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#D97706"/><rect x="8" y="10" width="16" height="12" rx="2" fill="#FFF" fill-opacity=".3"/><text x="16" y="19" fill="#FFF" font-size="8" font-family="sans-serif" font-weight="900" text-anchor="middle">ORO</text></svg>`,
-        GOOGL: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#4285F4"/><text x="16" y="21" fill="#FFF" font-size="12" font-family="sans-serif" font-weight="900" text-anchor="middle">G</text></svg>`,
-        META: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#0668E1"/><path fill="#FFF" d="M16 13.5c-1.8-2.5-3.8-3.5-5.8-3.5-3.3 0-5.2 2.6-5.2 6s1.9 6 5.2 6c2.4 0 4.2-1.3 5.8-3.7 1.6 2.4 3.4 3.7 5.8 3.7 3.3 0 5.2-2.6 5.2-6s-1.9-6-5.2-6c-2 0-4 1-5.8 3.5zm-5.8 6.5c-2 0-3.2-1.7-3.2-4s1.2-4 3.2-4c1.6 0 3.2 1.5 4.3 4-1.1 2.5-2.7 4-4.3 4zm11.6 0c-1.6 0-3.2-1.5-4.3-4 1.1-2.5 2.7-4 4.3-4 2 0 3.2 1.7 3.2 4s-1.2 4-3.2 4z"/></svg>`
+        GOOGL: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#4338ca"/><text x="16" y="20.5" fill="#FFF" font-size="8.5" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">GOOG</text></svg>`,
+        META: `<svg viewBox="0 0 32 32" class="asset-svg"><circle cx="16" cy="16" r="16" fill="#1d4ed8"/><text x="16" y="20.5" fill="#FFF" font-size="9" font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">META</text></svg>`
     };
 
     function getAssetSvg(symbol, size = 24) {

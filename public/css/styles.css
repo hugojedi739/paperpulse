@@ -2296,6 +2296,77 @@ body.light-theme .nav-link.active {
     color: #0b0e11;
 }
 
+/* ==========================================================================
+   Bloque D: Mercados — Compact Rows, Subtle Buttons, Column Hiding & Colors
+   ========================================================================== */
+.markets-table tbody tr {
+    height: 50px !important;
+}
+
+.markets-table td {
+    padding: 6px 12px !important;
+    vertical-align: middle !important;
+}
+
+/* Bloque D.1: Ocultar 4 columnas sin datos en acciones */
+.markets-table.hide-stock-columns th.col-7d,
+.markets-table.hide-stock-columns td.col-7d,
+.markets-table.hide-stock-columns th.col-cap,
+.markets-table.hide-stock-columns td.col-cap,
+.markets-table.hide-stock-columns th.col-vol,
+.markets-table.hide-stock-columns td.col-vol,
+.markets-table.hide-stock-columns th.col-spark,
+.markets-table.hide-stock-columns td.col-spark {
+    display: none !important;
+}
+
+/* Bloque D.2: Botón Operar discreto y secundario */
+.btn-trade-action {
+    padding: 4px 12px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-trade-action:hover {
+    background: rgba(0, 210, 255, 0.12) !important;
+    color: var(--accent-primary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+body.light-theme .btn-trade-action {
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme .btn-trade-action:hover {
+    background: rgba(0, 210, 255, 0.12) !important;
+    color: #0284c7 !important;
+    border-color: #0284c7 !important;
+}
+
+/* Bloque D.3: Columna 24h % e indicadores en verde y rojo */
+.markets-table td.bullish,
+body.light-theme .markets-table td.bullish,
+.data-table td.bullish,
+body.light-theme .data-table td.bullish {
+    color: #0ecb81 !important;
+    font-weight: 600 !important;
+}
+
+.markets-table td.bearish,
+body.light-theme .markets-table td.bearish,
+.data-table td.bearish,
+body.light-theme .data-table td.bearish {
+    color: #f6465d !important;
+    font-weight: 600 !important;
+}
+
 /* ============================================
    NEWS VIEW
    ============================================ */

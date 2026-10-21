@@ -13,7 +13,7 @@ window.Market = (function () {
         holdings: [],
         positions: [],
         demoCash: 0,
-        currentCategory: 'all',
+        currentCategory: 'crypto', // Bloque D.4: Cripto primero
         sortField: 'rank',
         sortOrder: 'asc',
         refreshTimer: null,
@@ -122,7 +122,13 @@ window.Market = (function () {
     /* ---------- Tabla de Mercados ---------- */
     function renderMarkets() {
         const tbody = document.getElementById('markets-body');
+        const tableEl = document.getElementById('markets-table');
         if (!tbody) return;
+
+        // Bloque D.1: Ocultar 4 columnas sin datos (7D, Cap, Vol, Spark) al visualizar acciones
+        if (tableEl) {
+            tableEl.classList.toggle('hide-stock-columns', state.currentCategory === 'stocks');
+        }
 
         let data = [...state.marketData];
 
@@ -186,26 +192,26 @@ window.Market = (function () {
                 : '—';
 
             return `<tr data-id="${coin.id}" data-symbol="${symUpper}" data-name="${coin.name}">
-                <td class="text-secondary">${idx + 1}</td>
-                <td>
+                <td class="text-secondary col-rank">${idx + 1}</td>
+                <td class="col-name">
                     <div class="market-coin-cell">
-                        ${window.App ? window.App.getAssetSvg(symUpper, 28) : ''}
+                        ${window.App ? window.App.getAssetSvg(symUpper, 26) : ''}
                         <div>
                             <strong>${coin.name}</strong>
                             <span class="coin-symbol">${symUpper}</span>
                         </div>
                     </div>
                 </td>
-                <td class="price-cell"><strong>${priceFormatted}</strong></td>
-                <td class="${cls24}">${text24}</td>
-                <td class="${cls7d}">${text7d}</td>
-                <td class="text-secondary">${volFormatted}</td>
-                <td class="text-secondary">${capFormatted}</td>
-                <td>
+                <td class="price-cell col-price"><strong>${priceFormatted}</strong></td>
+                <td class="${cls24} col-24h">${text24}</td>
+                <td class="${cls7d} col-7d">${text7d}</td>
+                <td class="text-secondary col-cap">${capFormatted}</td>
+                <td class="text-secondary col-vol">${volFormatted}</td>
+                <td class="col-spark">
                     <div class="sparkline-container" id="spark-${coin.id}"></div>
                 </td>
-                <td>
-                    <button class="btn btn-sm btn-primary btn-trade-action" data-id="${coin.id}" data-symbol="${symUpper}" data-name="${coin.name}">
+                <td class="col-action">
+                    <button class="btn btn-sm btn-trade-action" data-id="${coin.id}" data-symbol="${symUpper}" data-name="${coin.name}">
                         Operar
                     </button>
                 </td>
