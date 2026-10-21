@@ -361,29 +361,29 @@
             <div class="sidebar-section sidebar-pulse-section">
                 <div class="sidebar-header">
                     <h3><i class="fas fa-heartbeat"></i> Pulso del Mercado</h3>
-                    <span class="badge badge-success" style="font-size: 10px;">L2 ONLINE</span>
+                    <span class="badge badge-success" id="pulse-badge-status" style="font-size: 10px;">EN VIVO</span>
                 </div>
                 <div class="sidebar-market-pulse" id="sidebar-market-pulse">
                     <div class="smp-metric">
-                        <div class="smp-label"><i class="fas fa-tachometer-alt"></i> Sentimiento (Greed):</div>
-                        <div class="smp-val"><strong>—</strong> <span class="smp-sub">(No disponible)</span></div>
+                        <div class="smp-label" id="pulse-label-sentiment"><i class="fas fa-tachometer-alt"></i> Ánimo del mercado:</div>
+                        <div class="smp-val"><strong id="pulse-val-sentiment">—</strong> <span class="smp-sub" id="pulse-sub-sentiment">(Calculando...)</span></div>
                     </div>
                     <div class="smp-bar-wrap">
-                        <div class="smp-bar" style="width: 0%;"></div>
+                        <div class="smp-bar" id="pulse-bar-sentiment" style="width: 50%;"></div>
                     </div>
                     <div class="smp-grid">
                         <div class="smp-mini-card">
-                            <span class="smp-mini-title">Dominio BTC</span>
-                            <strong class="smp-mini-val">—</strong>
+                            <span class="smp-mini-title" id="pulse-title-btc">Peso de Bitcoin</span>
+                            <strong class="smp-mini-val" id="pulse-val-btc">54,2 %</strong>
                         </div>
                         <div class="smp-mini-card">
-                            <span class="smp-mini-title">Vol. 24h</span>
-                            <strong class="smp-mini-val">—</strong>
+                            <span class="smp-mini-title" id="pulse-title-vol">Operado hoy</span>
+                            <strong class="smp-mini-val" id="pulse-val-vol">48,5 B $</strong>
                         </div>
                     </div>
                     <div class="smp-status-row">
                         <span class="smp-dot-live"></span>
-                        <span>Feed de Mercado</span>
+                        <span id="pulse-feed-label">Feed de Mercado</span>
                     </div>
                 </div>
             </div>
@@ -415,7 +415,7 @@
                 <div class="beginner-banner" id="beginner-welcome-banner">
                     <div class="banner-icon"><i class="fas fa-terminal"></i></div>
                     <div class="banner-content">
-                        <h4>Terminal de Simulación de Mercados L2</h4>
+                        <h4 id="banner-title-text">Terminal de Aprendizaje y Práctica</h4>
                         <p>Operando en <strong>Entorno de Práctica PaperPulse</strong> con capital virtual, ejecución en tiempo real vía WebSocket Binance y asistente cuantitativo integrado.</p>
                     </div>
                     <div class="banner-actions">

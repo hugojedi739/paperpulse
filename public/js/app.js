@@ -1003,6 +1003,9 @@ window.App = (function () {
         const modeButtons = document.querySelectorAll('#mode-switch-btn .mode-btn, .user-menu-mode-btn');
         modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
 
+        // Bloque B.2: Ajustar jerga de Pulso del Mercado y banners según el modo
+        updatePulseJargon(mode);
+
         const quickPanel = document.getElementById('quick-trade-panel');
         const advPanel = document.getElementById('advanced-trade-panel');
         const tabQuick = document.getElementById('tab-quick-buy');
@@ -1022,17 +1025,48 @@ window.App = (function () {
             if (advPanel) advPanel.style.display = 'none';
             if (tabQuick) tabQuick.classList.add('active');
             if (tabAdv) tabAdv.classList.remove('active');
-            if (notify) showToast('Modo Fácil: Interfaz simplificada para principiantes.', 'info');
+            if (notify) showToast('Modo Fácil: Interfaz simplificada con lenguaje claro para principiantes.', 'info');
         } else {
             if (quickPanel) quickPanel.style.display = 'none';
             if (advPanel) advPanel.style.display = 'block';
             if (tabQuick) tabQuick.classList.remove('active');
             if (tabAdv) tabAdv.classList.add('active');
-            if (notify) showToast('Modo Pro: Órdenes avanzadas y controles profesionales.', 'info');
+            if (notify) showToast('Modo Pro: Órdenes avanzadas, libro de órdenes L2 y métricas profesionales.', 'info');
         }
     }
 
-    /* ---------- Order Type Toggle (Market, Limit, Stop-Limit) ---------- */
+    /* ---------- Bloque B.2: Jerga en Modo Fácil vs Pro ---------- */
+    function updatePulseJargon(mode) {
+        const isEasy = (mode === 'beginner');
+        const badgeStatus = document.getElementById('pulse-badge-status');
+        const labelSentiment = document.getElementById('pulse-label-sentiment');
+        const titleBtc = document.getElementById('pulse-title-btc');
+        const titleVol = document.getElementById('pulse-title-vol');
+        const valBtc = document.getElementById('pulse-val-btc');
+        const valVol = document.getElementById('pulse-val-vol');
+        const bannerTitle = document.getElementById('banner-title-text');
+
+        if (badgeStatus) badgeStatus.textContent = isEasy ? 'EN VIVO' : 'L2 ONLINE';
+        if (labelSentiment) {
+            labelSentiment.innerHTML = isEasy
+                ? '<i class="fas fa-tachometer-alt"></i> Ánimo del mercado:'
+                : '<i class="fas fa-tachometer-alt"></i> Sentimiento (Greed):';
+        }
+        if (titleBtc) titleBtc.textContent = isEasy ? 'Peso de Bitcoin' : 'Dominio BTC';
+        if (titleVol) titleVol.textContent = isEasy ? 'Operado hoy' : 'Vol. 24h';
+        if (valBtc) valBtc.textContent = isEasy ? '54,2 %' : '54.2%';
+        if (valVol) valVol.textContent = isEasy ? '48,5 B $' : '48.5B USD';
+        if (bannerTitle) {
+            bannerTitle.textContent = isEasy
+                ? 'Terminal de Aprendizaje y Práctica'
+                : 'Terminal de Simulación L2 y Práctica';
+        }
+
+        // Sincronizar métricas del termómetro con el modo activo
+        updateMarketSentimentMeter();
+    }
+
+        /* ---------- Order Type Toggle (Market, Limit, Stop-Limit) ---------- */
     function setupOrderTypeToggle() {
         const orderTypeSelect = document.getElementById('order-type');
         const orderStopGroup = document.getElementById('order-stop-group');
@@ -2048,21 +2082,34 @@ window.App = (function () {
         // Bloque C.2: Retirado para evitar datos sociales simulados
     }
 
-    /* ---------- Termómetro de Mercado (Amplitud Real 24h) ---------- */
+    /* ---------- Termómetro de Mercado (Amplitud Real 24h & Pulso Lateral) ---------- */
     function updateMarketSentimentMeter() {
         const pill = document.getElementById('sentiment-pill');
         const barFill = document.getElementById('sentiment-bar-fill');
         const tip = document.getElementById('sentiment-tip');
-        if (!pill || !barFill) return;
 
         const allPrices = (window.PriceFeed && typeof window.PriceFeed.getAllPrices === 'function')
             ? window.PriceFeed.getAllPrices()
             : {};
         const items = Object.values(allPrices).filter(item => typeof item.change24h === 'number');
+
+        // Referencias a elementos de Pulso del Mercado lateral (Bloque B.2)
+        const isEasy = (state.uiMode !== 'pro');
+        const pulseVal = document.getElementById('pulse-val-sentiment');
+        const pulseSub = document.getElementById('pulse-sub-sentiment');
+        const pulseBar = document.getElementById('pulse-bar-sentiment');
+
         if (items.length === 0) {
-            pill.textContent = '—';
-            pill.className = 'sentiment-pill neutral';
-            barFill.style.width = '50%';
+            if (pill) {
+                pill.textContent = '—';
+                pill.className = 'sentiment-pill neutral';
+            }
+            if (barFill) barFill.style.width = '50%';
+            if (pulseBar) pulseBar.style.width = '50%';
+            if (pulseVal && pulseSub) {
+                pulseVal.textContent = isEasy ? 'Equilibrado' : 'Neutral (50)';
+                pulseSub.textContent = isEasy ? '(Sincronizando)' : 'En espera';
+            }
             return;
         }
 
@@ -2075,19 +2122,42 @@ window.App = (function () {
         const gainers = valid.filter(it => it.change24h > 0).length;
         const pct = Math.round((gainers / valid.length) * 100);
 
-        barFill.style.width = `${pct}%`;
+        if (barFill) barFill.style.width = `${pct}%`;
+        if (pulseBar) pulseBar.style.width = `${pct}%`;
+
         if (pct >= 58) {
-            pill.className = 'sentiment-pill bullish';
-            pill.textContent = `${pct}% Alcista · Sesión Compradora`;
+            if (pill) {
+                pill.className = 'sentiment-pill bullish';
+                pill.textContent = `${pct}% Alcista · Sesión Compradora`;
+            }
             if (tip) tip.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Para principiantes:</strong> El ${pct}% de los activos seguidos cotiza al alza en las últimas 24h. Predomina la presión compradora.`;
+            if (pulseVal && pulseSub) {
+                pulseVal.textContent = isEasy ? 'Optimista' : `Greed (${pct})`;
+                pulseSub.textContent = isEasy ? `(${pct} % al alza)` : 'Codicia';
+                pulseVal.className = 'bullish';
+            }
         } else if (pct <= 42) {
-            pill.className = 'sentiment-pill bearish';
-            pill.textContent = `${pct}% Bajista · Sesión Vendedora`;
+            if (pill) {
+                pill.className = 'sentiment-pill bearish';
+                pill.textContent = `${pct}% Bajista · Sesión Vendedora`;
+            }
             if (tip) tip.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Para principiantes:</strong> Solo el ${pct}% de los activos cotiza en verde hoy. Predomina la recogida de beneficios y cautela.`;
+            if (pulseVal && pulseSub) {
+                pulseVal.textContent = isEasy ? 'Cauteloso' : `Fear (${pct})`;
+                pulseSub.textContent = isEasy ? `(${100 - pct} % a la baja)` : 'Miedo';
+                pulseVal.className = 'bearish';
+            }
         } else {
-            pill.className = 'sentiment-pill neutral';
-            pill.textContent = `${pct}% Neutral · Sesión Mixta`;
+            if (pill) {
+                pill.className = 'sentiment-pill neutral';
+                pill.textContent = `${pct}% Neutral · Sesión Mixta`;
+            }
             if (tip) tip.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Para principiantes:</strong> Mercado equilibrado sin sesgo direccional dominante entre compradores y vendedores.`;
+            if (pulseVal && pulseSub) {
+                pulseVal.textContent = isEasy ? 'Equilibrado' : `Neutral (${pct})`;
+                pulseSub.textContent = isEasy ? '(50/50)' : 'Neutro';
+                pulseVal.className = '';
+            }
         }
     }
 

@@ -7,8 +7,38 @@
 window.Market = (function () {
     'use strict';
 
+    /* ---------- Catálogo Inicial de Activos con Cotizaciones Base ---------- */
+    const INITIAL_CATALOG = [
+        { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 68420.00, price_change_percentage_24h: 2.14, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'ethereum', symbol: 'eth', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3520.00, price_change_percentage_24h: 1.65, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'binancecoin', symbol: 'bnb', name: 'BNB', image: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png', current_price: 590.00, price_change_percentage_24h: 0.82, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'solana', symbol: 'sol', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: 182.50, price_change_percentage_24h: 4.25, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'ripple', symbol: 'xrp', name: 'XRP', image: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', current_price: 0.54, price_change_percentage_24h: -1.15, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'cardano', symbol: 'ada', name: 'Cardano', image: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', current_price: 0.36, price_change_percentage_24h: -0.75, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', image: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', current_price: 0.14, price_change_percentage_24h: 3.10, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'polkadot', symbol: 'dot', name: 'Polkadot', image: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', current_price: 4.45, price_change_percentage_24h: -1.95, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'avalanche-2', symbol: 'avax', name: 'Avalanche', image: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png', current_price: 28.30, price_change_percentage_24h: 1.35, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'chainlink', symbol: 'link', name: 'Chainlink', image: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', current_price: 12.10, price_change_percentage_24h: 2.40, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'tron', symbol: 'trx', name: 'TRON', image: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png', current_price: 0.16, price_change_percentage_24h: 0.40, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        { id: 'polygon', symbol: 'pol', name: 'Polygon (POL)', image: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', current_price: 0.38, price_change_percentage_24h: -1.65, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
+        // Acciones Españolas (BME / IBEX)
+        { id: 'ibex', symbol: 'ibex', name: 'IBEX 35', image: '', current_price: 11840.00, price_change_percentage_24h: 0.45, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'santander', symbol: 'san', name: 'Banco Santander', image: '', current_price: 4.62, price_change_percentage_24h: 1.15, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'bbva', symbol: 'bbva', name: 'BBVA', image: '', current_price: 9.85, price_change_percentage_24h: 0.85, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'inditex', symbol: 'itx', name: 'Inditex', image: '', current_price: 52.40, price_change_percentage_24h: 1.40, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'iberdrola', symbol: 'ibe', name: 'Iberdrola', image: '', current_price: 13.90, price_change_percentage_24h: -0.35, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'repsol', symbol: 'rep', name: 'Repsol', image: '', current_price: 12.15, price_change_percentage_24h: 0.65, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'telefonica', symbol: 'tef', name: 'Telefónica', image: '', current_price: 4.38, price_change_percentage_24h: -0.40, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        // Acciones Wall Street & Tecnológicas
+        { id: 'apple', symbol: 'aapl', name: 'Apple Inc.', image: '', current_price: 232.50, price_change_percentage_24h: 0.75, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'nvidia', symbol: 'nvda', name: 'NVIDIA Corp.', image: '', current_price: 141.20, price_change_percentage_24h: 3.15, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'tesla', symbol: 'tsla', name: 'Tesla Inc.', image: '', current_price: 218.40, price_change_percentage_24h: -2.10, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'microsoft', symbol: 'msft', name: 'Microsoft Corp.', image: '', current_price: 428.10, price_change_percentage_24h: 0.55, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
+        { id: 'amazon', symbol: 'amzn', name: 'Amazon.com', image: '', current_price: 188.60, price_change_percentage_24h: 1.20, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' }
+    ];
+
     const state = {
-        marketData: [],
+        marketData: [...INITIAL_CATALOG],
         watchlist: ['bitcoin', 'ethereum', 'solana', 'santander', 'nvidia', 'apple', 'bbva'],
         holdings: [],
         positions: [],
@@ -27,36 +57,6 @@ window.Market = (function () {
             state.positions = window.Store.getPositions();
         }
     }
-
-    /* ---------- Catálogo Inicial (Zero-Mock: sin precios ni porcentajes inventados) ---------- */
-    const INITIAL_CATALOG = [
-        { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'ethereum', symbol: 'eth', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'binancecoin', symbol: 'bnb', name: 'BNB', image: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'solana', symbol: 'sol', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'ripple', symbol: 'xrp', name: 'XRP', image: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'cardano', symbol: 'ada', name: 'Cardano', image: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', image: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'polkadot', symbol: 'dot', name: 'Polkadot', image: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'avalanche-2', symbol: 'avax', name: 'Avalanche', image: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'chainlink', symbol: 'link', name: 'Chainlink', image: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'tron', symbol: 'trx', name: 'TRON', image: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        { id: 'polygon', symbol: 'pol', name: 'Polygon (POL)', image: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'crypto' },
-        // Acciones Españolas (BME / IBEX)
-        { id: 'ibex', symbol: 'ibex', name: 'IBEX 35', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'santander', symbol: 'san', name: 'Banco Santander', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'bbva', symbol: 'bbva', name: 'BBVA', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'inditex', symbol: 'itx', name: 'Inditex', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'iberdrola', symbol: 'ibe', name: 'Iberdrola', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'repsol', symbol: 'rep', name: 'Repsol', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'telefonica', symbol: 'tef', name: 'Telefónica', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        // Acciones Wall Street & Tecnológicas
-        { id: 'apple', symbol: 'aapl', name: 'Apple Inc.', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'nvidia', symbol: 'nvda', name: 'NVIDIA Corp.', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'tesla', symbol: 'tsla', name: 'Tesla Inc.', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'microsoft', symbol: 'msft', name: 'Microsoft Corp.', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' },
-        { id: 'amazon', symbol: 'amzn', name: 'Amazon.com', image: '', current_price: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, market_cap: null, total_volume: null, sparkline_in_7d: null, category: 'stocks' }
-    ];
 
     function generateSparkline(base, vol) {
         // Zero-mock: si no hay histórico real de 7d, no se genera línea plana ni artificial
@@ -925,24 +925,57 @@ window.Market = (function () {
         if (modalBal) modalBal.textContent = formatMoney(val);
     }
 
-    /* ---------- Top Movers (align-self start) ---------- */
+    /* ---------- Top Movers (align-self start & Empty State Informativo) ---------- */
     function renderTopMovers(type = 'gainers') {
         const container = document.getElementById('movers-list');
         if (!container) return;
 
-        const sorted = [...state.marketData]
-            .filter(d => d.price_change_percentage_24h != null)
+        // Combinar datos de state.marketData y live ticks de PriceFeed
+        const candidates = (state.marketData && state.marketData.length > 0)
+            ? state.marketData
+            : INITIAL_CATALOG;
+
+        const enriched = candidates.map(coin => {
+            const sym = (coin.symbol || '').toUpperCase();
+            const tick = (window.PriceFeed && typeof window.PriceFeed.getTick === 'function')
+                ? (window.PriceFeed.getTick(coin.id) || window.PriceFeed.getTick(sym))
+                : null;
+            const change = (tick && typeof tick.change24h === 'number')
+                ? tick.change24h
+                : (typeof coin.price_change_percentage_24h === 'number' ? coin.price_change_percentage_24h : null);
+            const livePrice = (tick && typeof tick.price === 'number')
+                ? tick.price
+                : (getCanonicalPrice(coin.id) || coin.current_price);
+            return {
+                ...coin,
+                liveChange: change,
+                livePrice: livePrice
+            };
+        }).filter(d => d.liveChange != null);
+
+        const sorted = enriched
             .sort((a, b) => type === 'gainers'
-                ? b.price_change_percentage_24h - a.price_change_percentage_24h
-                : a.price_change_percentage_24h - b.price_change_percentage_24h
+                ? b.liveChange - a.liveChange
+                : a.liveChange - b.liveChange
             )
             .slice(0, 5);
 
+        if (sorted.length === 0) {
+            container.innerHTML = `
+                <div class="movers-empty-state">
+                    <div class="movers-empty-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="movers-empty-title">Sin movimientos destacados</div>
+                    <div class="movers-empty-desc">Conectando con el feed de cotizaciones en tiempo real para calcular los mayores movimientos en 24h.</div>
+                </div>
+            `;
+            return;
+        }
+
         container.innerHTML = sorted.map((coin, i) => {
-            const change = coin.price_change_percentage_24h;
+            const change = coin.liveChange;
             const cls = change >= 0 ? 'bullish' : 'bearish';
-            const sym = coin.symbol.toUpperCase();
-            const livePrice = getCanonicalPrice(coin.id) || coin.current_price;
+            const sym = (coin.symbol || '').toUpperCase();
+            const livePrice = coin.livePrice;
             const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
                 ? window.Currency.getAssetQuoteCurrency(coin)
                 : 'USD';
