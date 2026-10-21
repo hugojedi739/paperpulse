@@ -145,6 +145,8 @@ window.App = (function () {
         if (mbnBtn) mbnBtn.classList.add('active');
         if (view) view.classList.add('active');
         state.currentView = viewName;
+        // Bloque F.4: Clase para reposicionar el chat flotante y no tapar controles de trading
+        document.body.classList.toggle('view-trading', viewName === 'trading');
         emit('viewChanged', viewName);
 
         // Scroll to top when switching views on mobile

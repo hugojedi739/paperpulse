@@ -2561,7 +2561,14 @@ body.light-theme .data-table td.bearish {
     bottom: 24px;
     right: 24px;
     z-index: 9990;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease, right 0.25s ease;
+}
+
+/* Bloque F.4: En vista trading, el botón flotante no debe tapar botones de compra/venta ni el libro */
+@media (min-width: 993px) {
+    body.view-trading .chat-widget {
+        right: calc(clamp(270px, 22vw, 320px) + 24px);
+    }
 }
 
 body.user-dropdown-open .chat-widget:not(.open) {
@@ -2641,21 +2648,33 @@ body.user-dropdown-open .chat-widget:not(.open) {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-title > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .chat-title > i {
     font-size: 20px;
     color: var(--accent-primary);
+    flex-shrink: 0;
 }
 
-.chat-name { font-size: 15px; font-weight: 600; display: block; }
+.chat-name { font-size: 14.5px; font-weight: 700; display: inline-block; white-space: nowrap; }
 
 .chat-status {
     font-size: 11px;
     color: var(--bullish);
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;
 }
 
 .status-dot {
@@ -2753,28 +2772,31 @@ body.user-dropdown-open .chat-widget:not(.open) {
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
 .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
-/* Chat Suggestions */
+/* Chat Suggestions (Bloque F.3: En dos líneas con scroll limpio) */
 .chat-suggestions {
     padding: 8px 12px;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    max-height: 86px;
+    max-height: 84px;
     overflow-y: auto;
     border-top: 1px solid var(--border);
     background: var(--bg-card);
+    scrollbar-width: thin;
 }
 
 .suggestion-btn {
-    padding: 5px 12px;
+    padding: 5px 11px;
     font-size: 11px;
     font-weight: 500;
     color: var(--text-primary);
     background: var(--bg-tertiary);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    white-space: normal;
-    text-align: left;
+    border-radius: 14px;
+    white-space: nowrap;
+    text-align: center;
+    cursor: pointer;
+    line-height: 1.25;
     transition: all var(--transition);
 }
 

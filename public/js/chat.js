@@ -632,18 +632,7 @@ window.Chat = (function () {
 
     /* ---------- Indicador de Estado en la Cabecera del Chat ---------- */
     function injectConfigButton() {
-        const header = document.querySelector('.chat-header');
-        const closeBtn = document.getElementById('chat-close');
-        if (header && closeBtn && !document.getElementById('chat-status-indicator')) {
-            const statusBadge = document.createElement('span');
-            statusBadge.id = 'chat-status-indicator';
-            statusBadge.className = 'badge badge-success';
-            statusBadge.style.marginRight = '8px';
-            statusBadge.style.fontSize = '10.5px';
-            statusBadge.style.padding = '3px 8px';
-            statusBadge.innerHTML = '<i class="fas fa-shield-alt"></i> Backend Seguro';
-            header.insertBefore(statusBadge, closeBtn);
-        }
+        // Bloque F.3: Sin insignias decorativas redundantes en la cabecera
     }
 
     /* ---------- Setup Event Listeners ---------- */
