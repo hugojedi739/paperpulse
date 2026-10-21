@@ -185,19 +185,23 @@ window.Charts = (function () {
             timeScale: {
                 borderColor: border,
                 timeVisible: true,
-                secondsVisible: false
+                secondsVisible: false,
+                rightOffset: 12,
+                barSpacing: 6,
+                fixLeftEdge: true,
+                shiftVisibleRangeOnNewBar: true
+            },
+            localization: {
+                locale: 'es-ES',
+                dateFormat: 'dd/MM/yyyy'
             },
             rightPriceScale: {
                 borderColor: border,
-                scaleMargins: { top: 0.1, bottom: 0.2 }
+                scaleMargins: { top: 0.1, bottom: 0.2 },
+                entireTextOnly: true
             },
             watermark: {
-                visible: true,
-                fontSize: 52,
-                horzAlign: 'center',
-                vertAlign: 'center',
-                color: watermarkColor,
-                text: `${displayPair} · ${intervalLabel}`
+                visible: false
             }
         };
     }
@@ -220,11 +224,10 @@ window.Charts = (function () {
                 vertLines: { color: grid },
                 horzLines: { color: grid }
             },
-            timeScale: { borderColor: border },
+            timeScale: { borderColor: border, rightOffset: 12 },
             rightPriceScale: { borderColor: border },
             watermark: {
-                color: watermarkColor,
-                text: `${displayPair} · ${intervalLabel}`
+                visible: false
             }
         };
 
@@ -448,24 +451,28 @@ window.Charts = (function () {
         const diff = closeVal - openVal;
         const pct = openVal > 0 ? (diff / openVal) * 100 : 0;
         const pctSign = pct >= 0 ? '+' : '';
-        const pctStr = `${pctSign}${pct.toFixed(2)}%`;
+        const pctStr = (window.Currency && typeof window.Currency.formatPercent === 'function')
+            ? window.Currency.formatPercent(pct)
+            : `${pctSign}${Math.abs(pct).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0%`;
 
         let volStr = '';
         if (vol != null && vol > 0) {
-            const volFormatted = (window.Currency && typeof window.Currency.formatNumber === 'function')
-                ? window.Currency.formatNumber(vol, { maximumFractionDigits: 1 })
-                : vol.toFixed(1);
+            const volFormatted = (window.Currency && typeof window.Currency.formatVolume === 'function')
+                ? window.Currency.formatVolume(vol)
+                : ((window.Currency && typeof window.Currency.formatNumber === 'function')
+                    ? window.Currency.formatNumber(vol, { maximumFractionDigits: 1 })
+                    : vol.toFixed(1));
             volStr = `<span class="ohlc-sep">|</span> <span>Vol:</span> <span class="ohlc-val ${cls}">${volFormatted}</span>`;
         }
 
         ohlcLegendEl.innerHTML = `
             <span class="ohlc-sym">${displayPair} · ${intervalLabel}</span>
             <span class="ohlc-sep">|</span>
-            <span>A: <strong class="ohlc-val ${cls}">${formatChartPrice(openVal)}</strong></span>
-            <span>M: <strong class="ohlc-val ${cls}">${formatChartPrice(highVal)}</strong></span>
-            <span>m: <strong class="ohlc-val ${cls}">${formatChartPrice(lowVal)}</strong></span>
-            <span>C: <strong class="ohlc-val ${cls}">${formatChartPrice(closeVal)}</strong></span>
-            <span class="ohlc-val ${cls}">(${pctStr})</span>
+            <span>Ap: <strong class="ohlc-val ${cls}">${formatChartPrice(openVal)}</strong></span>
+            <span>Máx: <strong class="ohlc-val ${cls}">${formatChartPrice(highVal)}</strong></span>
+            <span>Mín: <strong class="ohlc-val ${cls}">${formatChartPrice(lowVal)}</strong></span>
+            <span>Cie: <strong class="ohlc-val ${cls}">${formatChartPrice(closeVal)}</strong></span>
+            <span class="ohlc-val ${cls}">(${pctStr} vela)</span>
             ${volStr}
         `;
     }
@@ -476,7 +483,24 @@ window.Charts = (function () {
             return;
         }
         const last = currentSymbolData[currentSymbolData.length - 1];
-        updateOhlcLegend(last, last.volume);
+        // Sincronizar último precio con el feed en vivo (PriceFeed) para garantizar fuente única
+        const activeSym = (activeSymbolMeta && activeSymbolMeta.symbol)
+            || ((window.App && window.App.state && window.App.state.currentSymbol && window.App.state.currentSymbol.symbol) || 'BTC');
+        const feedTick = (window.PriceFeed && typeof window.PriceFeed.getTick === 'function')
+            ? window.PriceFeed.getTick(activeSym)
+            : null;
+
+        if (feedTick && typeof feedTick.price === 'number' && feedTick.price > 0) {
+            const liveCandle = {
+                ...last,
+                close: feedTick.price,
+                high: Math.max(last.high, feedTick.price),
+                low: Math.min(last.low, feedTick.price)
+            };
+            updateOhlcLegend(liveCandle, last.volume);
+        } else {
+            updateOhlcLegend(last, last.volume);
+        }
     }
 
     /* ---------- Líneas de Posición Abierta sobre el Gráfico ---------- */
@@ -1208,39 +1232,43 @@ window.Charts = (function () {
             ? window.Currency.getActiveCurrency()
             : 'EUR';
 
-        if (scaleBadge) {
-            scaleBadge.textContent = `escala en ${nativeQuote}`;
-        }
-
-        if (priceEl && typeof currentPrice === 'number') {
-            const formatted = (window.Currency && typeof window.Currency.formatNativePrice === 'function')
-                ? window.Currency.formatNativePrice(currentPrice, nativeQuote)
-                : `${formatChartPrice(currentPrice)} ${nativeQuote}`;
-            priceEl.textContent = formatted;
-            priceEl.classList.remove('price-flash-up', 'price-flash-down');
-            void priceEl.offsetWidth; // Reflow
-            priceEl.classList.add(currentPrice >= (prevPrice || currentPrice) ? 'price-flash-up' : 'price-flash-down');
-        }
-
-        if (convertedPill && typeof currentPrice === 'number') {
-            if (nativeQuote === activeCurr) {
-                convertedPill.style.display = 'none';
-            } else {
-                convertedPill.style.display = 'inline-block';
-                convertedPill.textContent = (window.Currency && typeof window.Currency.formatConvertedApprox === 'function')
-                    ? window.Currency.formatConvertedApprox(currentPrice, nativeQuote, activeCurr)
-                    : '';
-            }
-        }
-
-        // Priorizar datos oficiales de 24h / Sesión del Feed (PriceFeed)
+        // Priorizar datos oficiales de 24h / Sesión del Feed (PriceFeed) como fuente única
         const activeSym = (activeSymbolMeta && activeSymbolMeta.symbol)
             || ((window.App && window.App.state && window.App.state.currentSymbol && window.App.state.currentSymbol.symbol) || 'BTC');
         const feedTick = (window.PriceFeed && typeof window.PriceFeed.getTick === 'function')
             ? window.PriceFeed.getTick(activeSym)
             : null;
 
-        // Cálculo cuantitativo preciso del % de variación
+        const effectivePrice = (feedTick && typeof feedTick.price === 'number' && feedTick.price > 0)
+            ? feedTick.price
+            : currentPrice;
+
+        if (scaleBadge) {
+            scaleBadge.textContent = `escala en ${nativeQuote}`;
+        }
+
+        if (priceEl && typeof effectivePrice === 'number') {
+            const formatted = (window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                ? window.Currency.formatAssetPrice(effectivePrice, nativeQuote)
+                : `${formatChartPrice(effectivePrice)} ${nativeQuote}`;
+            priceEl.textContent = formatted;
+            priceEl.classList.remove('price-flash-up', 'price-flash-down');
+            void priceEl.offsetWidth; // Reflow
+            priceEl.classList.add(effectivePrice >= (prevPrice || effectivePrice) ? 'price-flash-up' : 'price-flash-down');
+        }
+
+        if (convertedPill && typeof effectivePrice === 'number') {
+            if (nativeQuote === activeCurr) {
+                convertedPill.style.display = 'none';
+            } else {
+                convertedPill.style.display = 'inline-block';
+                convertedPill.textContent = (window.Currency && typeof window.Currency.formatConvertedApprox === 'function')
+                    ? window.Currency.formatConvertedApprox(effectivePrice, nativeQuote, activeCurr)
+                    : '';
+            }
+        }
+
+        // Cálculo cuantitativo preciso del % de variación respecto al cierre anterior
         let pct = null;
         if (feedTick && typeof feedTick.change24h === 'number' && !isNaN(feedTick.change24h)) {
             pct = feedTick.change24h;
@@ -1259,20 +1287,18 @@ window.Charts = (function () {
                 refCandle = currentSymbolData[0];
             }
             const baseRefPrice = refCandle ? refCandle.close : prevPrice;
-            if (baseRefPrice && baseRefPrice > 0 && typeof currentPrice === 'number') {
-                pct = ((currentPrice - baseRefPrice) / baseRefPrice) * 100;
+            if (baseRefPrice && baseRefPrice > 0 && typeof effectivePrice === 'number') {
+                pct = ((effectivePrice - baseRefPrice) / baseRefPrice) * 100;
             }
-        } else if (prevPrice && prevPrice > 0 && typeof currentPrice === 'number') {
-            pct = ((currentPrice - prevPrice) / prevPrice) * 100;
+        } else if (prevPrice && prevPrice > 0 && typeof effectivePrice === 'number') {
+            pct = ((effectivePrice - prevPrice) / prevPrice) * 100;
         }
 
         if (changeEl) {
             if (typeof pct === 'number' && !isNaN(pct)) {
-                const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function')
-                    ? window.Currency.getActiveLocale()
-                    : 'es-ES';
-                const pctFormatted = pct.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                changeEl.textContent = `${pct >= 0 ? '+' : ''}${pctFormatted}%`;
+                changeEl.textContent = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                    ? window.Currency.formatPercent(pct)
+                    : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}\u00A0%`;
                 changeEl.className = `price-change ${pct >= 0 ? 'bullish' : 'bearish'}`;
             } else {
                 changeEl.textContent = '—';
@@ -1280,17 +1306,17 @@ window.Charts = (function () {
             }
         }
 
-        if (spreadPrice && typeof currentPrice === 'number') {
-            spreadPrice.textContent = (window.Currency && typeof window.Currency.formatNativePrice === 'function')
-                ? window.Currency.formatNativePrice(currentPrice, nativeQuote)
-                : formatChartPrice(currentPrice);
+        if (spreadPrice && typeof effectivePrice === 'number') {
+            spreadPrice.textContent = (window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                ? window.Currency.formatAssetPrice(effectivePrice, nativeQuote)
+                : formatChartPrice(effectivePrice);
         }
-        if (spreadValue && typeof currentPrice === 'number') {
+        if (spreadValue && typeof effectivePrice === 'number') {
             if (nativeQuote === activeCurr) {
                 spreadValue.textContent = '';
             } else {
                 spreadValue.textContent = (window.Currency && typeof window.Currency.formatConvertedApprox === 'function')
-                    ? window.Currency.formatConvertedApprox(currentPrice, nativeQuote, activeCurr)
+                    ? window.Currency.formatConvertedApprox(effectivePrice, nativeQuote, activeCurr)
                     : '';
             }
         }
@@ -1336,25 +1362,25 @@ window.Charts = (function () {
 
         if (statHigh) {
             statHigh.textContent = (typeof high24 === 'number' && !isNaN(high24))
-                ? ((window.Currency && typeof window.Currency.formatNativePrice === 'function')
-                    ? window.Currency.formatNativePrice(high24, nativeQuote)
+                ? ((window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                    ? window.Currency.formatAssetPrice(high24, nativeQuote)
                     : formatChartPrice(high24))
                 : '—';
         }
         if (statLow) {
             statLow.textContent = (typeof low24 === 'number' && !isNaN(low24))
-                ? ((window.Currency && typeof window.Currency.formatNativePrice === 'function')
-                    ? window.Currency.formatNativePrice(low24, nativeQuote)
+                ? ((window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                    ? window.Currency.formatAssetPrice(low24, nativeQuote)
                     : formatChartPrice(low24))
                 : '—';
         }
         if (statVol) {
             if (typeof vol24 === 'number' && !isNaN(vol24)) {
-                const volFormatted = (window.Currency && typeof window.Currency.formatNumber === 'function')
-                    ? window.Currency.formatNumber(vol24, { maximumFractionDigits: 0 })
-                    : vol24.toFixed(0);
-                const baseSym = (activeSymbolMeta && activeSymbolMeta.symbol) || 'VOL';
-                statVol.textContent = `${volFormatted} ${baseSym}`;
+                statVol.textContent = (window.Currency && typeof window.Currency.formatVolume === 'function')
+                    ? window.Currency.formatVolume(vol24)
+                    : (window.Currency && typeof window.Currency.formatNumber === 'function'
+                        ? window.Currency.formatNumber(vol24, { maximumFractionDigits: 1 })
+                        : vol24.toFixed(1));
             } else {
                 statVol.textContent = '—';
             }

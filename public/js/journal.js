@@ -603,7 +603,7 @@ window.Journal = (function () {
             const safeNotes = safeEscape(t.notes || '');
 
             const symId = (t.symbol || '').toLowerCase();
-            const quote = t.quote || (['santander', 'bbva', 'inditex', 'telefonica'].includes(symId) ? 'EUR' : (['apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId) ? 'USD' : 'USDT'));
+            const quote = t.quote || (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function' ? window.Currency.getAssetQuoteCurrency(symId) : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol'].includes(symId) ? 'EUR' : 'USD'));
             const locale = window.Currency && typeof window.Currency.getActiveLocale === 'function' ? window.Currency.getActiveLocale() : 'es-ES';
             const entryPriceStr = window.Currency && typeof window.Currency.formatNativePrice === 'function' ? window.Currency.formatNativePrice(t.entryPrice, quote) : fmtMoney(t.entryPrice);
             const exitPriceStr = window.Currency && typeof window.Currency.formatNativePrice === 'function' ? window.Currency.formatNativePrice(t.exitPrice, quote) : fmtMoney(t.exitPrice);

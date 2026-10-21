@@ -153,14 +153,36 @@ window.Market = (function () {
             const has7d = change7d != null && !isNaN(change7d);
             const cls24 = has24 ? (change24 >= 0 ? 'bullish' : 'bearish') : 'text-secondary';
             const cls7d = has7d ? (change7d >= 0 ? 'bullish' : 'bearish') : 'text-secondary';
-            const text24 = has24 ? `${change24 >= 0 ? '+' : ''}${Number(change24).toFixed(2)}%` : '—';
-            const text7d = has7d ? `${change7d >= 0 ? '+' : ''}${Number(change7d).toFixed(2)}%` : '—';
+            const text24 = has24
+                ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                    ? window.Currency.formatPercent(change24)
+                    : `${change24 >= 0 ? '+' : ''}${Number(change24).toFixed(2)}\u00A0%`)
+                : '—';
+            const text7d = has7d
+                ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                    ? window.Currency.formatPercent(change7d)
+                    : `${change7d >= 0 ? '+' : ''}${Number(change7d).toFixed(2)}\u00A0%`)
+                : '—';
 
-            const isSpanishStock = ['SAN', 'BBVA', 'ITX', 'TEF'].includes(symUpper);
+            const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                ? window.Currency.getAssetQuoteCurrency(coin)
+                : (['SAN', 'BBVA', 'ITX', 'TEF', 'IBE', 'REP', 'IBEX'].includes(symUpper) ? 'EUR' : (coin.category === 'stocks' ? 'USD' : 'USDT'));
             const priceFormatted = livePrice > 0 
-                ? (isSpanishStock && window.Currency && typeof window.Currency.formatNativePrice === 'function'
-                    ? window.Currency.formatNativePrice(livePrice, 'EUR')
+                ? (window.Currency && typeof window.Currency.formatAssetPrice === 'function'
+                    ? window.Currency.formatAssetPrice(livePrice, quote)
                     : formatMoney(livePrice))
+                : '—';
+
+            const volFormatted = coin.total_volume > 0
+                ? (window.Currency && typeof window.Currency.formatVolume === 'function'
+                    ? window.Currency.formatVolume(coin.total_volume)
+                    : formatMoney(coin.total_volume))
+                : '—';
+
+            const capFormatted = coin.market_cap > 0
+                ? (window.Currency && typeof window.Currency.formatCompact === 'function'
+                    ? window.Currency.formatCompact(coin.market_cap)
+                    : formatMoney(coin.market_cap))
                 : '—';
 
             return `<tr data-id="${coin.id}" data-symbol="${symUpper}" data-name="${coin.name}">
@@ -177,8 +199,8 @@ window.Market = (function () {
                 <td class="price-cell"><strong>${priceFormatted}</strong></td>
                 <td class="${cls24}">${text24}</td>
                 <td class="${cls7d}">${text7d}</td>
-                <td class="text-secondary">${coin.total_volume > 0 ? formatMoney(coin.total_volume) : '—'}</td>
-                <td class="text-secondary">${coin.market_cap > 0 ? formatMoney(coin.market_cap) : '—'}</td>
+                <td class="text-secondary">${volFormatted}</td>
+                <td class="text-secondary">${capFormatted}</td>
                 <td>
                     <div class="sparkline-container" id="spark-${coin.id}"></div>
                 </td>
@@ -294,10 +316,12 @@ window.Market = (function () {
                     itemEl.dataset.lastPrice = livePrice.toString();
                 }
 
-                const isSpanishStock = ['SAN', 'BBVA', 'ITX', 'TEF'].includes(sym);
+                const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                    ? window.Currency.getAssetQuoteCurrency(sym)
+                    : (['SAN', 'BBVA', 'ITX', 'TEF', 'REP', 'IBE', 'IBEX'].includes(sym) ? 'EUR' : 'USD');
                 const priceFormatted = livePrice > 0 
-                    ? (isSpanishStock && window.Currency && typeof window.Currency.formatNativePrice === 'function'
-                        ? window.Currency.formatNativePrice(livePrice, 'EUR')
+                    ? (window.Currency && typeof window.Currency.formatAssetPrice === 'function'
+                        ? window.Currency.formatAssetPrice(livePrice, quote)
                         : formatMoney(livePrice))
                     : '—';
 
@@ -307,7 +331,11 @@ window.Market = (function () {
                 const changeEl = itemEl.querySelector('.watchlist-change');
                 if (changeEl) {
                     changeEl.className = `watchlist-change ${cls}`;
-                    changeEl.textContent = hasChange ? `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}%` : '—';
+                    changeEl.textContent = hasChange
+                        ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                            ? window.Currency.formatPercent(change)
+                            : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
+                        : '—';
                 }
             });
             return;
@@ -325,11 +353,19 @@ window.Market = (function () {
             const cls = hasChange ? (change >= 0 ? 'bullish' : 'bearish') : 'text-secondary';
             const isActive = sym === currentActiveSym;
 
-            const isSpanishStock = ['SAN', 'BBVA', 'ITX', 'TEF'].includes(sym);
+            const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                ? window.Currency.getAssetQuoteCurrency(sym)
+                : (['SAN', 'BBVA', 'ITX', 'TEF', 'REP', 'IBE', 'IBEX'].includes(sym) ? 'EUR' : 'USD');
             const priceFormatted = livePrice > 0 
-                ? (isSpanishStock && window.Currency && typeof window.Currency.formatNativePrice === 'function'
-                    ? window.Currency.formatNativePrice(livePrice, 'EUR')
+                ? (window.Currency && typeof window.Currency.formatAssetPrice === 'function'
+                    ? window.Currency.formatAssetPrice(livePrice, quote)
                     : formatMoney(livePrice))
+                : '—';
+
+            const chgText = hasChange
+                ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                    ? window.Currency.formatPercent(change)
+                    : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
                 : '—';
 
             return `<div class="watchlist-item ${isActive ? 'active' : ''}" data-id="${coin.id}" data-symbol="${sym}" data-name="${coin.name}" data-last-price="${livePrice > 0 ? livePrice : ''}">
@@ -342,7 +378,7 @@ window.Market = (function () {
                 </div>
                 <div class="watchlist-item-right">
                     <span class="watchlist-price">${priceFormatted}</span>
-                    <span class="watchlist-change ${cls}">${hasChange ? `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}%` : '—'}</span>
+                    <span class="watchlist-change ${cls}">${chgText}</span>
                 </div>
             </div>`;
         }).join('');
@@ -901,6 +937,16 @@ window.Market = (function () {
             const cls = change >= 0 ? 'bullish' : 'bearish';
             const sym = coin.symbol.toUpperCase();
             const livePrice = getCanonicalPrice(coin.id) || coin.current_price;
+            const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                ? window.Currency.getAssetQuoteCurrency(coin)
+                : 'USD';
+            const priceFormatted = (window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                ? window.Currency.formatAssetPrice(livePrice, quote)
+                : formatMoney(livePrice);
+            const chgFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                ? window.Currency.formatPercent(change)
+                : `${change >= 0 ? '+' : ''}${change.toFixed(2)}\u00A0%`;
+
             return `<div class="mover-item" data-id="${coin.id}" data-symbol="${sym}" data-name="${coin.name}">
                 <span class="mover-rank">${i + 1}</span>
                 ${window.App ? window.App.getAssetSvg(sym, 22) : ''}
@@ -909,8 +955,8 @@ window.Market = (function () {
                     <span class="mover-name">${coin.name}</span>
                 </div>
                 <div class="mover-prices">
-                    <span class="mover-price">${formatMoney(livePrice)}</span>
-                    <span class="mover-change ${cls}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</span>
+                    <span class="mover-price">${priceFormatted}</span>
+                    <span class="mover-change ${cls}">${chgFormatted}</span>
                 </div>
             </div>`;
         }).join('');
@@ -928,9 +974,25 @@ window.Market = (function () {
         const bidsEl = document.getElementById('bids-list');
         const spreadPriceEl = document.getElementById('spread-price');
         const spreadValueEl = document.getElementById('spread-value');
+        const obSection = document.querySelector('.order-book-section');
         if (!asksEl || !bidsEl) return;
 
-        if (realDepthData && !realDepthData.unavailable && Array.isArray(realDepthData.bids) && realDepthData.bids.length > 0 && Array.isArray(realDepthData.asks) && realDepthData.asks.length > 0) {
+        // Regla 8: Rotular según la moneda real del activo (ej: USD, EUR, USDT)
+        const curSym = (window.App && window.App.state && window.App.state.currentSymbol) || { symbol: 'BTC' };
+        const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+            ? window.Currency.getAssetQuoteCurrency(curSym)
+            : 'USDT';
+        const obPriceHeader = document.getElementById('ob-price-header') || document.querySelector('.order-book-header span:first-child');
+        if (obPriceHeader) {
+            obPriceHeader.textContent = `Precio (${quote})`;
+        }
+
+        const hasDepth = realDepthData && !realDepthData.unavailable 
+            && Array.isArray(realDepthData.bids) && realDepthData.bids.length > 0 
+            && Array.isArray(realDepthData.asks) && realDepthData.asks.length > 0;
+
+        if (hasDepth) {
+            if (obSection) obSection.style.display = '';
             const bestAsk = realDepthData.asks[0].price;
             const bestBid = realDepthData.bids[0].price;
             const spread = Math.max(0, bestAsk - bestBid);
@@ -973,14 +1035,11 @@ window.Market = (function () {
                     <span class="ob-total">${parseFloat(b.total).toLocaleString()}</span>
                 </div>`).join('');
         } else {
-            const reason = (realDepthData && realDepthData.reason) || 'Libro de órdenes no disponible para este activo';
+            // Regla 8: Ocultar la tarjeta entera (no mostrarla vacía) cuando el activo no tiene profundidad
+            if (obSection) obSection.style.display = 'none';
             if (spreadPriceEl) spreadPriceEl.textContent = '—';
             if (spreadValueEl) spreadValueEl.textContent = '—';
-            asksEl.innerHTML = `
-                <div class="ob-empty-state" style="padding: 24px 12px; text-align: center; color: var(--text-muted); font-size: 11.5px;">
-                    <i class="fas fa-layer-group" style="font-size: 18px; margin-bottom: 6px; display: block; opacity: 0.4;"></i>
-                    <span>${window.Store && window.Store.escapeHTML ? window.Store.escapeHTML(reason) : reason}</span>
-                </div>`;
+            asksEl.innerHTML = '';
             bidsEl.innerHTML = '';
         }
     }

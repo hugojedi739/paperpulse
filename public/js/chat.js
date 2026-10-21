@@ -268,7 +268,7 @@ window.Chat = (function () {
                 ? window.Store.getPrice(p.id || p.symbol) 
                 : p.entryPrice;
             const pnlUsd = ((p.amount || 0) * curPrice) - (p.investedUsd || 0);
-            const quote = p.quoteCurrency || (['santander', 'bbva', 'inditex', 'telefonica'].includes((p.id || '').toLowerCase()) ? 'EUR' : (['apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes((p.id || '').toLowerCase()) ? 'USD' : 'USDT'));
+            const quote = p.quoteCurrency || (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function' ? window.Currency.getAssetQuoteCurrency(p.id || p.symbol) : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol'].includes((p.id || '').toLowerCase()) ? 'EUR' : 'USD'));
             const pnlFormatted = (window.Currency && typeof window.Currency.formatSigned === 'function')
                 ? window.Currency.formatSigned(pnlUsd)
                 : `${pnlUsd >= 0 ? '+' : ''}${pnlUsd.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
@@ -278,9 +278,9 @@ window.Chat = (function () {
                 amount: p.amount,
                 quoteCurrency: quote,
                 entryPrice: p.entryPrice,
-                entryPriceFormatted: (window.Currency && typeof window.Currency.formatNativePrice === 'function') ? window.Currency.formatNativePrice(p.entryPrice, quote) : `${p.entryPrice} ${quote}`,
+                entryPriceFormatted: (window.Currency && typeof window.Currency.formatAssetPrice === 'function') ? window.Currency.formatAssetPrice(p.entryPrice, quote) : `${p.entryPrice} ${quote}`,
                 currentPrice: curPrice,
-                currentPriceFormatted: (window.Currency && typeof window.Currency.formatNativePrice === 'function') ? window.Currency.formatNativePrice(curPrice, quote) : `${curPrice} ${quote}`,
+                currentPriceFormatted: (window.Currency && typeof window.Currency.formatAssetPrice === 'function') ? window.Currency.formatAssetPrice(curPrice, quote) : `${curPrice} ${quote}`,
                 pnlUsd: Math.round(pnlUsd * 100) / 100,
                 pnlFormatted: pnlFormatted
             };
@@ -312,7 +312,7 @@ window.Chat = (function () {
             }
         });
 
-        const SPANISH_STOCKS = ['SAN', 'BBVA', 'ITX', 'TEF'];
+        const SPANISH_STOCKS = ['SAN', 'BBVA', 'ITX', 'TEF', 'IBE', 'REP', 'IBEX'];
         const US_STOCKS = ['NVDA', 'AAPL', 'TSLA', 'MSFT', 'AMZN'];
 
         const market = symbolsToProcess.map(sym => {

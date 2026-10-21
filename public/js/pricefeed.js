@@ -301,7 +301,8 @@
             asOf: Date.now(),
             live: hasPrice,
             status: hasPrice ? 'live' : 'unavailable',
-            category: 'crypto'
+            category: 'crypto',
+            currency: 'USDT'
         };
 
         prices[meta.symbol] = tick;

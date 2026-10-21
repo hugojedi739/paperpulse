@@ -585,6 +585,7 @@ class YFinanceStockProvider(BaseStockProvider):
                     "ticker": t,
                     "name": info["name"],
                     "market": info["market"],
+                    "currency": "EUR" if info["market"] == "ES" else "USD",
                     "price": price,
                     "change24h": change24h,
                     "high24h": high24h,

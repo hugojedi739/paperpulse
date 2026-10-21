@@ -102,14 +102,22 @@
     }
 
     // Formateador principal con Intl.NumberFormat (elimina por diseño el fallo "$-761.36")
-    function format(amountUsd, options = {}) {
-        if (amountUsd == null || isNaN(amountUsd)) {
-            amountUsd = 0;
+    // Soporta options.fromCurrency para evitar doble conversión en activos ya cotizados en EUR u otra divisa
+    function format(amount, options = {}) {
+        if (typeof options === 'string') {
+            options = { fromCurrency: options };
+        }
+        if (amount == null || isNaN(amount)) {
+            amount = 0;
         }
 
         const curr = getActiveCurrency();
         const locale = getActiveLocale();
-        const converted = convertFromUsd(amountUsd);
+        const fromCurr = (options.fromCurrency || 'USD').toUpperCase().replace('USDT', 'USD');
+
+        // Regla 1: Cada activo guarda su moneda real. Si la moneda de origen coincide con la moneda de la cuenta,
+        // la conversión es 1:1 (NUNCA convertir EUR a EUR).
+        const converted = (fromCurr === curr) ? Number(amount) : convert(amount, fromCurr, curr);
 
         const defaultFraction = Math.abs(converted) >= 1 ? 2 : (Math.abs(converted) >= 0.01 ? 4 : 6);
         const minFrac = options.minimumFractionDigits != null ? options.minimumFractionDigits : defaultFraction;
@@ -159,11 +167,66 @@
         }
     }
 
-    // Formateador de números porcentuales (+5.20% / -2.15%)
+    // Conjunto canónico de acciones españolas (cotizadas en EUR) y americanas (USD)
+    const SPANISH_SYMBOLS = new Set([
+        'SAN', 'BBVA', 'ITX', 'TEF', 'IBE', 'REP', 'IBEX',
+        'SANTANDER', 'INDITEX', 'TELEFONICA', 'IBERDROLA', 'REPSOL', 'IBEX35', 'IBEX 35'
+    ]);
+    const US_STOCKS = new Set([
+        'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'GOOGL', 'META',
+        'APPLE', 'NVIDIA', 'TESLA', 'MICROSOFT', 'AMAZON', 'ALPHABET'
+    ]);
+
+    // Resuelve la moneda de cotización nativa de cualquier activo ('EUR', 'USD' o 'USDT')
+    function getAssetQuoteCurrency(symOrId) {
+        if (!symOrId) return 'USD';
+        if (typeof symOrId === 'object') {
+            if (symOrId.quoteCurrency) return symOrId.quoteCurrency.toUpperCase();
+            if (symOrId.currency) return symOrId.currency.toUpperCase();
+            if (symOrId.pair && typeof symOrId.pair === 'string' && symOrId.pair.includes('/')) {
+                return symOrId.pair.split('/')[1].toUpperCase();
+            }
+            symOrId = symOrId.symbol || symOrId.id || '';
+        }
+        const clean = String(symOrId).trim().toUpperCase().replace('.MC', '').replace('^', '');
+        if (SPANISH_SYMBOLS.has(clean)) return 'EUR';
+        if (US_STOCKS.has(clean)) return 'USD';
+        if (clean.endsWith('USDT') || clean.endsWith('USDC') || clean.endsWith('BUSD')) return 'USDT';
+        if (clean.includes('/')) return clean.split('/')[1].toUpperCase();
+        return 'USDT';
+    }
+
+    // Formateador de números porcentuales (+2,31 % / -1,45 %) con formato de idioma y espacio
     function formatPercent(pct) {
-        if (pct == null || isNaN(pct)) return '0.00%';
-        const sign = pct >= 0 ? '+' : '';
-        return `${sign}${pct.toFixed(2)}%`;
+        if (pct == null || isNaN(pct)) return '0,00\u00A0%';
+        const num = parseFloat(pct);
+        const locale = getActiveLocale();
+        const sign = num >= 0 ? '+' : '';
+        const formatted = Math.abs(num).toLocaleString(locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        return `${sign}${formatted}\u00A0%`;
+    }
+
+    // Formateador de volúmenes compactos y con separadores (35,8 M, 1,2 B, 850 K)
+    function formatVolume(vol) {
+        if (vol == null || isNaN(vol) || vol <= 0) return '—';
+        const num = Math.abs(Number(vol));
+        const locale = getActiveLocale();
+        if (num >= 1e9) {
+            const formatted = (num / 1e9).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            return `${formatted}\u00A0B`;
+        }
+        if (num >= 1e6) {
+            const formatted = (num / 1e6).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            return `${formatted}\u00A0M`;
+        }
+        if (num >= 1e3) {
+            const formatted = (num / 1e3).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            return `${formatted}\u00A0K`;
+        }
+        return num.toLocaleString(locale, { maximumFractionDigits: 2 });
     }
 
     // Formateador de número puro según el locale activo (sin símbolo de divisa, formato unificado)
@@ -201,14 +264,82 @@
         return inUsd * rateTo;
     }
 
-    // Formateador de precio en su divisa nativa con locale activo (e.g. 83.548,01 USDT / 4,52 EUR)
+    // Conversión desde la divisa nativa del activo a la moneda de la cuenta (NUNCA convierte EUR a EUR)
+    function convertAssetPriceToAccount(price, assetQuoteCurrency = 'USD') {
+        if (price == null || isNaN(price)) return 0;
+        const target = getActiveCurrency();
+        const from = (assetQuoteCurrency || 'USD').toUpperCase().replace('USDT', 'USD');
+        if (from === target) return parseFloat(price);
+        return convert(price, from, target);
+    }
+
+    // Formateador canónico unificado de precio:
+    // - Usa el símbolo (€, $, £) cuando la moneda del activo coincide con la de la cuenta.
+    // - Usa el código ISO (USD, EUR, USDT) solo cuando difiere.
+    // - Siempre con Intl.NumberFormat.
+    function formatAssetPrice(price, quoteCurrency = 'USD', convertToAccount = false) {
+        if (price == null || isNaN(price)) return '—';
+        const numPrice = parseFloat(price);
+        const activeCurr = getActiveCurrency();
+        const locale = getActiveLocale();
+        const realQuote = (quoteCurrency || 'USD').toUpperCase();
+
+        let finalAmount = numPrice;
+        let finalCurrency = realQuote;
+
+        if (convertToAccount) {
+            if (realQuote === activeCurr || (realQuote === 'USDT' && activeCurr === 'USD')) {
+                finalAmount = numPrice;
+                finalCurrency = activeCurr;
+            } else {
+                finalAmount = convert(numPrice, realQuote, activeCurr);
+                finalCurrency = activeCurr;
+            }
+        }
+
+        const minFrac = finalAmount >= 1000 ? 2 : (finalAmount >= 1 ? 2 : 4);
+        const maxFrac = finalAmount >= 1000 ? 2 : (finalAmount >= 1 ? 4 : 6);
+        const matchesAccount = (finalCurrency === activeCurr);
+
+        try {
+            if (matchesAccount) {
+                return new Intl.NumberFormat(locale, {
+                    style: 'currency',
+                    currency: activeCurr,
+                    currencyDisplay: 'narrowSymbol',
+                    minimumFractionDigits: minFrac,
+                    maximumFractionDigits: maxFrac
+                }).format(finalAmount);
+            } else {
+                if (finalCurrency === 'USDT') {
+                    const formattedNum = finalAmount.toLocaleString(locale, {
+                        minimumFractionDigits: minFrac,
+                        maximumFractionDigits: maxFrac
+                    });
+                    return `${formattedNum} USDT`;
+                }
+                return new Intl.NumberFormat(locale, {
+                    style: 'currency',
+                    currency: finalCurrency,
+                    currencyDisplay: 'code',
+                    minimumFractionDigits: minFrac,
+                    maximumFractionDigits: maxFrac
+                }).format(finalAmount);
+            }
+        } catch (e) {
+            const formattedNum = finalAmount.toLocaleString(locale, {
+                minimumFractionDigits: minFrac,
+                maximumFractionDigits: maxFrac
+            });
+            return matchesAccount
+                ? `${formattedNum} ${activeCurr === 'EUR' ? '€' : (activeCurr === 'GBP' ? '£' : '$')}`
+                : `${formattedNum} ${finalCurrency}`;
+        }
+    }
+
+    // Formateador de precio en su divisa nativa (redirige a formatAssetPrice)
     function formatNativePrice(price, quoteCurrency = 'USDT') {
-        const quote = (quoteCurrency || 'USDT').toUpperCase();
-        const formattedNum = formatNumber(price, {
-            minimumFractionDigits: price >= 1000 ? 2 : (price >= 1 ? 2 : 4),
-            maximumFractionDigits: price >= 1000 ? 2 : (price >= 1 ? 4 : 6)
-        });
-        return `${formattedNum} ${quote}`;
+        return formatAssetPrice(price, quoteCurrency, false);
     }
 
     // Formateador de equivalencia aproximada con símbolo ≈
@@ -268,13 +399,17 @@
         formatSigned,
         formatCompact,
         formatPercent,
+        formatVolume,
         formatCrypto,
         formatNumber,
+        formatAssetPrice,
         formatNativePrice,
         formatConvertedApprox,
         convert,
         convertFromUsd,
         convertToUsd,
+        convertAssetPriceToAccount,
+        getAssetQuoteCurrency,
         getActiveCurrency,
         getActiveLocale,
         setCurrency,

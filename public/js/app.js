@@ -188,6 +188,20 @@ window.App = (function () {
         document.getElementById('dash-quick-trade-btn')?.addEventListener('click', () => {
             switchView('trading');
         });
+
+        // Activar vista solicitada por parámetro de URL (?view=trading, etc.)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlView = urlParams.get('view');
+        if (urlView && ['dashboard', 'trading', 'markets', 'news', 'journal'].includes(urlView)) {
+            setTimeout(() => switchView(urlView), 50);
+        }
+        const urlSymbol = urlParams.get('symbol');
+        if (urlSymbol) {
+            const found = ALL_CATALOG_SYMBOLS.find(s => s.symbol.toUpperCase() === urlSymbol.toUpperCase() || s.id.toLowerCase() === urlSymbol.toLowerCase());
+            if (found) {
+                setTimeout(() => selectSymbol(found), 150);
+            }
+        }
     }
 
     /* ---------- Mobile Menu ---------- */
@@ -286,11 +300,22 @@ window.App = (function () {
                 const isWatch = window.Store && typeof window.Store.isInWatchlist === 'function' && window.Store.isInWatchlist(sym);
                 const tick = window.PriceFeed ? (window.PriceFeed.getTick(sym) || window.PriceFeed.getTick(s.id)) : null;
                 const hasLivePrice = tick && typeof tick.price === 'number' && tick.price > 0;
-                const priceFormatted = hasLivePrice ? formatCurrency(tick.price) : '—';
+                const quote = (s.pair && s.pair.includes('/'))
+                    ? s.pair.split('/')[1]
+                    : (tick && tick.currency ? tick.currency : (window.Currency && window.Currency.getAssetQuoteCurrency ? window.Currency.getAssetQuoteCurrency(sym) : 'USD'));
+                const priceFormatted = hasLivePrice
+                    ? (window.Currency && typeof window.Currency.formatAssetPrice === 'function'
+                        ? window.Currency.formatAssetPrice(tick.price, quote)
+                        : formatCurrency(tick.price, quote))
+                    : '—';
                 const hasChg = tick && tick.change24h != null && !isNaN(tick.change24h);
                 const chg = hasChg ? tick.change24h : null;
                 const chgClass = hasChg ? (chg >= 0 ? 'bullish' : 'bearish') : 'text-secondary';
-                const chgText = hasChg ? `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}%` : '—';
+                const chgText = hasChg
+                    ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                        ? window.Currency.formatPercent(chg)
+                        : `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}\u00A0%`)
+                    : '—';
                 const mktBadge = s.exchange || s.market || s.category || (s.type === 'crypto' ? 'Binance' : 'Bolsa');
 
                 return `
@@ -514,6 +539,13 @@ window.App = (function () {
             window.Charts.updatePriceDisplay(liveP, liveP);
         }
 
+        // Bloque A.8: Ocultar libro de órdenes si el activo no tiene profundidad
+        if (window.Market && typeof window.Market.renderOrderBook === 'function') {
+            if (isStock) {
+                window.Market.renderOrderBook({ unavailable: true, reason: 'Libro de órdenes no disponible para acciones' });
+            }
+        }
+
         switchView('trading');
 
         // Forzar recarga de gráfico ahora que el contenedor de trading está activo
@@ -586,9 +618,9 @@ window.App = (function () {
     }
 
     /* ---------- Formatters (Conectados a Currency Module) ---------- */
-    function formatCurrency(n) {
+    function formatCurrency(n, fromCurrency = 'USD') {
         if (window.Currency && typeof window.Currency.format === 'function') {
-            return window.Currency.format(n);
+            return window.Currency.format(n, fromCurrency);
         }
         const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
         if (n == null || isNaN(n)) return '0,00 €';
@@ -607,26 +639,34 @@ window.App = (function () {
     }
 
     function formatCompact(n) {
+        if (window.Currency && typeof window.Currency.formatVolume === 'function') {
+            return window.Currency.formatVolume(n);
+        }
         if (window.Currency && typeof window.Currency.formatCompact === 'function') {
             return window.Currency.formatCompact(n);
         }
         if (n == null || isNaN(n)) return '0';
         const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
         const abs = Math.abs(n);
-        if (abs >= 1e12) return (n / 1e12).toLocaleString(locale, { maximumFractionDigits: 2 }) + 'T';
-        if (abs >= 1e9) return (n / 1e9).toLocaleString(locale, { maximumFractionDigits: 2 }) + 'B';
-        if (abs >= 1e6) return (n / 1e6).toLocaleString(locale, { maximumFractionDigits: 2 }) + 'M';
-        if (abs >= 1e3) return (n / 1e3).toLocaleString(locale, { maximumFractionDigits: 2 }) + 'K';
+        if (abs >= 1e12) return (n / 1e12).toLocaleString(locale, { maximumFractionDigits: 1 }) + '\u00A0T';
+        if (abs >= 1e9) return (n / 1e9).toLocaleString(locale, { maximumFractionDigits: 1 }) + '\u00A0B';
+        if (abs >= 1e6) return (n / 1e6).toLocaleString(locale, { maximumFractionDigits: 1 }) + '\u00A0M';
+        if (abs >= 1e3) return (n / 1e3).toLocaleString(locale, { maximumFractionDigits: 1 }) + '\u00A0K';
         return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function formatPercent(n) {
-        if (n == null || isNaN(n)) return '<span class="muted">0,00%</span>';
+        if (n == null || isNaN(n)) return '<span class="muted">0,00\u00A0%</span>';
+        if (window.Currency && typeof window.Currency.formatPercent === 'function') {
+            const cls = n >= 0 ? 'bullish' : 'bearish';
+            const icon = n >= 0 ? 'fa-caret-up' : 'fa-caret-down';
+            return `<span class="${cls}"><i class="fas ${icon}"></i> ${window.Currency.formatPercent(n)}</span>`;
+        }
         const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
         const cls = n >= 0 ? 'bullish' : 'bearish';
         const icon = n >= 0 ? 'fa-caret-up' : 'fa-caret-down';
-        const valFormatted = n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return `<span class="${cls}"><i class="fas ${icon}"></i> ${n >= 0 ? '+' : ''}${valFormatted}%</span>`;
+        const valFormatted = Math.abs(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `<span class="${cls}"><i class="fas ${icon}"></i> ${n >= 0 ? '+' : '-'}${valFormatted}\u00A0%</span>`;
     }
 
     function timeAgo(date) {
@@ -710,10 +750,23 @@ window.App = (function () {
             const hasValidPrice = tick && typeof tick.price === 'number' && tick.price > 0;
             const hasValidChg = tick && tick.change24h != null && !isNaN(tick.change24h);
             const chg = hasValidChg ? tick.change24h : null;
+            const quote = (it.pair && it.pair.includes('/'))
+                ? it.pair.split('/')[1]
+                : (tick && tick.currency ? tick.currency : (window.Currency && window.Currency.getAssetQuoteCurrency ? window.Currency.getAssetQuoteCurrency(it.symbol) : 'USD'));
+            const priceFormatted = hasValidPrice
+                ? (window.Currency && typeof window.Currency.formatAssetPrice === 'function'
+                    ? window.Currency.formatAssetPrice(tick.price, quote)
+                    : formatCurrency(tick.price, quote))
+                : '—';
+            const changeText = hasValidChg
+                ? (window.Currency && typeof window.Currency.formatPercent === 'function'
+                    ? window.Currency.formatPercent(chg)
+                    : `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}\u00A0%`)
+                : '—';
             return {
-                priceFormatted: hasValidPrice ? formatCurrency(tick.price) : '—',
+                priceFormatted,
                 changeClass: hasValidChg ? (chg >= 0 ? 'bullish' : 'bearish') : 'text-secondary',
-                changeText: hasValidChg ? `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}%` : '—'
+                changeText
             };
         }
 
@@ -810,8 +863,10 @@ window.App = (function () {
         const investedAmount = parseFloat(input?.value) || 0;
         const sym = state.currentSymbol || { id: 'bitcoin', symbol: 'BTC' };
         const symId = (sym.id || sym.symbol || '').toLowerCase();
-        const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
-        const quote = (['santander', 'bbva', 'inditex', 'telefonica'].includes(symId)) ? 'EUR' : (isStock ? 'USD' : 'USDT');
+        const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
+        const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+            ? window.Currency.getAssetQuoteCurrency(sym)
+            : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex'].includes(symId) ? 'EUR' : (isStock ? 'USD' : 'USDT'));
 
         const currentPrice = (window.Store && typeof window.Store.getPrice === 'function' && window.Store.getPrice(sym.id || sym.symbol))
             || (window.PriceFeed && window.PriceFeed.getPrice(sym.symbol || sym.id)) || 0;
@@ -1358,8 +1413,10 @@ window.App = (function () {
 
             const sym = state.currentSymbol;
             const symId = (sym.id || sym.symbol || '').toLowerCase();
-            const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
-            const quote = (['santander', 'bbva', 'inditex', 'telefonica'].includes(symId)) ? 'EUR' : (isStock ? 'USD' : 'USDT');
+            const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
+            const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                ? window.Currency.getAssetQuoteCurrency(sym)
+                : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex'].includes(symId) ? 'EUR' : (isStock ? 'USD' : 'USDT'));
 
             const currentPrice = (window.Store && typeof window.Store.getPrice === 'function' && window.Store.getPrice(sym.id || sym.symbol))
                 || (window.PriceFeed && window.PriceFeed.getPrice(sym.symbol || sym.id)) || 0;
@@ -1433,8 +1490,10 @@ window.App = (function () {
 
             const sym = state.currentSymbol;
             const symId = (sym.id || sym.symbol || '').toLowerCase();
-            const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
-            const quote = (['santander', 'bbva', 'inditex', 'telefonica'].includes(symId)) ? 'EUR' : (isStock ? 'USD' : 'USDT');
+            const isStock = ['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex', 'apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId);
+            const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                ? window.Currency.getAssetQuoteCurrency(sym)
+                : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex'].includes(symId) ? 'EUR' : (isStock ? 'USD' : 'USDT'));
 
             const orderType = document.getElementById('order-type')?.value || 'market';
             let stopPrice = 0;
@@ -1632,6 +1691,12 @@ window.App = (function () {
             ? window.Store.getSettings()
             : { palette: 'cyan', theme: 'dark', currency: 'auto' };
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTheme = urlParams.get('theme');
+        if (urlTheme === 'light' || urlTheme === 'dark') {
+            settings.theme = urlTheme;
+        }
+
         // Accent Palettes
         const savedPalette = settings.palette || 'cyan';
         document.body.setAttribute('data-palette', savedPalette);
@@ -1695,8 +1760,11 @@ window.App = (function () {
     };
 
     function getAlertAssetQuote(assetId) {
+        if (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function') {
+            return window.Currency.getAssetQuoteCurrency(assetId);
+        }
         const id = String(assetId || 'bitcoin').toLowerCase();
-        if (['santander', 'san', 'bbva', 'inditex', 'itx', 'telefonica', 'tef'].includes(id)) return 'EUR';
+        if (['santander', 'san', 'bbva', 'inditex', 'itx', 'telefonica', 'tef', 'iberdrola', 'ibe', 'repsol', 'rep', 'ibex'].includes(id)) return 'EUR';
         if (['apple', 'aapl', 'nvidia', 'nvda', 'tesla', 'tsla', 'microsoft', 'msft', 'amazon', 'amzn'].includes(id)) return 'USD';
         return 'USDT';
     }
@@ -2489,10 +2557,12 @@ window.App = (function () {
                 if (price > 0) {
                     const liqPrice = price * Math.max(0.1, (1 - 0.85 / currentLev));
                     const symId = (sym.id || sym.symbol || '').toLowerCase();
-                    const quote = (['santander', 'bbva', 'inditex', 'telefonica'].includes(symId)) ? 'EUR' : (['apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId) ? 'USD' : 'USDT');
-                    liqPriceEl.textContent = (window.Currency && typeof window.Currency.formatNativePrice === 'function')
-                        ? window.Currency.formatNativePrice(liqPrice, quote)
-                        : formatCurrency(liqPrice);
+                    const quote = (window.Currency && typeof window.Currency.getAssetQuoteCurrency === 'function')
+                        ? window.Currency.getAssetQuoteCurrency(sym)
+                        : (['santander', 'bbva', 'inditex', 'telefonica', 'iberdrola', 'repsol', 'ibex'].includes(symId) ? 'EUR' : (['apple', 'nvidia', 'tesla', 'microsoft', 'amazon'].includes(symId) ? 'USD' : 'USDT'));
+                    liqPriceEl.textContent = (window.Currency && typeof window.Currency.formatAssetPrice === 'function')
+                        ? window.Currency.formatAssetPrice(liqPrice, quote)
+                        : formatCurrency(liqPrice, quote);
                 } else {
                     liqPriceEl.textContent = '—';
                 }
