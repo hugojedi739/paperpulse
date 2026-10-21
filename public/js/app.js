@@ -2043,54 +2043,9 @@ window.App = (function () {
         });
     }
 
-    /* ---------- Community Sentiment Social Voting (Cero Datos Simulados) ---------- */
+    /* ---------- Community Sentiment (Eliminado en Bloque C.2: sin usuarios reales) ---------- */
     function setupCommunityVoting() {
-        let bullVotes = 0;
-        let bearVotes = 0;
-        let voted = false;
-
-        const bullBtn = document.getElementById('btn-vote-bull');
-        const bearBtn = document.getElementById('btn-vote-bear');
-        const bullCountEl = document.getElementById('bull-votes-count');
-        const bearCountEl = document.getElementById('bear-votes-count');
-        const pctEl = document.getElementById('community-bull-pct');
-        const trackFill = document.getElementById('comm-bull-fill');
-
-        function updateVotesDisplay() {
-            const total = bullVotes + bearVotes;
-            if (total === 0) {
-                if (pctEl) pctEl.textContent = 'Sin votos en sesión';
-                if (trackFill) trackFill.style.width = '50%';
-                if (bullCountEl) bullCountEl.textContent = '0';
-                if (bearCountEl) bearCountEl.textContent = '0';
-                return;
-            }
-            const pct = Math.round((bullVotes / total) * 100);
-            if (pctEl) pctEl.textContent = `${pct}% Alcista`;
-            if (trackFill) trackFill.style.width = `${pct}%`;
-            if (bullCountEl) bullCountEl.textContent = bullVotes.toLocaleString();
-            if (bearCountEl) bearCountEl.textContent = bearVotes.toLocaleString();
-        }
-
-        updateVotesDisplay();
-
-        bullBtn?.addEventListener('click', () => {
-            if (voted) { showToast('Ya has votado en esta sesión.', 'info'); return; }
-            bullVotes++;
-            voted = true;
-            updateVotesDisplay();
-            showToast('🚀 ¡Voto Alcista registrado!', 'success');
-            bullBtn.style.borderColor = 'var(--bullish)';
-        });
-
-        bearBtn?.addEventListener('click', () => {
-            if (voted) { showToast('Ya has votado en esta sesión.', 'info'); return; }
-            bearVotes++;
-            voted = true;
-            updateVotesDisplay();
-            showToast('🐻 Voto Bajista registrado.', 'warning');
-            bearBtn.style.borderColor = 'var(--bearish)';
-        });
+        // Bloque C.2: Retirado para evitar datos sociales simulados
     }
 
     /* ---------- Termómetro de Mercado (Amplitud Real 24h) ---------- */

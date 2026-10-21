@@ -1951,7 +1951,7 @@ body.light-theme .nav-link.active {
     border-radius: 0 0 var(--radius) var(--radius);
 }
 
-/* Trading Panel */
+/* Trading Panel (Bloque C.1: Scroll suave y barra de desplazamiento visible sin cortar botones) */
 .trading-panel {
     width: clamp(270px, 22vw, 320px);
     flex-shrink: 0;
@@ -1960,8 +1960,19 @@ body.light-theme .nav-link.active {
     border-radius: var(--radius);
     display: flex;
     flex-direction: column;
-    max-height: calc(clamp(320px, 46vh, 480px) + 52px);
+    max-height: calc(clamp(340px, 50vh, 520px) + 52px);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.trading-panel::-webkit-scrollbar {
+    width: 5px;
+}
+
+.trading-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
 }
 
 .order-tabs {
@@ -9317,17 +9328,27 @@ body.light-theme .pic-content p {
     flex-shrink: 0;
 }
 
-/* Trading Panel Practice Lock Overlay */
+/* Trading Panel Practice Lock Overlay (Bloque C.1: Botón de práctica visible y accesible) */
 .trading-panel-locked-card {
     background: rgba(15, 23, 42, 0.75);
     border: 1px dashed rgba(148, 163, 184, 0.25);
     border-radius: 8px;
-    padding: 22px 18px;
+    padding: 16px 14px;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.trading-panel-locked-card .btn-open-practice {
+    min-height: 44px !important;
+    width: 100% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
 }
 
 body.light-theme .trading-panel-locked-card {

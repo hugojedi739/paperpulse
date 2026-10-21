@@ -16,7 +16,7 @@ def capture(url, out_path, width=1280, height=800, theme="dark"):
         "--headless=new",
         f"--screenshot={tmp_out}",
         f"--window-size={width},{height}",
-        "--virtual-time-budget=3500",
+        "--run-all-compositor-stages-before-draw",
         "--no-sandbox",
         "--disable-gpu",
         "--hide-scrollbars",

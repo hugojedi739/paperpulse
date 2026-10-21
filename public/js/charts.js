@@ -836,12 +836,7 @@ window.Charts = (function () {
             try {
                 tradingChart.applyOptions({
                     watermark: {
-                        visible: true,
-                        fontSize: 52,
-                        horzAlign: 'center',
-                        vertAlign: 'center',
-                        color: watermarkColor,
-                        text: `${displayPair} · ${intervalLabel}`
+                        visible: false
                     }
                 });
             } catch (e) {}
