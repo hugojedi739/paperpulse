@@ -2216,6 +2216,23 @@ window.App = (function () {
             }
             const marginFill = document.getElementById('user-menu-margin-fill');
             const marginHint = document.getElementById('user-menu-margin-hint');
+            const statusBadge = dropdown.querySelector('.ubp-status');
+            const hasPractice = window.Store && typeof window.Store.hasPracticeAccount === 'function' && window.Store.hasPracticeAccount();
+
+            if (statusBadge) {
+                statusBadge.textContent = hasPractice ? 'Modo Práctica' : 'Modo Consulta';
+            }
+
+            // Bloque E.2: Ocultar margen disponible en modo consulta
+            if (!hasPractice) {
+                if (marginHint) marginHint.style.display = 'none';
+                if (marginFill && marginFill.parentElement) marginFill.parentElement.style.display = 'none';
+                return;
+            }
+
+            if (marginHint) marginHint.style.display = '';
+            if (marginFill && marginFill.parentElement) marginFill.parentElement.style.display = '';
+
             if (marginHint) {
                 const positions = (window.Store && typeof window.Store.getPositions === 'function') ? window.Store.getPositions() : [];
                 if (positions.length === 0) {

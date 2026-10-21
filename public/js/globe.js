@@ -861,7 +861,7 @@ window.Globe = (function () {
         fetchMarkets();
         state.pollTimer = setInterval(fetchMarkets, 60000);
 
-        // 3. Inicializar escena 3D de inmediato
+        // 3. Inicializar escena 3D de inmediato (o fallback estático si está desactivado)
         if (state.effectsMode !== 'disabled' && isWebGLAvailable()) {
             state.isInView = true;
             if (window.THREE) {
@@ -869,6 +869,8 @@ window.Globe = (function () {
             } else {
                 loadThreeScript().then(() => initScene()).catch(() => activateFallbackMode());
             }
+        } else {
+            activateFallbackMode();
         }
 
         // 4. Observador de Visibilidad (Pausar rotación decorativa cuando la tarjeta no esté en pantalla)
