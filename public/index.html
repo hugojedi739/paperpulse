@@ -169,7 +169,7 @@
                         </div>
                         <div class="user-profile-details">
                             <div class="user-profile-name">Operador</div>
-                            <div class="user-profile-account"><i class="fas fa-shield-alt"></i> Cuenta de Práctica</div>
+                            <div class="user-profile-account" id="user-profile-account-type"><i class="fas fa-shield-alt"></i> Cuenta de Práctica</div>
                             <div class="user-profile-email">Cuenta local</div>
                         </div>
                     </div>
@@ -190,10 +190,18 @@
                         <button class="user-menu-item" id="user-menu-demo-manage">
                             <div class="umi-icon icon-trade"><i class="fas fa-wallet"></i></div>
                             <div class="umi-text">
-                                <strong>Capital y Saldo de Práctica</strong>
-                                <span>Ajustar fondos o restablecer saldo demo</span>
+                                <strong id="user-menu-demo-title">Capital y Saldo de Práctica</strong>
+                                <span id="user-menu-demo-desc">Ajustar fondos o restablecer saldo demo</span>
                             </div>
                             <i class="fas fa-chevron-right umi-arrow"></i>
+                        </button>
+                        <button class="user-menu-item d-none" id="user-menu-close-practice-direct" title="Retirar saldo virtual y pasar a modo solo consulta">
+                            <div class="umi-icon umi-icon-danger"><i class="fas fa-eye"></i></div>
+                            <div class="umi-text">
+                                <strong class="text-danger">Borrar dinero (Solo ver y no operar)</strong>
+                                <span class="text-danger-sub">Volver a Modo Consulta sin dinero ni operativa</span>
+                            </div>
+                            <i class="fas fa-chevron-right umi-arrow text-danger"></i>
                         </button>
                         <button class="user-menu-item" id="user-menu-guide">
                             <div class="umi-icon icon-guide"><i class="fas fa-book-open"></i></div>
@@ -1672,8 +1680,8 @@
             </div>
             <div class="confirm-modal-footer">
                 <button class="btn btn-outline" id="demo-modal-btn-cancel">Cancelar</button>
-                <button class="btn btn-ghost text-danger d-none" id="demo-modal-btn-close-account" title="Volver a Modo Consulta">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar cuenta de práctica
+                <button class="btn btn-outline text-danger d-none" id="demo-modal-btn-close-account" title="Retirar saldo virtual y volver a modo solo consulta">
+                    <i class="fas fa-eye"></i> Borrar dinero (Solo ver y no operar)
                 </button>
                 <button class="btn btn-primary" id="demo-modal-btn-primary">
                     <i class="fas fa-play"></i> Empezar a practicar

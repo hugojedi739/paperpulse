@@ -1304,17 +1304,12 @@ window.App = (function () {
             } catch (e) {}
         }
 
-        // Reset Balance Button
+        // Reset Balance Button -> abre modal de gestión de cuenta de práctica
         document.getElementById('reset-balance-btn')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (window.Store && typeof window.Store.resetPracticeAccount === 'function') {
-                const initial = window.Store.getInitialCapitalUsd() || 1000;
-                window.Store.resetPracticeAccount(initial);
-                showToast(`🔄 Saldo de práctica restablecido a ${formatCurrency(initial)}.`, 'success');
-            } else if (window.Market && window.Market.resetDemoBalance) {
-                window.Market.resetDemoBalance();
+            if (typeof window.openDemoAccountModal === 'function') {
+                window.openDemoAccountModal();
             }
-            playChime(true);
         });
 
         // Profit Simulator
@@ -2236,13 +2231,17 @@ window.App = (function () {
 
         function updateDropdownBalance() {
             const totalBalanceEl = document.getElementById('total-balance');
-            if (totalBalanceEl && balanceDisplay) {
-                balanceDisplay.textContent = totalBalanceEl.textContent;
+            const hasPractice = window.Store && typeof window.Store.hasPracticeAccount === 'function' && window.Store.hasPracticeAccount();
+            if (balanceDisplay) {
+                if (!hasPractice) {
+                    balanceDisplay.textContent = '—';
+                } else if (totalBalanceEl) {
+                    balanceDisplay.textContent = totalBalanceEl.textContent;
+                }
             }
             const marginFill = document.getElementById('user-menu-margin-fill');
             const marginHint = document.getElementById('user-menu-margin-hint');
             const statusBadge = dropdown.querySelector('.ubp-status');
-            const hasPractice = window.Store && typeof window.Store.hasPracticeAccount === 'function' && window.Store.hasPracticeAccount();
 
             if (statusBadge) {
                 statusBadge.textContent = hasPractice ? 'Modo Práctica' : 'Modo Consulta';
@@ -2312,8 +2311,21 @@ window.App = (function () {
         // User Menu Actions
         document.getElementById('user-menu-demo-manage')?.addEventListener('click', () => {
             toggleDropdown(false);
-            const modal = document.getElementById('demo-account-modal');
-            if (modal) openModal(modal);
+            if (typeof window.openDemoAccountModal === 'function') {
+                window.openDemoAccountModal();
+            } else {
+                const modal = document.getElementById('demo-account-modal');
+                if (modal) modal.classList.add('show');
+            }
+        });
+
+        document.getElementById('user-menu-close-practice-direct')?.addEventListener('click', () => {
+            toggleDropdown(false);
+            if (window.Store && typeof window.Store.closePracticeAccount === 'function') {
+                window.Store.closePracticeAccount();
+            }
+            showToast('Modo Consulta activado: Saldo virtual retirado. Ahora estás en modo solo lectura sin dinero ni operativa.', 'info');
+            syncAccountStateUI();
         });
 
         document.getElementById('user-menu-api')?.addEventListener('click', () => {
@@ -2771,8 +2783,20 @@ window.App = (function () {
     }
 
     /* ---------- Interactive Educational Tooltip Popovers ---------- */
+    function escapeHTML(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function setupInteractiveTooltips() {
         let currentPopover = null;
+        let hoverTimeout = null;
+        let leaveTimeout = null;
 
         function closePopover() {
             if (currentPopover) {
@@ -2781,37 +2805,13 @@ window.App = (function () {
             }
         }
 
-        document.addEventListener('click', (e) => {
-            const isTouch = window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            const target = e.target.closest('.tooltip-hint, [data-help-title], [data-tooltip]' + (isTouch ? ', [title]:not(input):not(select):not(textarea)' : ''));
-            if (!target) {
-                if (currentPopover && !e.target.closest('.floating-help-popover')) {
-                    closePopover();
-                }
-                return;
-            }
+        function showPopoverFor(target) {
+            if (!target) return;
 
-            // On desktop non-touch, only intercept explicit help hints or elements with data-help-*
-            const isExplicitHint = target.classList.contains('tooltip-hint') || 
-                                   target.hasAttribute('data-help-title') || 
-                                   target.hasAttribute('data-help-text') || 
-                                   target.hasAttribute('data-tooltip') ||
-                                   target.matches('.fa-info-circle, .fa-question-circle, .info-icon, .stat-info-icon');
-            if (!isExplicitHint && !isTouch) return;
-
-            // Don't intercept primary navigation clicks if title is just an aria label on a link/button
-            if (!isExplicitHint && (target.tagName === 'A' || (target.tagName === 'BUTTON' && !target.classList.contains('btn-indicator-tool')))) {
-                return;
-            }
-
-            e.stopPropagation();
-            closePopover();
-
-            const rawTitle = target.dataset.helpTitle || target.getAttribute('title') || target.dataset.tooltip || 'Información de Trading';
+            const rawTitle = target.dataset.helpTitle || target.closest('[data-help-title]')?.dataset.helpTitle || target.getAttribute('title') || target.dataset.tooltip || 'Información de Trading';
             const rawText = target.dataset.helpText || target.closest('[data-help-text]')?.dataset.helpText || target.getAttribute('title') || target.dataset.tooltip || target.closest('[data-tooltip]')?.dataset.tooltip || 'Detalle operativo del terminal de trading.';
             const tip = target.dataset.helpTip || target.closest('[data-help-tip]')?.dataset.helpTip || null;
 
-            // If title and text are identical and text is short, format title cleanly
             let displayTitle = rawTitle;
             let displayText = rawText;
             if (rawTitle === rawText && rawText.includes(':')) {
@@ -2820,15 +2820,17 @@ window.App = (function () {
                 displayText = parts.slice(1).join(':').trim();
             }
 
+            closePopover();
+
             const popover = document.createElement('div');
             popover.className = 'floating-help-popover';
             popover.innerHTML = `
                 <div class="fhp-header">
-                    <div class="fhp-title"><i class="fas fa-question-circle"></i> ${safeEscape(displayTitle)}</div>
+                    <div class="fhp-title"><i class="fas fa-question-circle"></i> ${escapeHTML(displayTitle)}</div>
                     <button class="fhp-close" title="Cerrar">&times;</button>
                 </div>
-                <p class="fhp-text">${safeEscape(displayText)}</p>
-                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Pro:</strong> ${safeEscape(tip)}</div>` : ''}
+                <p class="fhp-text">${escapeHTML(displayText)}</p>
+                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Pro:</strong> ${escapeHTML(tip)}</div>` : ''}
             `;
 
             document.body.appendChild(popover);
@@ -2850,10 +2852,72 @@ window.App = (function () {
             popover.style.top = `${Math.max(10, top)}px`;
             popover.style.left = `${left}px`;
 
+            // Mantener abierto si el ratón entra en el propio popover
+            popover.addEventListener('mouseenter', () => {
+                if (leaveTimeout) {
+                    clearTimeout(leaveTimeout);
+                    leaveTimeout = null;
+                }
+            });
+            popover.addEventListener('mouseleave', () => {
+                closePopover();
+            });
+
             popover.querySelector('.fhp-close')?.addEventListener('click', (ev) => {
                 ev.stopPropagation();
                 closePopover();
             });
+        }
+
+        // 1. Soporte Clic / Táctil
+        document.addEventListener('click', (e) => {
+            const isTouch = window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const target = e.target.closest('.tooltip-hint, [data-help-title], [data-tooltip], .fa-question-circle, .fa-info-circle' + (isTouch ? ', [title]:not(input):not(select):not(textarea)' : ''));
+            if (!target) {
+                if (currentPopover && !e.target.closest('.floating-help-popover')) {
+                    closePopover();
+                }
+                return;
+            }
+
+            // Evitar interceptar navegación estándar
+            if (target.tagName === 'A' || (target.tagName === 'BUTTON' && !target.classList.contains('tooltip-hint') && !target.classList.contains('btn-indicator-tool'))) {
+                return;
+            }
+
+            e.stopPropagation();
+            showPopoverFor(target);
+        });
+
+        // 2. Soporte Hover con Ratón en Escritorio
+        document.addEventListener('mouseover', (e) => {
+            if (window.innerWidth <= 768 || ('ontouchstart' in window)) return;
+            const target = e.target.closest('.tooltip-hint, [data-help-title], .fa-question-circle, .fa-info-circle');
+            if (!target) return;
+
+            if (leaveTimeout) {
+                clearTimeout(leaveTimeout);
+                leaveTimeout = null;
+            }
+
+            if (hoverTimeout) clearTimeout(hoverTimeout);
+            hoverTimeout = setTimeout(() => {
+                showPopoverFor(target);
+            }, 140);
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('.tooltip-hint, [data-help-title], .fa-question-circle, .fa-info-circle');
+            if (!target) return;
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            leaveTimeout = setTimeout(() => {
+                if (currentPopover && !currentPopover.matches(':hover')) {
+                    closePopover();
+                }
+            }, 250);
         });
 
         document.addEventListener('keydown', (e) => {
@@ -2973,6 +3037,25 @@ window.App = (function () {
     function syncAccountStateUI() {
         const hasPractice = window.Store && typeof window.Store.hasPracticeAccount === 'function' && window.Store.hasPracticeAccount();
         const modeTag = document.getElementById('account-mode-tag');
+
+        const closePracticeDirectBtn = document.getElementById('user-menu-close-practice-direct');
+        if (closePracticeDirectBtn) {
+            closePracticeDirectBtn.classList.toggle('d-none', !hasPractice);
+        }
+        const userProfileAccount = document.getElementById('user-profile-account-type');
+        if (userProfileAccount) {
+            userProfileAccount.innerHTML = hasPractice 
+                ? '<i class="fas fa-shield-alt"></i> Cuenta de Práctica' 
+                : '<i class="fas fa-eye"></i> Modo Consulta (Solo ver)';
+        }
+        const userMenuDemoTitle = document.getElementById('user-menu-demo-title');
+        const userMenuDemoDesc = document.getElementById('user-menu-demo-desc');
+        if (userMenuDemoTitle) {
+            userMenuDemoTitle.textContent = hasPractice ? 'Gestión de Saldo de Práctica' : 'Activar Cuenta de Práctica';
+        }
+        if (userMenuDemoDesc) {
+            userMenuDemoDesc.textContent = hasPractice ? 'Ajustar fondos o restablecer saldo demo' : 'Elegir saldo virtual para practicar trading';
+        }
         const balAmount = document.getElementById('total-balance');
         const resetBtn = document.getElementById('reset-balance-btn');
         const privacyBtn = document.getElementById('balance-privacy-btn');
@@ -3137,15 +3220,27 @@ window.App = (function () {
                 if (modalTitle) modalTitle.textContent = 'Activar Cuenta de Práctica';
                 if (modalBadge) modalBadge.innerHTML = '<i class="fas fa-play-circle"></i> Nuevo Operador';
                 if (primaryBtn) primaryBtn.innerHTML = '<i class="fas fa-play"></i> Empezar a practicar';
-                if (closeAccountBtn) closeAccountBtn.style.display = 'none';
-                if (resetWarning) resetWarning.style.display = 'none';
+                if (closeAccountBtn) {
+                    closeAccountBtn.classList.add('d-none');
+                    closeAccountBtn.style.display = 'none';
+                }
+                if (resetWarning) {
+                    resetWarning.classList.add('d-none');
+                    resetWarning.style.display = 'none';
+                }
             } else {
                 // Estado: Gestión / Restablecimiento
                 if (modalTitle) modalTitle.textContent = 'Gestión de Cuenta de Práctica';
                 if (modalBadge) modalBadge.innerHTML = '<i class="fas fa-sliders-h"></i> Cuenta Activa';
                 if (primaryBtn) primaryBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Restablecer saldo de práctica';
-                if (closeAccountBtn) closeAccountBtn.style.display = 'inline-flex';
-                if (resetWarning) resetWarning.style.display = 'block';
+                if (closeAccountBtn) {
+                    closeAccountBtn.classList.remove('d-none');
+                    closeAccountBtn.style.display = 'inline-flex';
+                }
+                if (resetWarning) {
+                    resetWarning.classList.remove('d-none');
+                    resetWarning.style.display = 'block';
+                }
             }
 
             pills.forEach(p => {
@@ -3163,6 +3258,7 @@ window.App = (function () {
                 firstBtn?.focus();
             }, 50);
         }
+        window.openDemoAccountModal = openModal;
 
         function closeModal() {
             modal?.classList.remove('show');
@@ -3253,10 +3349,10 @@ window.App = (function () {
 
         // Botón: Cerrar cuenta de práctica y volver a Modo Consulta
         closeAccountBtn?.addEventListener('click', () => {
-            if (window.Store) {
+            if (window.Store && typeof window.Store.closePracticeAccount === 'function') {
                 window.Store.closePracticeAccount();
             }
-            showToast('👋 Has vuelto al Modo Consulta. Tu Watchlist y alertas siguen intactos.', 'info');
+            showToast('Modo Consulta activado: Saldo virtual retirado. Ahora estás en modo solo lectura sin dinero ni operativa.', 'info');
             closeModal();
             syncAccountStateUI();
         });
