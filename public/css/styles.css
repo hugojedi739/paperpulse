@@ -9622,11 +9622,12 @@ input:focus:not(:focus-visible) {
     min-height: 340px;
 }
 
-/* Visor 3D del Globo */
+/* Visor 3D del Globo (Bloque G.1: Altura suficiente para visualización completa sin recortes) */
 .globe-viewport-container {
     flex: 1;
     min-width: 280px;
-    height: 340px;
+    height: 360px;
+    min-height: 360px;
     position: relative;
     border-radius: var(--radius);
     background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
@@ -9740,10 +9741,33 @@ body.light-theme .globe-overlay-hint {
     padding: 0;
     margin: 0;
     overflow-y: auto;
-    max-height: 290px;
+    max-height: 360px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.markets-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.markets-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.markets-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+body.light-theme .markets-list {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+body.light-theme .markets-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
 }
 
 .market-item {

@@ -355,7 +355,7 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
 
     markets.append({
         "id": "us",
-        "name": "Wall Street (NYSE / NASDAQ)",
+        "name": "Bolsa de Nueva York (Wall Street)",
         "city": "Nueva York",
         "country": "EE.UU.",
         "flag": "🇺🇸",
@@ -376,14 +376,15 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
     t_es = now_madrid.time()
     weekday_es = now_madrid.weekday()
     open_es = datetime.time(9, 0)
+    tz_es_name = now_madrid.strftime("%Z") or "CEST"
 
     if is_open_es:
         next_dt = now_madrid.replace(hour=17, minute=30, second=0, microsecond=0)
-        next_event_text = "Cierra hoy a las 17:30 CET"
+        next_event_text = f"Cierra hoy a las 17:30 {tz_es_name}"
     else:
         if weekday_es < 5 and t_es < open_es and (now_madrid.month, now_madrid.day) not in ES_HOLIDAYS_FIXED:
             next_dt = now_madrid.replace(hour=9, minute=0, second=0, microsecond=0)
-            next_event_text = "Abre hoy a las 09:00 CET"
+            next_event_text = f"Abre hoy a las 09:00 {tz_es_name}"
         else:
             days = 1
             if weekday_es == 4:
@@ -392,12 +393,12 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
                 days = 7 - weekday_es
             next_date = now_madrid.date() + datetime.timedelta(days=days)
             next_dt = datetime.datetime.combine(next_date, open_es, tzinfo=TZ_MADRID)
-            next_event_text = f"Abre el próximo día hábil 09:00 CET"
+            next_event_text = f"Abre el próximo día hábil 09:00 {tz_es_name}"
     next_event_utc_es = next_dt.astimezone(datetime.timezone.utc).isoformat()
 
     markets.append({
         "id": "es",
-        "name": "Bolsa de Madrid (BME / IBEX)",
+        "name": "Bolsa de Madrid (BME / IBEX 35)",
         "city": "Madrid",
         "country": "España",
         "flag": "🇪🇸",
@@ -407,7 +408,7 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
         "local_time": now_madrid.strftime("%H:%M"),
         "open": is_open_es,
         "status": msg_es,
-        "hours": "09:00 - 17:30 CET (L-V)",
+        "hours": f"09:00 - 17:30 {tz_es_name} (L-V)",
         "next_event_utc": next_event_utc_es,
         "next_event_text": next_event_text
     })
@@ -415,7 +416,7 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
     # 3. Criptomonedas (Binance Global 24/7)
     markets.append({
         "id": "crypto",
-        "name": "Mercado Cripto (Binance)",
+        "name": "Mercado Cripto (Binance Global)",
         "city": "Global 24/7",
         "country": "Descentralizado",
         "flag": "🌐",
@@ -430,11 +431,12 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
         "next_event_text": "Sesión continua (sin cierre)"
     })
 
-    # 4. Londres (LSE) - Sin calendario oficial de festivos (open: null)
+    # 4. Londres (LSE) - Bolsa en Reino Unido
     now_lon = now_utc.astimezone(TZ_LONDON)
+    tz_lon_name = now_lon.strftime("%Z") or "GMT"
     markets.append({
         "id": "lon",
-        "name": "London Stock Exchange (LSE)",
+        "name": "Bolsa de Londres (LSE)",
         "city": "Londres",
         "country": "Reino Unido",
         "flag": "🇬🇧",
@@ -443,14 +445,15 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
         "timezone": "Europe/London",
         "local_time": now_lon.strftime("%H:%M"),
         "open": None,
-        "status": "Sin datos oficiales de festivos",
-        "hours": "08:00 - 16:30 GMT",
+        "status": "Horario habitual",
+        "hours": f"08:00 - 16:30 {tz_lon_name}",
         "next_event_utc": None,
-        "next_event_text": "Calendario festivo no verificado"
+        "next_event_text": "Horario habitual"
     })
 
-    # 5. Fráncfort (Xetra / DAX) - Sin calendario oficial de festivos (open: null)
+    # 5. Fráncfort (Xetra / DAX)
     now_fra = now_utc.astimezone(TZ_BERLIN)
+    tz_fra_name = now_fra.strftime("%Z") or "CEST"
     markets.append({
         "id": "fra",
         "name": "Bolsa de Fráncfort (Xetra / DAX)",
@@ -462,17 +465,17 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
         "timezone": "Europe/Berlin",
         "local_time": now_fra.strftime("%H:%M"),
         "open": None,
-        "status": "Sin datos oficiales de festivos",
-        "hours": "09:00 - 17:30 CET",
+        "status": "Horario habitual",
+        "hours": f"09:00 - 17:30 {tz_fra_name}",
         "next_event_utc": None,
-        "next_event_text": "Calendario festivo no verificado"
+        "next_event_text": "Horario habitual"
     })
 
-    # 6. Tokio (TSE / Nikkei) - Sin calendario oficial de festivos (open: null)
+    # 6. Tokio (TSE / Nikkei)
     now_tyo = now_utc.astimezone(TZ_TOKYO)
     markets.append({
         "id": "tyo",
-        "name": "Bolsa de Tokio (TSE / JPX)",
+        "name": "Bolsa de Tokio (TSE / Nikkei)",
         "city": "Tokio",
         "country": "Japón",
         "flag": "🇯🇵",
@@ -481,10 +484,10 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
         "timezone": "Asia/Tokyo",
         "local_time": now_tyo.strftime("%H:%M"),
         "open": None,
-        "status": "Sin datos oficiales de festivos",
+        "status": "Horario habitual",
         "hours": "09:00 - 15:30 JST",
         "next_event_utc": None,
-        "next_event_text": "Calendario festivo no verificado"
+        "next_event_text": "Horario habitual"
     })
 
     return markets
@@ -1311,11 +1314,39 @@ def fetch_real_news_sync() -> List[Dict[str, Any]]:
                         source_name = parts[1].strip()
 
                 lower_title = title.lower()
+
+                # Bloque G.6: Filtro de relevancia de mercados (descartar cultivos, recetas, deportes, etc.)
+                irrelevant_topics = [
+                    "cultivo", "cultivos", "agrícola", "agricultura", "cosecha", "ganadería", "pesca",
+                    "receta", "cocina", "farándula", "horóscopo", "moda", "belleza", "futbol", "fútbol",
+                    "fichaje", "concierto", "celebridad", "lotería", "sabor", "gastronomía", "restaurante",
+                    "clima", "meteorología", "carnaval", "concurso", "festival"
+                ]
                 stock_keywords = [
                     "ibex", "santander", "bbva", "inditex", "repsol", "telefónica", "telefonica",
                     "iberdrola", "nvidia", "apple", "tesla", "wall street", "nasdaq", "nyse",
                     "acciones", "bolsa", "dividendo", "earnings", "bpa", "capitalización", "cotización", "s&p"
                 ]
+                financial_keywords = [
+                    "bolsa", "mercado", "mercados", "acción", "acciones", "ibex", "wall street", "nasdaq",
+                    "bce", "fed", "banco central", "inflación", "tipos de interés", "deuda", "bonos", "tesoro",
+                    "pib", "dividendo", "dividendos", "beneficio", "ingresos", "resultados", "trimestre", "bpa",
+                    "santander", "bbva", "inditex", "telefónica", "telefonica", "repsol", "iberdrola", "caixabank",
+                    "apple", "nvidia", "tesla", "microsoft", "amazon", "google", "meta", "crypto", "bitcoin",
+                    "ethereum", "petróleo", "brent", "gas", "oro", "divisas", "dólar", "dolar", "euro", "cotización",
+                    "cotiza", "inversión", "inversores", "capital", "opa", "fusión", "adquisición", "aranceles",
+                    "banca", "entidad", "cnmv", "sec", "recesión", "crecimiento", "política monetaria", "euribor",
+                    "economía", "financiero", "financiera", "arancel", "comercio exterior", "exportaciones", "empleo"
+                ]
+
+                # Descartar si coincide con temas irrelevantes sin mención bursátil
+                if any(bad in lower_title for bad in irrelevant_topics) and not any(k in lower_title for k in stock_keywords):
+                    continue
+
+                # Exigir relevancia financiera mínima
+                if not any(good in lower_title for good in financial_keywords):
+                    continue
+
                 cat = "stocks" if any(k in lower_title for k in stock_keywords) else "economy"
 
                 if title and link and link not in seen_urls:

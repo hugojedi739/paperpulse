@@ -186,10 +186,15 @@ window.Globe = (function () {
                 statusLabel = 'Abierto';
             } else if (m.open === null) {
                 statusClass = 'unknown';
-                statusLabel = 'Sin datos';
+                statusLabel = 'Horario regular';
             }
 
-            const nextText = m.next_event_text || m.status || '';
+            let nextText = m.next_event_text || m.status || '';
+            let nextTooltip = nextText;
+            if (nextText.includes('Calendario festivo')) {
+                nextText = 'Horario habitual';
+                nextTooltip = 'Horario habitual de mercado. Calendario oficial de festivos no verificado.';
+            }
 
             return `
                 <li class="market-item" data-id="${m.id}" tabindex="0" role="button"
@@ -209,7 +214,7 @@ window.Globe = (function () {
                         <span class="mi-status-badge ${statusClass}">
                             <span class="status-dot"></span> ${statusLabel}
                         </span>
-                        <span class="mi-next" title="${nextText}">${nextText}</span>
+                        <span class="mi-next" title="${nextTooltip}">${nextText}</span>
                     </div>
                 </li>
             `;
@@ -287,19 +292,23 @@ window.Globe = (function () {
 
         const accentRgb = getThemeAccentColor();
 
-        // 1. Intentar cargar máscara PNG de continentes
+        // 1. Intentar cargar máscara PNG de continentes (Bloque G.5: 720x360 con datos reales Natural Earth)
         let maskData = null;
+        let maskW = 720;
+        let maskH = 360;
         try {
             await new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     try {
+                        maskW = img.naturalWidth || 720;
+                        maskH = img.naturalHeight || 360;
                         const offCanvas = document.createElement('canvas');
-                        offCanvas.width = 360;
-                        offCanvas.height = 180;
+                        offCanvas.width = maskW;
+                        offCanvas.height = maskH;
                         const ctx = offCanvas.getContext('2d');
                         ctx.drawImage(img, 0, 0);
-                        maskData = ctx.getImageData(0, 0, 360, 180).data;
+                        maskData = ctx.getImageData(0, 0, maskW, maskH).data;
                     } catch (e) {
                         console.warn('[Globe] Error procesando canvas de máscara:', e);
                     }
@@ -320,12 +329,14 @@ window.Globe = (function () {
 
         // 2. Muestrear si la máscara está disponible con alta definición de continentes
         if (maskData && maskData.length > 0) {
-            for (let y = 0; y < 180; y += 1) {
-                for (let x = 0; x < 360; x += 1) {
-                    const idx = (y * 360 + x) * 4;
+            const stepY = maskH >= 360 ? 2 : 1;
+            const stepX = maskW >= 720 ? 2 : 1;
+            for (let y = 0; y < maskH; y += stepY) {
+                for (let x = 0; x < maskW; x += stepX) {
+                    const idx = (y * maskW + x) * 4;
                     if (maskData[idx] > 100) {
-                        const lat = 90 - y;
-                        const lon = x - 180;
+                        const lat = 90 - (y / maskH) * 180;
+                        const lon = (x / maskW) * 360 - 180;
                         const pos = latLonToVector3(lat, lon, R);
                         positions.push(pos.x, pos.y, pos.z);
 
@@ -457,10 +468,10 @@ window.Globe = (function () {
         const width = containerEl.clientWidth || 320;
         const height = containerEl.clientHeight || 320;
 
-        // Escena y Cámara
+        // Escena y Cámara (Bloque G.1: Ajuste de cámara z=24.5 para evitar recorte de polos)
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-        camera.position.z = 21;
+        camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+        camera.position.z = 24.5;
 
         // Renderizador WebGL
         try {
@@ -708,12 +719,17 @@ window.Globe = (function () {
         }
     }
 
-    /* ---------- Redimensionamiento Responsivo ---------- */
+    /* ---------- Redimensionamiento Responsivo (Bloque G.1) ---------- */
     function handleResize() {
         if (!renderer || !camera || !containerEl) return;
         const width = containerEl.clientWidth || 320;
         const height = containerEl.clientHeight || 320;
         camera.aspect = width / height;
+        if (width < height) {
+            camera.position.z = Math.max(24.5, 24.5 * (height / Math.max(width, 1)));
+        } else {
+            camera.position.z = 24.5;
+        }
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
         if (state.effectsMode === 'reduced') {
