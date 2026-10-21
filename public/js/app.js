@@ -854,10 +854,23 @@ window.App = (function () {
                     ? window.Currency.formatPercent(chg)
                     : `${chg >= 0 ? '+' : ''}${Number(chg).toFixed(2)}\u00A0%`)
                 : '—';
+
+            // Bloque I.7: Detectar estado de mercado cerrado para acciones
+            const isStock = it.category === 'stocks' || ['SAN', 'BBVA', 'ITX', 'TEF', 'IBE', 'REP', 'IBEX', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN'].includes(it.symbol);
+            let isClosed = false;
+            if (isStock) {
+                if (window.Store && typeof window.Store.isAssetMarketOpen === 'function') {
+                    isClosed = window.Store.isAssetMarketOpen(it.symbol, 'stocks') === false;
+                } else if (tick && tick.marketOpen !== undefined) {
+                    isClosed = tick.marketOpen === false;
+                }
+            }
+
             return {
                 priceFormatted,
                 changeClass: hasValidChg ? (chg >= 0 ? 'bullish' : 'bearish') : 'text-secondary',
-                changeText
+                changeText,
+                isClosed
             };
         }
 
@@ -876,6 +889,17 @@ window.App = (function () {
                     chgEl.className = `tape-change ${m.changeClass}`;
                     chgEl.textContent = m.changeText;
                 }
+                let closedTag = el.querySelector('.tape-closed-tag');
+                if (m.isClosed) {
+                    if (!closedTag) {
+                        closedTag = document.createElement('span');
+                        closedTag.className = 'tape-closed-tag';
+                        closedTag.textContent = 'CIERRE';
+                        el.appendChild(closedTag);
+                    }
+                } else if (closedTag) {
+                    closedTag.remove();
+                }
             });
             return;
         }
@@ -890,6 +914,7 @@ window.App = (function () {
                     <span class="tape-sym">${it.symbol}</span>
                     <span class="tape-price">${m.priceFormatted}</span>
                     <span class="tape-change ${m.changeClass}">${m.changeText}</span>
+                    ${m.isClosed ? '<span class="tape-closed-tag">CIERRE</span>' : ''}
                 </div>
             `;
         }).join('');
@@ -2759,7 +2784,8 @@ window.App = (function () {
         }
 
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('.tooltip-hint, [data-help-title]');
+            const isTouch = window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const target = e.target.closest('.tooltip-hint, [data-help-title], [data-tooltip]' + (isTouch ? ', [title]:not(input):not(select):not(textarea)' : ''));
             if (!target) {
                 if (currentPopover && !e.target.closest('.floating-help-popover')) {
                     closePopover();
@@ -2767,22 +2793,44 @@ window.App = (function () {
                 return;
             }
 
+            // On desktop non-touch, only intercept explicit help hints or elements with data-help-*
+            const isExplicitHint = target.classList.contains('tooltip-hint') || 
+                                   target.hasAttribute('data-help-title') || 
+                                   target.hasAttribute('data-help-text') || 
+                                   target.hasAttribute('data-tooltip') ||
+                                   target.matches('.fa-info-circle, .fa-question-circle, .info-icon, .stat-info-icon');
+            if (!isExplicitHint && !isTouch) return;
+
+            // Don't intercept primary navigation clicks if title is just an aria label on a link/button
+            if (!isExplicitHint && (target.tagName === 'A' || (target.tagName === 'BUTTON' && !target.classList.contains('btn-indicator-tool')))) {
+                return;
+            }
+
             e.stopPropagation();
             closePopover();
 
-            const title = target.dataset.helpTitle || target.getAttribute('title') || 'Información de Trading';
-            const text = target.dataset.helpText || target.closest('[data-help-text]')?.dataset.helpText || target.getAttribute('title') || target.closest('[data-tooltip]')?.dataset.tooltip || 'Detalle operativo del terminal de trading.';
+            const rawTitle = target.dataset.helpTitle || target.getAttribute('title') || target.dataset.tooltip || 'Información de Trading';
+            const rawText = target.dataset.helpText || target.closest('[data-help-text]')?.dataset.helpText || target.getAttribute('title') || target.dataset.tooltip || target.closest('[data-tooltip]')?.dataset.tooltip || 'Detalle operativo del terminal de trading.';
             const tip = target.dataset.helpTip || target.closest('[data-help-tip]')?.dataset.helpTip || null;
+
+            // If title and text are identical and text is short, format title cleanly
+            let displayTitle = rawTitle;
+            let displayText = rawText;
+            if (rawTitle === rawText && rawText.includes(':')) {
+                const parts = rawText.split(':');
+                displayTitle = parts[0].trim();
+                displayText = parts.slice(1).join(':').trim();
+            }
 
             const popover = document.createElement('div');
             popover.className = 'floating-help-popover';
             popover.innerHTML = `
                 <div class="fhp-header">
-                    <div class="fhp-title"><i class="fas fa-question-circle"></i> ${title}</div>
+                    <div class="fhp-title"><i class="fas fa-question-circle"></i> ${safeEscape(displayTitle)}</div>
                     <button class="fhp-close" title="Cerrar">&times;</button>
                 </div>
-                <p class="fhp-text">${text}</p>
-                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Pro:</strong> ${tip}</div>` : ''}
+                <p class="fhp-text">${safeEscape(displayText)}</p>
+                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Pro:</strong> ${safeEscape(tip)}</div>` : ''}
             `;
 
             document.body.appendChild(popover);

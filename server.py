@@ -34,7 +34,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Route, WebSocketRoute, Mount
-from starlette.responses import JSONResponse, Response, StreamingResponse, FileResponse
+from starlette.responses import JSONResponse, Response, StreamingResponse, FileResponse, HTMLResponse
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 import requests
@@ -1857,11 +1857,25 @@ async def api_health(request):
     })
 
 async def serve_index(request):
-    """Sirve únicamente el index.html ubicado dentro de public/."""
+    """Sirve index.html con dominio configurable para canonical y Open Graph (Bloque I.2)."""
     index_path = os.path.join(PUBLIC_DIR, "index.html")
     if not os.path.exists(index_path):
         return Response("index.html not found in public directory", status_code=404)
-    response = FileResponse(index_path, media_type="text/html")
+
+    app_domain = os.environ.get("APP_DOMAIN", "").strip().rstrip("/")
+    if not app_domain:
+        host = request.headers.get("host", "localhost:8000")
+        proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+        app_domain = f"{proto}://{host}"
+
+    with open(index_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Reemplazar URLs de dominio configurable
+    content = content.replace("https://paperpulse.app/", f"{app_domain}/")
+    content = content.replace("https://paperpulse.app", app_domain)
+
+    response = HTMLResponse(content)
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
@@ -1925,13 +1939,16 @@ class SecurityHeadersMiddleware:
                 if b"strict-transport-security" not in existing:
                     headers.append((b"strict-transport-security", b"max-age=31536000; includeSubDomains"))
                 if b"content-security-policy" not in existing:
+                    # Bloque I.5: CSP estricta de producción sin localhost en connect-src salvo en modo desarrollo
+                    is_dev = os.environ.get("ENV", "production").lower() in ("dev", "development") or os.environ.get("DEBUG", "0") == "1"
+                    local_ws = " ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*" if is_dev else ""
                     csp_policy = (
                         "default-src 'self'; "
                         "script-src 'self'; "
                         "style-src 'self' 'unsafe-inline'; "
                         "font-src 'self' data:; "
                         "img-src 'self' data: blob:; "
-                        "connect-src 'self' wss://stream.binance.com:* wss://data-stream.binance.vision:* ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://api.binance.com https://api.frankfurter.app; "
+                        f"connect-src 'self' wss://stream.binance.com:* wss://data-stream.binance.vision:*{local_ws} https://api.binance.com https://api.frankfurter.app; "
                         "frame-ancestors 'none'; "
                         "base-uri 'self'; "
                         "form-action 'self';"

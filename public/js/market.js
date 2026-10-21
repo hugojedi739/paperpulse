@@ -343,6 +343,29 @@ window.Market = (function () {
                             : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
                         : '—';
                 }
+
+                // Bloque I.7: Etiqueta CIERRE in-situ
+                const isStock = coin.category === 'stocks' || ['SAN', 'BBVA', 'ITX', 'TEF', 'REP', 'IBE', 'IBEX', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN'].includes(sym);
+                let isClosed = false;
+                if (isStock) {
+                    if (window.Store && typeof window.Store.isAssetMarketOpen === 'function') {
+                        isClosed = window.Store.isAssetMarketOpen(sym, 'stocks') === false;
+                    } else if (tick && tick.marketOpen !== undefined) {
+                        isClosed = tick.marketOpen === false;
+                    }
+                }
+                let closedTag = itemEl.querySelector('.watchlist-closed-tag');
+                if (isClosed) {
+                    if (!closedTag) {
+                        closedTag = document.createElement('span');
+                        closedTag.className = 'watchlist-closed-tag';
+                        closedTag.textContent = 'CIERRE';
+                        const changeRow = itemEl.querySelector('.watchlist-change-row') || itemEl.querySelector('.watchlist-item-right');
+                        if (changeRow) changeRow.appendChild(closedTag);
+                    }
+                } else if (closedTag) {
+                    closedTag.remove();
+                }
             });
             return;
         }
@@ -374,6 +397,17 @@ window.Market = (function () {
                     : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
                 : '—';
 
+            // Bloque I.7: Detectar mercado cerrado
+            const isStock = coin.category === 'stocks' || ['SAN', 'BBVA', 'ITX', 'TEF', 'REP', 'IBE', 'IBEX', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN'].includes(sym);
+            let isClosed = false;
+            if (isStock) {
+                if (window.Store && typeof window.Store.isAssetMarketOpen === 'function') {
+                    isClosed = window.Store.isAssetMarketOpen(sym, 'stocks') === false;
+                } else if (tick && tick.marketOpen !== undefined) {
+                    isClosed = tick.marketOpen === false;
+                }
+            }
+
             return `<div class="watchlist-item ${isActive ? 'active' : ''}" data-id="${coin.id}" data-symbol="${sym}" data-name="${coin.name}" data-last-price="${livePrice > 0 ? livePrice : ''}">
                 <div class="watchlist-item-left">
                     ${window.App ? window.App.getAssetSvg(sym, 24) : ''}
@@ -384,7 +418,10 @@ window.Market = (function () {
                 </div>
                 <div class="watchlist-item-right">
                     <span class="watchlist-price">${priceFormatted}</span>
-                    <span class="watchlist-change ${cls}">${chgText}</span>
+                    <div class="watchlist-change-row">
+                        <span class="watchlist-change ${cls}">${chgText}</span>
+                        ${isClosed ? '<span class="watchlist-closed-tag">CIERRE</span>' : ''}
+                    </div>
                 </div>
             </div>`;
         }).join('');

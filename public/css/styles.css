@@ -24,10 +24,15 @@
     --border: #2b3139;
     --border-light: #363c45;
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.16);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-xl: 0 16px 36px rgba(0, 0, 0, 0.45);
+    --radius-sm: 4px;
+    --radius-md: 8px;
     --radius: 12px;
-    --radius-sm: 8px;
     --radius-lg: 16px;
+    --radius-full: 9999px;
     --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     --sidebar-width: 240px;
     --navbar-height: 54px;
@@ -142,6 +147,84 @@ img { max-width: 100%; display: block; }
 .bearish { color: var(--bearish) !important; }
 .muted { color: var(--text-muted) !important; }
 .text-secondary { color: var(--text-secondary); }
+.d-none { display: none !important; }
+.w-100 { width: 100% !important; }
+.w-50 { width: 50% !important; }
+.mt-12 { margin-top: 12px !important; }
+.mb-20 { margin-bottom: 20px !important; }
+.text-danger { color: var(--danger, #ef4444) !important; }
+.text-danger-muted { color: rgba(239, 68, 68, 0.85) !important; }
+.font-xs { font-size: 10px !important; }
+.fx-status-tag { font-size: 11px; margin-left: 4px; font-weight: 600; }
+.noscript-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0b0e11;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    font-family: sans-serif;
+    padding: 24px;
+    text-align: center;
+}
+
+/* Bloque I.6: Tabular Nums para alineación financiera perfecta de todas las cifras */
+.stat-value,
+.stat-change,
+.price-value,
+.price-change,
+.ticker-price,
+.tape-price,
+.tape-change,
+.watchlist-price,
+.watchlist-change,
+.ob-price,
+.ob-amount,
+.ob-total,
+.position-qty,
+.position-pnl,
+.mover-price,
+.mover-change,
+.pps-val,
+.pps-sub,
+.smp-mini-val,
+.balance-val,
+.user-dropdown-balance,
+.order-preview-value,
+.number-tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* Bloque I.7: Etiquetas de Mercado Cerrado en cinta y lista lateral */
+.tape-closed-tag,
+.watchlist-closed-tag {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(148, 163, 184, 0.16);
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.watchlist-change-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
 
 /* ============================================
    NAVBAR
@@ -10335,5 +10418,109 @@ body.light-theme .skeleton-box {
         font-size: 20px;
     }
 }
+
+/* Bloque I.6 & I.9: Alias [data-theme] y contraste estricto en modo claro con paleta dorada */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-hover: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border: #e2e8f0;
+    --border-light: #cbd5e1;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme[data-palette="gold"] .btn-primary,
+body.light-theme[data-palette="gold"] .btn-glow,
+[data-theme="light"][data-palette="gold"] .btn-primary,
+[data-theme="light"][data-palette="gold"] .btn-glow {
+    color: #ffffff !important;
+}
+
+/* Bloque I.8: Cristal consolidado a máx. 6 elementos y respeto a prefers-reduced-transparency */
+@media (prefers-reduced-transparency: reduce) {
+    .navbar,
+    .search-results,
+    .mobile-bottom-nav,
+    .mobile-trading-action-bar,
+    .confirm-modal,
+    .guide-modal,
+    .alerts-modal,
+    .api-key-modal,
+    .news-modal,
+    .chat-panel {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: var(--bg-card) !important;
+    }
+}
+
+/* ==========================================================================
+   Bloque I.4: Clases de utilidad para erradicar atributos style= en línea
+   ========================================================================== */
+.d-none { display: none !important; }
+.w-100 { width: 100% !important; }
+.w-50 { width: 50% !important; }
+.w-0 { width: 0% !important; }
+.mt-12 { margin-top: 12px !important; }
+.mt-14 { margin-top: 14px !important; }
+.mb-20 { margin-bottom: 20px !important; }
+.mb-14 { margin-bottom: 14px !important; }
+.mb-12 { margin-bottom: 12px !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.ml-6 { margin-left: 6px !important; }
+.p-0 { padding: 0 !important; }
+.max-w-680 { max-width: 680px !important; }
+.max-w-480 { max-width: 480px !important; }
+.tracking-wide { letter-spacing: 2px !important; }
+.font-hint { font-size: 12px !important; opacity: 0.8 !important; }
+.text-danger { color: var(--danger) !important; }
+.text-danger-sub { color: rgba(239, 68, 68, 0.85) !important; }
+.umi-icon-cyan { background: rgba(0, 210, 255, 0.12) !important; color: var(--accent-primary) !important; }
+.umi-icon-blue { background: rgba(58, 123, 213, 0.15) !important; color: #3a7bd5 !important; }
+.umi-icon-danger { background: rgba(239, 68, 68, 0.15) !important; color: var(--danger) !important; }
+.noscript-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #0b0e11 !important;
+    color: #fff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 999999 !important;
+    font-family: sans-serif !important;
+    padding: 24px !important;
+    text-align: center !important;
+}
+.noscript-title { color: #00d2ff !important; margin-bottom: 12px !important; }
+.noscript-desc { color: #94a3b8 !important; max-width: 520px !important; line-height: 1.6 !important; font-size: 15px !important; }
+.empty-state-p32 { padding: 32px 16px !important; text-align: center !important; color: var(--text-muted) !important; font-size: 13px !important; }
+.empty-state-icon { font-size: 24px !important; margin-bottom: 8px !important; display: block !important; opacity: 0.5 !important; }
+.portfolio-empty-inner { grid-column: 1 / -1 !important; padding: 28px 16px !important; text-align: center !important; color: var(--text-muted) !important; font-size: 13px !important; }
+.portfolio-empty-icon { margin-bottom: 8px !important; font-size: 24px !important; opacity: 0.5 !important; display: block !important; }
+.no-bg-img { background-image: none !important; }
+.textarea-journal { background-image: none !important; height: 100px !important; resize: vertical !important; }
+.textarea-reflection { background-image: none !important; height: 80px !important; resize: vertical !important; }
+.flex-end { display: flex !important; justify-content: flex-end !important; }
+.modal-footer-actions { display: flex !important; justify-content: flex-end !important; gap: 10px !important; margin-top: 18px !important; }
+.guide-section-h4 { color: var(--text-primary) !important; font-size: 15px !important; margin-bottom: 6px !important; display: flex !important; align-items: center !important; gap: 8px !important; }
+.guide-body-text { padding: 24px !important; font-size: 14px !important; line-height: 1.6 !important; color: var(--text-secondary) !important; }
+.demo-reset-warning-box { margin-top: 14px !important; padding: 10px 14px !important; background: rgba(246, 70, 93, 0.08) !important; border: 1px solid rgba(246, 70, 93, 0.2) !important; border-radius: 6px !important; font-size: 12px !important; color: var(--text-secondary) !important; }
+.danger-notice-box { background: rgba(239, 68, 68, 0.08) !important; border: 1px solid rgba(239, 68, 68, 0.25) !important; border-radius: 8px !important; padding: 12px 14px !important; margin-bottom: 14px !important; font-size: 12.5px !important; color: var(--text-secondary) !important; }
+.danger-notice-title { color: var(--danger) !important; display: block !important; margin-bottom: 6px !important; }
+.danger-notice-list { padding-left: 18px !important; margin: 0 !important; line-height: 1.6 !important; }
+.danger-notice-note { font-size: 12px !important; color: var(--text-muted) !important; margin: 0 !important; }
+.danger-notice-p { margin-bottom: 12px !important; font-size: 13.5px !important; line-height: 1.5 !important; color: var(--text-primary) !important; }
+.wm-status-tag { font-size: 11px !important; margin-left: 4px !important; font-weight: 600 !important; }
+
 
 

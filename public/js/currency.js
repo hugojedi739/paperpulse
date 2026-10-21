@@ -201,7 +201,7 @@
         if (pct == null || isNaN(pct)) return '0,00\u00A0%';
         const num = parseFloat(pct);
         const locale = getActiveLocale();
-        const sign = num >= 0 ? '+' : '';
+        const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
         const formatted = Math.abs(num).toLocaleString(locale, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2

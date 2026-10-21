@@ -5,23 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>PaperPulse Terminal — Trading y Análisis Cuantitativo</title>
     <meta name="description" content="PaperPulse Terminal — Plataforma avanzada de simulación de trading cuantitativo, análisis técnico en tiempo real y gestión de carteras de inversión.">
-    <link rel="canonical" href="http://localhost:8000/">
+    <link rel="canonical" href="https://paperpulse.app/">
 
-    <!-- Open Graph / Redes Sociales -->
+    <!-- Open Graph / Redes Sociales (1200x630px con vista previa real) -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="http://localhost:8000/">
+    <meta property="og:url" content="https://paperpulse.app/">
     <meta property="og:title" content="PaperPulse Terminal — Trading y Análisis Cuantitativo">
-    <meta property="og:description" content="Simulación de trading cuantitativo en tiempo real para criptoactivos y bolsas mundiales con motor cuantitativo paper trading.">
-    <meta property="og:image" content="/img/brand/og-preview.png">
+    <meta property="og:description" content="Simulación cuantitativa y análisis de mercados en tiempo real con cotizaciones oficiales de bolsas y cripto.">
+    <meta property="og:image" content="https://paperpulse.app/img/brand/og-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="PaperPulse Terminal">
     <meta property="og:locale" content="es_ES">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="http://localhost:8000/">
+    <meta name="twitter:url" content="https://paperpulse.app/">
     <meta name="twitter:title" content="PaperPulse Terminal — Trading y Análisis Cuantitativo">
-    <meta name="twitter:description" content="Simulación de trading cuantitativo en tiempo real para criptoactivos y bolsas mundiales.">
-    <meta name="twitter:image" content="/img/brand/og-preview.png">
+    <meta name="twitter:description" content="Simulación cuantitativa y análisis de mercados en tiempo real con cotizaciones oficiales.">
+    <meta name="twitter:image" content="https://paperpulse.app/img/brand/og-preview.png">
 
     <!-- Web App & PWA -->
     <meta name="theme-color" content="#0b0e11">
@@ -34,13 +36,14 @@
     <link rel="stylesheet" href="vendor/fonts/fonts.css">
     <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css?v=9">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><rect width='36' height='36' rx='9' fill='%230b0e11'/><path d='M18 5L29 11.5V24.5L18 31L7 24.5V11.5L18 5Z' stroke='%2300d2ff' stroke-width='2.2' fill='none'/><circle cx='18' cy='18' r='3' fill='%2300d2ff'/></svg>">
+    <!-- Favicon: Línea de latido (Heartbeat Pulse Line) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><rect width='36' height='36' rx='9' fill='%230b0e11'/><path d='M4 18h7l3-7 4 16 4-20 3 14 2-3h5' stroke='%2300d2ff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><circle cx='22' cy='6' r='2' fill='%2300d2ff'/></svg>">
 </head>
 <body>
     <noscript>
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0b0e11;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:sans-serif;padding:24px;text-align:center;">
-            <h1 style="color:#00d2ff;margin-bottom:12px;">JavaScript Requerido</h1>
-            <p style="color:#94a3b8;max-width:520px;line-height:1.6;font-size:15px;">
+        <div class="noscript-overlay">
+            <h1 class="noscript-title">JavaScript Requerido</h1>
+            <p class="noscript-desc">
                 PaperPulse Terminal requiere JavaScript habilitado para conectar con los feeds en vivo, calcular el motor cuantitativo y renderizar gráficos interactivos. Por favor, activa JavaScript en tu navegador.
             </p>
         </div>
@@ -53,22 +56,17 @@
             </button>
             <a href="#" class="logo" title="PaperPulse Terminal">
                 <div class="brand-logo-mark">
-                    <svg class="brand-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg class="brand-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="PaperPulse Logo">
                         <defs>
                             <linearGradient id="paperPulseMarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" stop-color="#00d2ff"/>
                                 <stop offset="100%" stop-color="#3a7bd5"/>
                             </linearGradient>
-                            <linearGradient id="paperPulseMarkCore" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#ffffff"/>
-                                <stop offset="100%" stop-color="#00d2ff"/>
-                            </linearGradient>
                         </defs>
-                        <rect width="36" height="36" rx="9" fill="url(#paperPulseMarkGrad)" fill-opacity="0.15"/>
-                        <path d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="url(#paperPulseMarkGrad)" stroke-width="2" stroke-linejoin="round"/>
-                        <path d="M18 10L25 14V22L18 26L11 22V14L18 10Z" fill="url(#paperPulseMarkGrad)" fill-opacity="0.25"/>
-                        <path d="M18 14L22 16.5V21.5L18 24L14 21.5V16.5L18 14Z" fill="url(#paperPulseMarkCore)"/>
-                        <circle cx="18" cy="18" r="2.5" fill="#ffffff"/>
+                        <rect width="36" height="36" rx="9" fill="url(#paperPulseMarkGrad)" fill-opacity="0.14"/>
+                        <!-- Línea de latido Pulse (Electrocardiograma / Latido Financiero) -->
+                        <path d="M4 18H11L14 11L18 27L22 7L25 21L27 18H32" stroke="url(#paperPulseMarkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="22" cy="7" r="2.2" fill="#00d2ff"/>
                     </svg>
                 </div>
                 <div class="logo-text-wrap">
@@ -104,7 +102,7 @@
                 <i class="fas fa-search search-main-icon"></i>
                 <input type="text" id="search-input" aria-label="Buscar criptomonedas o acciones" placeholder="Buscar..." autocomplete="off">
                 <kbd class="search-kbd-hint">/</kbd>
-                <button class="search-mobile-close-btn" id="search-mobile-close-btn" aria-label="Cerrar búsqueda" style="display:none;"><i class="fas fa-times"></i></button>
+                <button class="search-mobile-close-btn d-none" id="search-mobile-close-btn" aria-label="Cerrar búsqueda"><i class="fas fa-times"></i></button>
                 <div class="search-results" id="search-results"></div>
             </div>
             <!-- Mode Switcher (Beginner vs Pro) -->
@@ -115,9 +113,9 @@
             <!-- Estado de Cuenta / Modo Operativo -->
             <div class="balance-pill demo-account-pill" id="demo-account-trigger" title="Estado de la cuenta: Clic para ver detalles o gestionar">
                 <span class="account-mode-tag mode-consulta" id="account-mode-tag" title="Modo Consulta: Solo visualización de mercados"><i class="fas fa-eye"></i> <span class="amt-text">Modo Consulta</span></span>
-                <span class="balance-amount balance-sensitive" id="total-balance" style="display: none;">—</span>
-                <button class="btn-balance-privacy" id="balance-privacy-btn" aria-label="Ocultar o mostrar saldo confidencial" title="Ocultar / Mostrar saldos" style="display: none;"><i class="fas fa-eye"></i></button>
-                <button class="btn-balance-reset" id="reset-balance-btn" aria-label="Ajustes de cuenta de práctica" title="Ajustes de cuenta de práctica" style="display: none;"><i class="fas fa-sliders-h"></i></button>
+                <span class="balance-amount balance-sensitive d-none" id="total-balance">—</span>
+                <button class="btn-balance-privacy d-none" id="balance-privacy-btn" aria-label="Ocultar o mostrar saldo confidencial" title="Ocultar / Mostrar saldos"><i class="fas fa-eye"></i></button>
+                <button class="btn-balance-reset d-none" id="reset-balance-btn" aria-label="Ajustes de cuenta de práctica" title="Ajustes de cuenta de práctica"><i class="fas fa-sliders-h"></i></button>
                 <button class="btn-start-practice-nav" id="btn-start-practice-nav" title="Activar cuenta de práctica con saldo ficticio"><i class="fas fa-play"></i> Practicar</button>
             </div>
             <!-- Connection Status (Binance WS Real-Time & Bolsa) -->
@@ -133,7 +131,7 @@
             <div class="notification-dropdown-wrap" id="notification-dropdown-wrap">
                 <button class="nav-icon-btn" id="notification-btn" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false" title="Notificaciones y Alertas de Mercado">
                     <i class="fas fa-bell"></i>
-                    <span class="notif-badge" id="notif-badge-count" style="display: none;">0</span>
+                    <span class="notif-badge d-none" id="notif-badge-count">0</span>
                 </button>
                 <div class="notification-dropdown-menu" id="notification-dropdown-menu">
                     <div class="notif-dropdown-header">
@@ -145,8 +143,8 @@
                         <button class="btn-text-action" id="notif-mark-read-btn" title="Marcar todas como leídas">Marcar leídas</button>
                     </div>
                     <div class="notif-dropdown-list" id="notif-items-list">
-                        <div class="notif-empty-state" style="padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                            <i class="fas fa-bell-slash" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+                        <div class="notif-empty-state empty-state-p32">
+                            <i class="fas fa-bell-slash empty-state-icon"></i>
                             No tienes notificaciones pendientes
                         </div>
                     </div>
@@ -180,7 +178,7 @@
                             <span class="ubp-label"><i class="fas fa-wallet"></i> Saldo Demo Total</span>
                             <strong class="ubp-val" id="user-dropdown-balance">—</strong>
                         </div>
-                        <div class="ubp-bar"><div class="ubp-fill" id="user-menu-margin-fill" style="width: 100%;"></div></div>
+                        <div class="ubp-bar"><div class="ubp-fill w-100" id="user-menu-margin-fill"></div></div>
                         <div class="ubp-footer">
                             <span class="ubp-hint" id="user-menu-margin-hint">Margen disponible: 100%</span>
                             <span class="ubp-status">Modo Práctica</span>
@@ -267,7 +265,7 @@
                         <!-- Sección Datos & Privacidad -->
                         <div class="user-menu-group-title">Datos & Privacidad</div>
                         <button class="user-menu-item" id="user-menu-export" title="Descargar copia de seguridad en JSON de tus operaciones y ajustes">
-                            <div class="umi-icon icon-trade" style="background: rgba(0, 210, 255, 0.12); color: var(--accent-primary);"><i class="fas fa-file-export"></i></div>
+                            <div class="umi-icon icon-trade umi-icon-cyan"><i class="fas fa-file-export"></i></div>
                             <div class="umi-text">
                                 <strong>Exportar Datos (JSON)</strong>
                                 <span>Copia de seguridad local</span>
@@ -275,14 +273,14 @@
                             <i class="fas fa-download umi-arrow"></i>
                         </button>
                         <button class="user-menu-item" id="user-menu-import" title="Restaurar operaciones y configuración desde un archivo JSON">
-                            <div class="umi-icon icon-trade" style="background: rgba(58, 123, 213, 0.15); color: #3a7bd5;"><i class="fas fa-file-import"></i></div>
+                            <div class="umi-icon icon-trade umi-icon-blue"><i class="fas fa-file-import"></i></div>
                             <div class="umi-text">
                                 <strong>Importar Datos (JSON)</strong>
                                 <span>Restaurar copia previa</span>
                             </div>
                             <i class="fas fa-upload umi-arrow"></i>
                         </button>
-                        <input type="file" id="user-import-file-input" accept=".json,application/json" style="display: none;">
+                        <input type="file" id="user-import-file-input" accept=".json,application/json" class="d-none">
 
                         <!-- Sección Legal y Sesión -->
                         <div class="user-menu-group-title">Información & Sesión</div>
@@ -295,12 +293,12 @@
                             <i class="fas fa-chevron-right umi-arrow"></i>
                         </button>
                         <button class="user-menu-item danger-item" id="user-menu-clear-all" title="Eliminar permanentemente todos los datos locales (Derecho al olvido RGPD)">
-                            <div class="umi-icon icon-reset" style="background: rgba(239, 68, 68, 0.15); color: var(--danger);"><i class="fas fa-user-slash"></i></div>
+                            <div class="umi-icon icon-reset umi-icon-danger"><i class="fas fa-user-slash"></i></div>
                             <div class="umi-text">
-                                <strong style="color: var(--danger);">Borrar Mis Datos (RGPD)</strong>
-                                <span style="color: rgba(239, 68, 68, 0.85);">Eliminar historial y cuenta local</span>
+                                <strong class="text-danger">Borrar Mis Datos (RGPD)</strong>
+                                <span class="text-danger-sub">Eliminar historial y cuenta local</span>
                             </div>
-                            <i class="fas fa-trash-alt umi-arrow" style="color: var(--danger);"></i>
+                            <i class="fas fa-trash-alt umi-arrow text-danger"></i>
                         </button>
                     </div>
                 </div>
@@ -312,7 +310,7 @@
     </nav>
 
     <!-- ========== BANNER GLOBAL SIN CONEXIÓN ========== -->
-    <div id="global-offline-banner" class="global-offline-banner" style="display: none;" role="alert" aria-live="assertive">
+    <div class="global-offline-banner d-none" id="global-offline-banner" role="alert" aria-live="assertive">
         <div class="offline-banner-content">
             <i class="fas fa-wifi-slash"></i>
             <span><strong>Sin conexión a internet:</strong> Mostrando los últimos datos guardados. La reconexión se intentará automáticamente.</span>
@@ -352,7 +350,7 @@
             <div class="sidebar-section sidebar-pulse-section">
                 <div class="sidebar-header">
                     <h3><i class="fas fa-heartbeat"></i> Pulso del Mercado</h3>
-                    <span class="badge badge-success" id="pulse-badge-status" style="font-size: 10px;">EN VIVO</span>
+                    <span class="badge badge-success badge-xs" id="pulse-badge-status">EN VIVO</span>
                 </div>
                 <div class="sidebar-market-pulse" id="sidebar-market-pulse">
                     <div class="smp-metric">
@@ -360,7 +358,7 @@
                         <div class="smp-val"><strong id="pulse-val-sentiment">—</strong> <span class="smp-sub" id="pulse-sub-sentiment">(Calculando...)</span></div>
                     </div>
                     <div class="smp-bar-wrap">
-                        <div class="smp-bar" id="pulse-bar-sentiment" style="width: 50%;"></div>
+                        <div class="smp-bar w-50" id="pulse-bar-sentiment"></div>
                     </div>
                     <div class="smp-grid">
                         <div class="smp-mini-card">
@@ -511,15 +509,15 @@
                         <div class="card-body">
                             <!-- Barra Segmentada de Asignación de Capital -->
                             <div class="asset-alloc-bar" title="Distribución de activos en cartera">
-                                <div class="aab-seg seg-usdt" style="width: 100%;" title="Efectivo Disponible: 100%"></div>
+                                <div class="aab-seg seg-usdt w-100" title="Efectivo Disponible: 100%"></div>
                             </div>
 
                             <!-- Cuadrícula de Tarjetas de Activos en Tenencia -->
                             <div class="holdings-grid" id="portfolio-holdings-grid">
-                                <div class="portfolio-empty-hint" style="grid-column: 1 / -1; padding: 28px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                                    <i class="fas fa-wallet" style="margin-bottom: 8px; font-size: 24px; opacity: 0.5; display: block;"></i>
+                                <div class="portfolio-empty-hint portfolio-empty-inner">
+                                    <i class="fas fa-wallet portfolio-empty-icon"></i>
                                     Sin activos en cartera aún.<br>
-                                    <span style="font-size: 12px; opacity: 0.8;">Las posiciones que adquieras en la terminal aparecerán aquí con sus cotizaciones en vivo.</span>
+                                    <span class="font-hint">Las posiciones que adquieras en la terminal aparecerán aquí con sus cotizaciones en vivo.</span>
                                 </div>
                             </div>
                         </div>
@@ -537,7 +535,7 @@
                             <div class="wm-header-actions">
                                 <span class="wm-tz-hint"><i class="fas fa-clock"></i> Zonas horarias oficiales</span>
                                 <button class="btn-icon-subtle" id="wm-fx-toggle-btn" title="Alternar Modo de Efectos (3D Dinámico / 3D Estático / 2D Esquema)" aria-label="Alternar Efectos Visuales">
-                                    <i class="fas fa-cube"></i> <span id="wm-fx-status-text" style="font-size: 11px; margin-left: 4px; font-weight: 600;">3D</span>
+                                    <i class="fas fa-cube"></i> <span id="wm-fx-status-text" class="wm-status-tag">3D</span>
                                 </button>
                                 <button class="btn-icon-subtle" id="wm-reset-cam-btn" title="Restablecer vista del globo" aria-label="Restablecer orientación del globo">
                                     <i class="fas fa-sync-alt"></i>
@@ -549,7 +547,7 @@
                             <div class="globe-viewport-container" id="globe-viewport-container">
                                 <canvas id="globe-canvas" class="globe-canvas" aria-hidden="true"></canvas>
                                 <!-- Fallback Estático 2D para efectos desactivados o sin WebGL -->
-                                <div id="globe-fallback" class="globe-fallback" style="display:none;" aria-hidden="true">
+                                <div class="globe-fallback d-none" id="globe-fallback" aria-hidden="true">
                                     <div class="globe-fallback-inner">
                                         <svg viewBox="0 0 240 240" class="globe-fallback-svg">
                                             <defs>
@@ -613,7 +611,7 @@
                         </div>
                         <div class="card-body">
                             <div class="sentiment-track">
-                                <div class="sentiment-bar-fill" id="sentiment-bar-fill" style="width: 50%;"></div>
+                                <div class="sentiment-bar-fill w-50" id="sentiment-bar-fill"></div>
                             </div>
                             <div class="sentiment-labels">
                                 <span>Predominio Vendedor</span>
@@ -651,7 +649,7 @@
                                     </div>
                                     <div class="symbol-price-row">
                                         <span class="current-price" id="current-price">—</span>
-                                        <span class="converted-price-pill" id="converted-price-pill" style="display:none;">—</span>
+                                        <span class="converted-price-pill d-none" id="converted-price-pill">—</span>
                                         <span class="price-change text-secondary" id="price-change">—</span>
                                     </div>
                                 </div>
@@ -739,7 +737,7 @@
                                     <input type="number" id="quick-usd-input" value="50" min="5" step="5">
                                     <span class="input-suffix" id="quick-input-suffix">EUR</span>
                                 </div>
-                                <div class="input-approx-note" id="quick-input-approx" style="font-size:11px; color:var(--text-muted); margin-top:4px; display:none;"></div>
+                                <div class="input-approx-note d-none" id="quick-input-approx"></div>
                             </div>
 
                             <!-- Calculation Feedback Box -->
@@ -773,14 +771,14 @@
                         </div>
 
                         <!-- 2. MODO AVANZADO (PRO USERS) -->
-                        <div class="advanced-trade-panel" id="advanced-trade-panel" style="display: none;">
+                        <div class="advanced-trade-panel d-none" id="advanced-trade-panel">
                             <div class="order-tabs">
                                 <button class="order-tab active" data-type="spot" id="order-tab-spot"><i class="fas fa-coins"></i> Spot</button>
                                 <button class="order-tab" data-type="margin" id="order-tab-margin"><i class="fas fa-bolt"></i> Margin 10x</button>
                             </div>
 
                             <!-- Opciones Didácticas de Margin Trading -->
-                            <div class="margin-options-box" id="margin-trade-options" style="display: none;">
+                            <div class="margin-options-box d-none" id="margin-trade-options">
                                 <div class="margin-badge-banner">
                                     <i class="fas fa-bolt"></i>
                                     <span><strong>Modo Margin Activo</strong> · Multiplica tu capital con préstamo virtual</span>
@@ -818,21 +816,21 @@
                                         <option value="stop-limit">Stop-Limit (Protección)</option>
                                     </select>
                                 </div>
-                                <div class="form-group" id="order-stop-group" style="display: none;">
+                                <div class="form-group d-none" id="order-stop-group">
                                     <label>Precio Stop (Disparo)</label>
                                     <div class="input-group">
                                         <input type="number" id="order-stop-price" placeholder="0.00" step="0.01">
                                         <span class="input-suffix" id="order-stop-suffix">USDT</span>
                                     </div>
-                                    <div class="input-approx-note" id="order-stop-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px; display:none;"></div>
+                                    <div class="input-approx-note d-none" id="order-stop-approx"></div>
                                 </div>
-                                <div class="form-group" id="order-price-group" style="display: none;">
+                                <div class="form-group d-none" id="order-price-group">
                                     <label>Precio Límite</label>
                                     <div class="input-group">
                                         <input type="number" id="order-price" placeholder="0.00" step="0.01" disabled>
                                         <span class="input-suffix" id="order-price-suffix">USDT</span>
                                     </div>
-                                    <div class="input-approx-note" id="order-price-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px; display:none;"></div>
+                                    <div class="input-approx-note d-none" id="order-price-approx"></div>
                                 </div>
                                 <div class="form-group">
                                     <label>Cantidad</label>
@@ -853,7 +851,7 @@
                                         <input type="number" id="order-total" placeholder="0.00" readonly>
                                         <span class="input-suffix" id="order-total-suffix">USDT</span>
                                     </div>
-                                    <div class="input-approx-note" id="order-total-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px;"></div>
+                                    <div class="input-approx-note" id="order-total-approx" ></div>
                                 </div>
                                 <div class="order-buttons">
                                     <button class="btn btn-buy" id="buy-btn">
@@ -1005,7 +1003,7 @@
                     <button class="btn btn-sell mobile-trade-btn" id="mobile-trade-sell-btn">
                         <i class="fas fa-arrow-down"></i> <span>Vender</span>
                     </button>
-                    <button class="btn btn-primary mobile-trade-practice-btn" id="mobile-trade-practice-btn" style="display: none;">
+                    <button class="btn btn-primary mobile-trade-practice-btn d-none" id="mobile-trade-practice-btn">
                         <i class="fas fa-play"></i> <span>Empezar a practicar</span>
                     </button>
                 </div>
@@ -1023,7 +1021,7 @@
                         <button class="market-tab active" data-category="crypto">🪙 Cripto</button>
                         <button class="market-tab" data-category="all">🌐 Todos</button>
                         <button class="market-tab" data-category="stocks">📊 Acciones</button>
-                        <button class="market-tab" data-category="forex" style="display: none;">💱 Forex</button>
+                        <button class="market-tab d-none" data-category="forex">💱 Forex</button>
                     </div>
                     <div class="search-box search-box-inline">
                         <i class="fas fa-search"></i>
@@ -1109,7 +1107,7 @@
                         <div class="jkc-main">
                             <span class="jkc-val-hero" id="journal-win-rate">—</span>
                             <div class="mini-progress-track">
-                                <div class="mini-progress-fill" id="journal-winrate-bar" style="width: 0%;"></div>
+                                <div class="mini-progress-fill w-0" id="journal-winrate-bar"></div>
                             </div>
                         </div>
                         <div class="jkc-footer">
@@ -1139,8 +1137,8 @@
                         </div>
                         <div class="jkc-main">
                             <span class="jkc-val-hero accent" id="journal-streak-val">—</span>
-                            <span id="journal-rr-ratio" style="display:none;">—</span>
-                            <span id="journal-rr-sub" style="display:none;"></span>
+                            <span id="journal-rr-ratio" class="d-none">—</span>
+                            <span id="journal-rr-sub" class="d-none"></span>
                         </div>
                         <div class="jkc-footer">
                             <span class="jkc-subtext" id="journal-streak-sub">Calculando racha actual...</span>
@@ -1202,7 +1200,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card-body" style="padding: 0;">
+                    <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="data-table journal-table">
                                 <thead>
@@ -1223,7 +1221,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="journal-empty-state" id="journal-empty-state" style="display: none;">
+                        <div class="journal-empty-state d-none" id="journal-empty-state">
                             <i class="fas fa-filter"></i>
                             <p>No se encontraron operaciones con los filtros seleccionados.</p>
                         </div>
@@ -1250,7 +1248,7 @@
     <div id="chat-widget" class="chat-widget">
         <button id="chat-toggle" class="chat-toggle" aria-label="Abrir asistente de mercado PaperPulse AI" title="Abrir PaperPulse Intelligence">
             <i class="fas fa-brain"></i>
-            <span class="chat-badge" id="chat-badge" style="display:none">1</span>
+            <span class="chat-badge d-none" id="chat-badge">1</span>
         </button>
         <div class="chat-panel" id="chat-panel">
             <div class="chat-header">
@@ -1331,7 +1329,7 @@
                             <div class="guide-metric-row"><span>Drivers:</span> <span>Liquidez on-chain, sentimiento macro</span></div>
                             <div class="guide-tab-hint"><i class="fas fa-lightbulb"></i> Ideal para <strong>Day Trading y Scalping</strong> con liquidez continua.</div>
                         </div>
-                        <div class="guide-tab-panel" id="guide-panel-stocks" style="display:none;">
+                        <div class="guide-tab-panel d-none" id="guide-panel-stocks">
                             <div class="guide-metric-row"><span>Horario:</span> <strong>Lunes a Viernes (según festivos oficiales de cada bolsa)</strong></div>
                             <div class="guide-metric-row"><span>Rango diario:</span> <strong class="text-accent">Moderado (±1% a ±3%)</strong></div>
                             <div class="guide-metric-row"><span>Drivers:</span> <span>Resultados trimestrales (Earnings), tipos de la Fed</span></div>
@@ -1523,7 +1521,7 @@
 
     <!-- ========== MODAL AVISO LEGAL, TÉRMINOS Y PRIVACIDAD ========== -->
     <div id="legal-privacy-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
-        <div class="guide-modal-content" style="max-width: 680px;">
+        <div class="guide-modal-content max-w-680">
             <div class="guide-modal-header">
                 <div class="guide-header-title">
                     <span class="guide-badge"><i class="fas fa-shield-alt"></i> Normativa & Cumplimiento</span>
@@ -1531,33 +1529,33 @@
                 </div>
                 <button class="guide-close-btn" id="legal-modal-close" aria-label="Cerrar modal">&times;</button>
             </div>
-            <div class="guide-modal-body" style="padding: 24px; font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+            <div class="guide-modal-body guide-body-text">
+                <div class="mb-20">
+                    <h4 class="guide-section-h4">
                         <i class="fas fa-balance-scale text-accent"></i> 1. Simulación Educativa sin Asesoramiento Financiero
                     </h4>
                     <p>PaperPulse Terminal es un software interactivo desarrollado exclusivamente con fines formativos, de simulación cuantitativa y práctica analítica. En ningún caso las cotizaciones, gráficos, órdenes simuladas ni los análisis generados por PaperPulse AI deben interpretarse como asesoramiento financiero, gestión de carteras, recomendación personalizada ni inducción a la compra o venta de instrumentos financieros según la Directiva MiFID II o legislaciones aplicables.</p>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                <div class="mb-20">
+                    <h4 class="guide-section-h4">
                         <i class="fas fa-database text-accent"></i> 2. Fuentes de Datos y Retardo
                     </h4>
                     <p>Los datos de cotizaciones cripto se obtienen en tiempo real a través de los canales públicos de Binance. Los datos de renta variable y bolsa proceden de APIs de mercado con fines demostrativos y pueden presentar retardos de hasta 15 minutos o diferir de las cotizaciones oficiales de contratación en tiempo real.</p>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                <div class="mb-20">
+                    <h4 class="guide-section-h4">
                         <i class="fas fa-user-shield text-accent"></i> 3. Privacidad y Almacenamiento Local (Zero-Tracking)
                     </h4>
                     <p>PaperPulse Terminal opera bajo una política estricta de privacidad: no recopila datos bancarios, no vende información a terceros ni utiliza cookies publicitarias. Tu saldo virtual, historial de órdenes y configuraciones se almacenan localmente en tu propio navegador mediante <code>localStorage</code>.</p>
                 </div>
                 <div>
-                    <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 6px; display:flex; align-items:center; gap:8px;">
+                    <h4 class="guide-section-h4">
                         <i class="fas fa-chart-line text-warning"></i> 4. Advertencia de Alto Riesgo en Mercados Reales
                     </h4>
-                    <p style="margin-bottom: 0;">El trading en mercados financieros reales (acciones, derivados, futuros y criptoactivos) conlleva un riesgo elevado de pérdida de capital. Nunca operes con dinero real que no puedas permitirte perder íntegramente.</p>
+                    <p class="mb-0">El trading en mercados financieros reales (acciones, derivados, futuros y criptoactivos) conlleva un riesgo elevado de pérdida de capital. Nunca operes con dinero real que no puedas permitirte perder íntegramente.</p>
                 </div>
             </div>
-            <div class="guide-modal-footer" style="display:flex; justify-content:flex-end;">
+            <div class="guide-modal-footer flex-end">
                 <button type="button" class="btn btn-primary" id="legal-modal-btn-understand">Entendido y Aceptar</button>
             </div>
         </div>
@@ -1597,7 +1595,7 @@
                                 <input type="number" id="alert-target-input" placeholder="0.00" step="50">
                                 <span class="input-suffix" id="alert-target-suffix">USDT</span>
                             </div>
-                            <div class="input-approx-note" id="alert-target-approx" style="font-size:11px; color:var(--text-muted); margin-top:3px;"></div>
+                            <div class="input-approx-note" id="alert-target-approx" ></div>
                         </div>
                     </div>
                     <button class="btn btn-primary" id="btn-save-alert">
@@ -1668,13 +1666,13 @@
                 </div>
 
                 <!-- Aviso de reinicio / cierre -->
-                <div class="demo-reset-warning" id="demo-reset-warning" style="display:none; margin-top: 14px; padding: 10px 14px; background: rgba(246, 70, 93, 0.08); border: 1px solid rgba(246, 70, 93, 0.2); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">
+                <div class="demo-reset-warning demo-reset-warning-box d-none" id="demo-reset-warning">
                     <i class="fas fa-info-circle text-warning"></i> <strong>Nota al restablecer:</strong> Se restablecerá tu saldo y se cerrarán las posiciones abiertas. Tu Watchlist y alertas se conservarán.
                 </div>
             </div>
             <div class="confirm-modal-footer">
                 <button class="btn btn-outline" id="demo-modal-btn-cancel">Cancelar</button>
-                <button class="btn btn-ghost text-danger" id="demo-modal-btn-close-account" style="display: none;" title="Volver a Modo Consulta">
+                <button class="btn btn-ghost text-danger d-none" id="demo-modal-btn-close-account" title="Volver a Modo Consulta">
                     <i class="fas fa-sign-out-alt"></i> Cerrar cuenta de práctica
                 </button>
                 <button class="btn btn-primary" id="demo-modal-btn-primary">
@@ -1698,9 +1696,9 @@
                 <input type="hidden" id="j-modal-trade-id">
                 <div class="form-group">
                     <label>Estrategia / Setup utilizado:</label>
-                    <input type="text" id="j-modal-setup" class="form-select" style="background-image:none;" placeholder="Ej: Ruptura EMA 50, Retroceso Fibonacci, Scalping 5m...">
+                    <input class="form-select no-bg-img" type="text" id="j-modal-setup" placeholder="Ej: Ruptura EMA 50, Retroceso Fibonacci, Scalping 5m...">
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group mt-12">
                     <label>Estado Emocional & Psicología:</label>
                     <select id="j-modal-emotion" class="form-select">
                         <option value="Disciplinado">🎯 Disciplinado (Seguí el plan a rajatabla)</option>
@@ -1711,9 +1709,9 @@
                         <option value="Impaciente">⏱️ Impaciente (Cerré antes de tiempo)</option>
                     </select>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group mt-12">
                     <label>Reflexión del Trader & Lección aprendida:</label>
-                    <textarea id="j-modal-notes" class="form-select" style="background-image:none; height: 100px; resize: vertical;" rows="4" placeholder="¿Respetaste tu Stop Loss? ¿Hubo FOMO o indisciplina? ¿Qué hiciste bien en esta operación?"></textarea>
+                    <textarea class="form-select textarea-journal" id="j-modal-notes" rows="4" placeholder="¿Respetaste tu Stop Loss? ¿Hubo FOMO o indisciplina? ¿Qué hiciste bien en esta operación?"></textarea>
                 </div>
             </div>
             <div class="confirm-modal-footer">
@@ -1753,7 +1751,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 14px;">
+                <div class="form-group mt-14">
                     <label>Estrategia / Setup Utilizado:</label>
                     <select id="cpm-setup-select" class="form-select">
                         <option value="Ruptura de Resistencia">Ruptura de Resistencia / Soporte</option>
@@ -1766,7 +1764,7 @@
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group mt-12">
                     <label>Estado Emocional & Psicología:</label>
                     <select id="cpm-emotion-select" class="form-select">
                         <option value="Disciplinado">🎯 Disciplinado (Seguí el plan a rajatabla)</option>
@@ -1778,9 +1776,9 @@
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group mt-12">
                     <label>¿Qué aprendiste en esta operación? (Para tu Diario de Trading):</label>
-                    <textarea id="cpm-reflection-input" class="form-select" style="background-image:none; height: 80px; resize: vertical;" placeholder="Ej: Respeté mi Stop Loss, entré con buen volumen, no dejé correr las ganancias..."></textarea>
+                    <textarea class="form-select textarea-reflection" id="cpm-reflection-input" placeholder="Ej: Respeté mi Stop Loss, entré con buen volumen, no dejé correr las ganancias..."></textarea>
                 </div>
             </div>
             <div class="confirm-modal-footer">
@@ -1803,7 +1801,7 @@
                 <button class="btn-icon" id="rcm-modal-close" title="Cerrar"><i class="fas fa-times"></i></button>
             </div>
             <div class="confirm-modal-body">
-                <p id="rcm-desc" style="color: var(--text-secondary); line-height: 1.5; font-size: 13px;">
+                <p id="rcm-desc" class="rcm-desc-text">
                     Esta acción restablecerá tu capital demo al saldo inicial y cancelará las órdenes abiertas en este entorno.
                 </p>
             </div>
@@ -1827,7 +1825,7 @@
                 <button class="btn-icon" id="awm-modal-close"><i class="fas fa-times"></i></button>
             </div>
             <div class="confirm-modal-body">
-                <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Haz clic en los activos que deseas seguir en tu panel lateral:</p>
+                <p class="watch-modal-desc">Haz clic en los activos que deseas seguir en tu panel lateral:</p>
                 <div class="watchlist-picker-grid" id="watchlist-picker-grid">
                     <!-- Dinámicamente poblado con activos disponibles -->
                 </div>
@@ -1874,8 +1872,8 @@
             <div class="loader-ring"></div>
             <div class="loader-text">
                 <span class="loader-logo">
-                    <span class="brand-title" style="letter-spacing: 2px;">PaperPulse</span>
-                    <span class="brand-tag" style="margin-left: 6px;">TERMINAL</span>
+                    <span class="brand-title tracking-wide">PaperPulse</span>
+                    <span class="brand-tag ml-6">TERMINAL</span>
                 </span>
                 <span>Iniciando motor de liquidez y cotizaciones...</span>
             </div>
@@ -1910,30 +1908,30 @@
     </div>
 
     <!-- ========== MODAL CONFIRMACIÓN BORRAR MIS DATOS (RGPD) ========== -->
-    <div id="clear-data-confirm-modal" class="confirm-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="cdm-title">
-        <div class="confirm-modal-content" style="max-width: 480px;">
+    <div class="confirm-modal d-none" id="clear-data-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cdm-title">
+        <div class="confirm-modal-content max-w-480">
             <div class="confirm-modal-header">
-                <h3 id="cdm-title"><i class="fas fa-shield-alt" style="color: var(--danger); margin-right: 8px;"></i> Borrar Mis Datos (RGPD)</h3>
+                <h3 id="cdm-title"><i class="fas fa-shield-alt text-danger mr-8"></i> Borrar Mis Datos (RGPD)</h3>
                 <button class="btn-icon" id="clear-data-modal-close" aria-label="Cerrar"><i class="fas fa-times"></i></button>
             </div>
             <div class="confirm-modal-body">
-                <p style="margin-bottom: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary);">
+                <p class="danger-notice-p">
                     En cumplimiento del Reglamento General de Protección de Datos (RGPD), puedes ejercer tu <strong>derecho de supresión / olvido</strong> en cualquier momento.
                 </p>
-                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--text-secondary);">
-                    <strong style="color: var(--danger); display: block; margin-bottom: 6px;"><i class="fas fa-exclamation-triangle"></i> Esta acción es permanente e irreversible:</strong>
-                    <ul style="padding-left: 18px; margin: 0; line-height: 1.6;">
+                <div class="danger-notice-box">
+                    <strong class="danger-notice-title"><i class="fas fa-exclamation-triangle"></i> Esta acción es permanente e irreversible:</strong>
+                    <ul class="danger-notice-list">
                         <li>Se eliminarán permanentemente todas las operaciones de tu Diario.</li>
                         <li>Se cancelarán las órdenes y posiciones abiertas.</li>
                         <li>Se restablecerá el saldo de práctica al estado inicial.</li>
                         <li>Se borrarán tus alertas de precio y listas de favoritos.</li>
                     </ul>
                 </div>
-                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+                <p class="danger-notice-note">
                     Tip: Si sólo deseas respaldar tu información para transferirla a otro dispositivo, usa <strong>Exportar Datos (JSON)</strong>.
                 </p>
             </div>
-            <div class="confirm-modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+            <div class="confirm-modal-footer modal-footer-actions">
                 <button class="btn btn-secondary" id="clear-data-cancel-btn">Cancelar</button>
                 <button class="btn btn-danger" id="clear-data-confirm-btn"><i class="fas fa-trash-alt"></i> Sí, borrar definitivamente</button>
             </div>

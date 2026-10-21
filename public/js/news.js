@@ -158,20 +158,8 @@ window.News = (function () {
             const source = safeEscape(article.source || 'Agencia Oficial');
             const url = safeEscape(article.url || '#');
 
-            // Banner seguro: marcador propio por categoría (o imagen oficial con fallback al marcador)
-            const internalMarkerHtml = getInternalNewsMarker(article.category, article.source);
-            let imageSectionHtml = internalMarkerHtml;
-            if (article.imageUrl && String(article.imageUrl).startsWith('https://')) {
-                const safeImgUrl = safeEscape(article.imageUrl);
-                imageSectionHtml = `
-                    <div class="news-image-wrap" style="position:relative; width:100%; height:130px; overflow:hidden; background:var(--bg-tertiary);">
-                        <img src="${safeImgUrl}" alt="${title}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.parentElement.innerHTML=\`${internalMarkerHtml.replace(/"/g, '&quot;')}\`;">
-                        <span class="news-category-badge ${article.category}" style="position:absolute; top:8px; left:8px; font-size:10px; padding:2px 8px;">
-                            <i class="fas ${getCategoryIcon(article.category)}"></i> ${getCategoryLabel(article.category)}
-                        </span>
-                    </div>
-                `;
-            }
+            // Banner seguro: Marcador propio temático por categoría (evita violación de CSP img-src 'self' data:)
+            const imageSectionHtml = getInternalNewsMarker(article.category, article.source);
 
             return `
                 <article class="news-card" data-category="${article.category}" data-id="${article.id}" tabindex="0" role="button" aria-label="${title}">
@@ -236,13 +224,8 @@ window.News = (function () {
             catEl.className = `news-category-badge ${article.category}`;
         }
 
-        if (imgWrap && imgEl) {
-            if (article.imageUrl && String(article.imageUrl).startsWith('https://')) {
-                imgEl.src = article.imageUrl;
-                imgWrap.style.display = 'block';
-            } else {
-                imgWrap.style.display = 'none';
-            }
+        if (imgWrap) {
+            imgWrap.style.display = 'none';
         }
 
         if (titleEl) titleEl.textContent = article.title;
