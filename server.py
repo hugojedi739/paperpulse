@@ -1862,11 +1862,17 @@ async def serve_index(request):
     if not os.path.exists(index_path):
         return Response("index.html not found in public directory", status_code=404)
 
+    is_dev = os.environ.get("ENV", "production").lower() in ("dev", "development") or os.environ.get("DEBUG", "0") == "1"
     app_domain = os.environ.get("APP_DOMAIN", "").strip().rstrip("/")
     if not app_domain:
-        host = request.headers.get("host", "localhost:8000")
-        proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
-        app_domain = f"{proto}://{host}"
+        if not is_dev:
+            # En producción, exigir APP_DOMAIN obligatoriamente para prevenir ataques de envenenamiento de cabecera Host
+            return Response(
+                "Error 500: La variable de entorno APP_DOMAIN es obligatoria en entorno de producción. No se permite el uso de la cabecera Host controlada por el cliente.",
+                status_code=500
+            )
+        # En modo desarrollo local seguro
+        app_domain = "http://localhost:8000"
 
     with open(index_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -1948,7 +1954,7 @@ class SecurityHeadersMiddleware:
                         "style-src 'self' 'unsafe-inline'; "
                         "font-src 'self' data:; "
                         "img-src 'self' data: blob:; "
-                        f"connect-src 'self' wss://stream.binance.com:* wss://data-stream.binance.vision:*{local_ws} https://api.binance.com https://api.frankfurter.app; "
+                        f"connect-src 'self' wss://stream.binance.com:* wss://data-stream.binance.vision:*{local_ws} https://api.binance.com https://api.frankfurter.app https://api.coingecko.com; "
                         "frame-ancestors 'none'; "
                         "base-uri 'self'; "
                         "form-action 'self';"
