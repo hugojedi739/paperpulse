@@ -95,7 +95,7 @@ window.Market = (function () {
         const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
         const isPos = (amountUsd || 0) >= 0;
         const valFormatted = Math.abs(amountUsd || 0).toLocaleString(locale, { style: 'currency', currency: 'EUR' });
-        return `${isPos ? '+' : '-'}${valFormatted}`;
+        return `${isPos ? '+' : '−'}${valFormatted}`;
     }
 
     /* ---------- Consulta de Datos de Mercado ---------- */
@@ -413,7 +413,7 @@ window.Market = (function () {
             const chgText = hasChange
                 ? (window.Currency && typeof window.Currency.formatPercent === 'function'
                     ? window.Currency.formatPercent(change)
-                    : `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}\u00A0%`)
+                    : `${change >= 0 ? '+' : '−'}${Math.abs(Number(change)).toFixed(2)}\u00A0%`)
                 : '—';
 
             // Bloque I.7: Detectar mercado cerrado vs Sin datos
@@ -659,6 +659,9 @@ window.Market = (function () {
                     const priceFormatted = price > 0 ? formatMoney(price) : '—';
                     const valFormatted = val > 0 ? formatMoney(val) : '—';
                     const pctOfTotal = totalPortfolioVal > 0 ? ((val / totalPortfolioVal) * 100).toFixed(1) : 0;
+                    const pctFormatted = window.Currency && typeof window.Currency.formatPercent === 'function'
+                        ? window.Currency.formatPercent(parseFloat(pctOfTotal), { showPlus: false, decimals: 1 })
+                        : `${pctOfTotal}\u00A0%`;
                     return `
                         <div class="holding-card" data-symbol="${pos.symbol}" data-id="${pos.id}" title="Clic para ver ${pos.symbol}">
                             <div class="hc-icon">${window.App ? window.App.getAssetSvg(pos.symbol, 28) : ''}</div>
@@ -668,7 +671,7 @@ window.Market = (function () {
                                     <strong class="hc-val">${valFormatted}</strong>
                                 </div>
                                 <div class="hc-row">
-                                    <span class="hc-amount">${pos.amount} ${pos.symbol} · ${pctOfTotal}%</span>
+                                    <span class="hc-amount">${pos.amount} ${pos.symbol} · ${pctFormatted}</span>
                                     <span class="hc-change text-secondary">@ ${priceFormatted}</span>
                                 </div>
                             </div>
@@ -813,12 +816,16 @@ window.Market = (function () {
                 : pos.amount;
             const pnlPctFormatted = Math.abs(pnlPct).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+                const pnlPercentText = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                    ? window.Currency.formatPercent(pnlPct)
+                    : `${pnlPct >= 0 ? '+' : '−'}${pnlPctFormatted}\u00A0%`;
+
             return `<tr class="${isNewCls}">
                 <td><div class="pos-asset-flex">${window.App ? window.App.getAssetSvg(pos.symbol, 24) : ''}<div><strong>${pos.name}</strong> <span class="coin-symbol">${pos.symbol}</span></div></div></td>
                 <td class="price-cell">${amountFormatted} <span class="text-secondary">(${formatMoney(currentValue)})</span></td>
                 <td class="price-cell">${entryFormatted}</td>
                 <td class="price-cell">${currentFormatted}</td>
-                <td class="price-cell ${pnlCls}"><strong>${formatSignedMoney(pnlUsd)}</strong> (${pnlPct >= 0 ? '+' : '−'}${pnlPctFormatted}%)</td>
+                <td class="price-cell ${pnlCls}"><strong>${formatSignedMoney(pnlUsd)}</strong> (${pnlPercentText})</td>
                 <td><button class="btn-close-pos" data-index="${idx}" title="Cerrar posición con confirmación"><i class="fas fa-times"></i> Cerrar</button></td>
             </tr>`;
         }).join('');
@@ -832,8 +839,11 @@ window.Market = (function () {
             const isPos = totalPnlUsd >= 0;
             const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
             const totalPctFormatted = Math.abs(totalPct).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const totalPctText = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                ? window.Currency.formatPercent(totalPct)
+                : `${totalPct >= 0 ? '+' : '−'}${totalPctFormatted}\u00A0%`;
             totalPnlEl.className = `pnl-summary-val ${isPos ? 'bullish' : 'bearish'}`;
-            totalPnlEl.textContent = `${formatSignedMoney(totalPnlUsd)} (${totalPct >= 0 ? '+' : '−'}${totalPctFormatted}%)`;
+            totalPnlEl.textContent = `${formatSignedMoney(totalPnlUsd)} (${totalPctText})`;
         }
 
         tbody.querySelectorAll('.btn-close-pos').forEach(btn => {
@@ -873,7 +883,10 @@ window.Market = (function () {
         if (entryEl) entryEl.textContent = formatMoney(pos.entryPrice);
         if (exitEl) exitEl.textContent = formatMoney(currentPrice);
         if (pnlEl) {
-            pnlEl.textContent = `${formatSignedMoney(pnl)} (${pnlPct >= 0 ? '+' : '−'}${Math.abs(pnlPct).toFixed(2)}%)`;
+            const pnlPctFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                ? window.Currency.formatPercent(pnlPct)
+                : `${pnlPct >= 0 ? '+' : '−'}${Math.abs(pnlPct).toFixed(2)}\u00A0%`;
+            pnlEl.textContent = `${formatSignedMoney(pnl)} (${pnlPctFormatted})`;
             pnlEl.className = `cpm-pnl-pill ${isPos ? 'bullish' : 'bearish'}`;
         }
         if (reflectionInput) reflectionInput.value = '';
@@ -1044,7 +1057,7 @@ window.Market = (function () {
                 : formatMoney(livePrice);
             const chgFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
                 ? window.Currency.formatPercent(change)
-                : `${change >= 0 ? '+' : ''}${change.toFixed(2)}\u00A0%`;
+                : `${change >= 0 ? '+' : '−'}${Math.abs(change).toFixed(2)}\u00A0%`;
 
             return `<div class="mover-item" data-id="${coin.id}" data-symbol="${sym}" data-name="${coin.name}">
                 <span class="mover-rank">${i + 1}</span>

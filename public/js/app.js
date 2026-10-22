@@ -751,7 +751,7 @@ window.App = (function () {
         const cls = n >= 0 ? 'bullish' : 'bearish';
         const icon = n >= 0 ? 'fa-caret-up' : 'fa-caret-down';
         const valFormatted = Math.abs(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return `<span class="${cls}"><i class="fas ${icon}"></i> ${n >= 0 ? '+' : '-'}${valFormatted}\u00A0%</span>`;
+        return `<span class="${cls}"><i class="fas ${icon}"></i> ${n >= 0 ? '+' : '−'}${valFormatted}\u00A0%</span>`;
     }
 
     function timeAgo(date) {
@@ -1332,7 +1332,14 @@ window.App = (function () {
                 const pct = (netProfit / invest) * 100;
                 const isPos = netProfit >= 0;
 
-                profitValEl.textContent = `${isPos ? '+' : ''}${formatCurrency(netProfit)} (${isPos ? '+' : ''}${pct.toFixed(2)}%)`;
+                const profitFormatted = (window.Currency && typeof window.Currency.formatSigned === 'function')
+                    ? window.Currency.formatSigned(netProfit)
+                    : `${isPos ? '+' : '−'}${formatCurrency(Math.abs(netProfit))}`;
+                const pctFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
+                    ? window.Currency.formatPercent(pct)
+                    : `${isPos ? '+' : '−'}${Math.abs(pct).toFixed(2)}\u00A0%`;
+
+                profitValEl.textContent = `${profitFormatted} (${pctFormatted})`;
                 profitValEl.className = `sim-profit-val ${isPos ? 'bullish' : 'bearish'}`;
                 if (totalValEl) totalValEl.textContent = `${formatCurrency(finalVal)} USD`;
             } else {
@@ -3159,8 +3166,7 @@ window.App = (function () {
 
             if (statPortfolio) statPortfolio.textContent = formatCurrency(curEquity);
             if (statProfit) {
-                const isPos = perfPct >= 0;
-                statProfit.innerHTML = `<span class="${isPos ? 'bullish' : 'bearish'}"><i class="fas fa-caret-${isPos ? 'up' : 'down'}"></i> ${isPos ? '+' : ''}${perfPct.toFixed(2)}%</span>`;
+                statProfit.innerHTML = formatPercent(perfPct);
             }
 
             const inviteCard = document.getElementById('dashboard-practice-invite');

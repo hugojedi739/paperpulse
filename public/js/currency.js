@@ -202,14 +202,16 @@
     }
 
     // Formateador de números porcentuales (+2,31 % / −1,45 %) con formato de idioma y espacio
-    function formatPercent(pct) {
+    function formatPercent(pct, options = {}) {
         if (pct == null || isNaN(pct)) return '0,00\u00A0%';
         const num = parseFloat(pct);
         const locale = getActiveLocale();
-        const sign = num > 0 ? '+' : (num < 0 ? '−' : '');
+        const showPlus = options.showPlus !== false;
+        const decimals = typeof options.decimals === 'number' ? options.decimals : 2;
+        const sign = num > 0 ? (showPlus ? '+' : '') : (num < 0 ? '−' : '');
         const formatted = Math.abs(num).toLocaleString(locale, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: typeof options.minimumFractionDigits === 'number' ? options.minimumFractionDigits : decimals,
+            maximumFractionDigits: typeof options.maximumFractionDigits === 'number' ? options.maximumFractionDigits : decimals
         });
         return `${sign}${formatted}\u00A0%`;
     }

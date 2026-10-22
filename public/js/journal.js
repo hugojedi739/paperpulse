@@ -72,7 +72,7 @@ window.Journal = (function () {
         const locale = (window.Currency && typeof window.Currency.getActiveLocale === 'function') ? window.Currency.getActiveLocale() : 'es-ES';
         const isPos = (amountUsd || 0) >= 0;
         const valFormatted = Math.abs(amountUsd || 0).toLocaleString(locale, { style: 'currency', currency: 'EUR' });
-        return `${isPos ? '+' : '-'}${valFormatted}`;
+        return `${isPos ? '+' : '−'}${valFormatted}`;
     }
 
     /* ---------- Cálculo de Métricas Cuantitativas Avanzadas ---------- */
@@ -249,7 +249,10 @@ window.Journal = (function () {
         const wrEl = document.getElementById('journal-win-rate');
         const wrBarEl = document.getElementById('journal-winrate-bar');
         const wrRatioEl = document.getElementById('journal-win-ratio');
-        if (wrEl) wrEl.textContent = `${m.winRate.toFixed(1)}%`;
+        const winRateFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
+            ? window.Currency.formatPercent(m.winRate, { showPlus: false })
+            : `${m.winRate.toFixed(2)}\u00A0%`;
+        if (wrEl) wrEl.textContent = winRateFormatted;
         if (wrBarEl) wrBarEl.style.width = `${Math.min(100, Math.max(0, m.winRate))}%`;
         if (wrRatioEl) {
             wrRatioEl.textContent = `${m.wins} Ganadas / ${m.losses} Perdidas${m.breakeven > 0 ? ` / ${m.breakeven} BE` : ''}`;
@@ -264,7 +267,7 @@ window.Journal = (function () {
             pnlEl.className = `jkc-val-hero ${isPos ? 'bullish' : 'bearish'}`;
         }
         if (pnlSubEl) {
-            pnlSubEl.textContent = `${fmtSignedMoney(m.grossProfit)} Ganado / -${fmtMoney(m.grossLoss)} Perdido`;
+            pnlSubEl.textContent = `${fmtSignedMoney(m.grossProfit)} Ganado / ${fmtSignedMoney(-Math.abs(m.grossLoss))} Perdido`;
         }
 
         // 4. Ratio R:R Medio
@@ -272,7 +275,7 @@ window.Journal = (function () {
         const rrSubEl = document.getElementById('journal-rr-sub');
         if (rrEl) rrEl.textContent = `1 : ${m.riskRewardRatio.toFixed(2)}`;
         if (rrSubEl) {
-            rrSubEl.textContent = `Media G: ${fmtSignedMoney(m.avgWin)} | Media P: -${fmtMoney(m.avgLoss)}`;
+            rrSubEl.textContent = `Media G: ${fmtSignedMoney(m.avgWin)} | Media P: ${fmtSignedMoney(-Math.abs(m.avgLoss))}`;
         }
 
         // 5. Racha & Esperanza (Muestra Racha Actual y Máxima en Pantalla)
@@ -281,7 +284,7 @@ window.Journal = (function () {
         if (streakEl) {
             let currentText = '0';
             if (m.currentWinStreak > 0) currentText = `+${m.currentWinStreak} G`;
-            else if (m.currentLossStreak > 0) currentText = `-${m.currentLossStreak} P`;
+            else if (m.currentLossStreak > 0) currentText = `−${m.currentLossStreak} P`;
             streakEl.textContent = `${m.maxWinStreak} Máx | Actual: ${currentText}`;
         }
         if (streakSubEl) {
@@ -290,7 +293,7 @@ window.Journal = (function () {
 
         // Sincronización en vivo con las tarjetas del Dashboard
         const dashWinRate = document.getElementById('stat-winrate');
-        if (dashWinRate) dashWinRate.textContent = `${m.winRate.toFixed(1)}%`;
+        if (dashWinRate) dashWinRate.textContent = winRateFormatted;
         const dashWinRateChange = document.getElementById('stat-winrate-change');
         if (dashWinRateChange) dashWinRateChange.innerHTML = `<i class="fas fa-trophy"></i> ${m.wins}G / ${m.losses}P`;
 
@@ -427,8 +430,11 @@ window.Journal = (function () {
         ctx.fillStyle = strokeColor;
         ctx.font = 'bold 11px monospace';
         ctx.textAlign = 'right';
+        const gainPctFormatted = (window.Currency && typeof window.Currency.formatPercent === 'function')
+            ? window.Currency.formatPercent(gainPct)
+            : `${gain >= 0 ? '+' : '−'}${Math.abs(gainPct).toFixed(2)}\u00A0%`;
         ctx.fillText(
-            `Patrimonio: ${fmtMoney(last.val)} (${gain >= 0 ? '+' : ''}${gainPct.toFixed(2)}%)`,
+            `Patrimonio: ${fmtMoney(last.val)} (${gainPctFormatted})`,
             width - padRight,
             padTop - 8
         );
@@ -654,7 +660,7 @@ window.Journal = (function () {
                     <td>
                         <div class="j-pnl-col ${pnlCls}">
                             <strong class="j-pnl-val">${fmtSignedMoney(t.pnl)}</strong>
-                            <span class="j-pnl-pct">(${t.pnl >= 0 ? '+' : '−'}${pnlPctStr}%)</span>
+                            <span class="j-pnl-pct">(${window.Currency && typeof window.Currency.formatPercent === 'function' ? window.Currency.formatPercent(t.pnlPct || 0) : (t.pnl >= 0 ? '+' : '−') + pnlPctStr + '\u00A0%'})</span>
                         </div>
                     </td>
                     <td>
@@ -844,7 +850,7 @@ window.Journal = (function () {
                 t.investedUsd.toFixed(2),
                 t.exitValue.toFixed(2),
                 t.pnl.toFixed(2),
-                t.pnlPct.toFixed(2) + '%',
+                (t.pnlPct != null && !isNaN(t.pnlPct) ? Number(t.pnlPct).toFixed(2) : '0.00'),
                 t.status,
                 `"${cleanSetup}"`,
                 `"${cleanEmotion}"`,
