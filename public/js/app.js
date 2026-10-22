@@ -1056,7 +1056,7 @@ window.App = (function () {
             if (advPanel) advPanel.style.display = 'block';
             if (tabQuick) tabQuick.classList.remove('active');
             if (tabAdv) tabAdv.classList.add('active');
-            if (notify) showToast('Modo Pro: Órdenes avanzadas, libro de órdenes L2 y métricas profesionales.', 'info');
+            if (notify) showToast('Modo Avanzado: Órdenes avanzadas, libro de órdenes L2 y métricas profesionales.', 'info');
         }
     }
 
@@ -2602,17 +2602,17 @@ window.App = (function () {
 
         function setDensity(isCompact, userInitiated = false) {
             document.body.classList.toggle('density-compact', isCompact);
-            if (menuDensityPill) menuDensityPill.textContent = isCompact ? 'PRO' : 'STD';
-            if (menuDensityLabel) menuDensityLabel.textContent = isCompact ? 'Modo Compacto Pro (Optimizado)' : 'Modo Estándar';
+            if (menuDensityPill) menuDensityPill.textContent = isCompact ? 'AVZ' : 'STD';
+            if (menuDensityLabel) menuDensityLabel.textContent = isCompact ? 'Modo Compacto Avanzado (Optimizado)' : 'Modo Estándar';
             if (densityBtn) {
                 densityBtn.innerHTML = isCompact ? '<i class="fas fa-compress-alt"></i>' : '<i class="fas fa-expand-alt"></i>';
-                densityBtn.title = isCompact ? 'Escala Compacta Pro Activa (Clic para Estándar)' : 'Escala Estándar Activa (Clic para Compacta)';
+                densityBtn.title = isCompact ? 'Escala Compacta Avanzada Activa (Clic para Estándar)' : 'Escala Estándar Activa (Clic para Compacta)';
             }
             if (userInitiated) {
                 if (window.Store && typeof window.Store.setSetting === 'function') {
                     window.Store.setSetting('density', isCompact ? 'compact' : 'standard');
                 }
-                showToast(isCompact ? '📐 Densidad Compacta Pro activada (adaptada a pantalla sin zoom)' : '📐 Densidad Estándar activada', 'info');
+                showToast(isCompact ? '📐 Densidad Compacta Avanzada activada (adaptada a pantalla sin zoom)' : '📐 Densidad Estándar activada', 'info');
                 setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
             }
         }
@@ -2837,7 +2837,7 @@ window.App = (function () {
                     <button class="fhp-close" title="Cerrar">&times;</button>
                 </div>
                 <p class="fhp-text">${escapeHTML(displayText)}</p>
-                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Pro:</strong> ${escapeHTML(tip)}</div>` : ''}
+                ${tip ? `<div class="fhp-tip"><i class="fas fa-lightbulb"></i> <strong>Consejo Avanzado:</strong> ${escapeHTML(tip)}</div>` : ''}
             `;
 
             document.body.appendChild(popover);
@@ -3415,7 +3415,7 @@ window.App = (function () {
                 targetSelector: '.trading-panel',
                 view: 'trading',
                 title: '4. Panel de Operativa y Órdenes',
-                desc: 'Aquí ejecutas tus órdenes. En modo Fácil cuentas con importes rápidos de 20€ a 1.000€. En modo Pro dispones de órdenes Límite, Stop-Loss y multiplicador de apalancamiento.',
+                desc: 'Aquí ejecutas tus órdenes. En modo Fácil cuentas con importes rápidos de 20€ a 1.000€. En modo Avanzado dispones de órdenes Límite, Stop-Loss y multiplicador de apalancamiento.',
                 tip: '<strong>Consejo:</strong> Todas las operaciones se descuentan de tu saldo de práctica virtual sin arriesgar dinero real.'
             },
             {
@@ -3647,7 +3647,7 @@ window.App = (function () {
             }
             if (verdictEl) {
                 if (pct === 1) {
-                    verdictEl.innerHTML = '<i class="fas fa-shield-check text-bullish"></i> <strong>Modo Profesional:</strong> Tu cuenta soportaría hasta 50 operaciones negativas seguidas sin quebrar.';
+                    verdictEl.innerHTML = '<i class="fas fa-shield-check text-bullish"></i> <strong>Gestión Avanzada:</strong> Tu cuenta soportaría hasta 50 operaciones negativas seguidas sin quebrar.';
                 } else if (pct === 2) {
                     verdictEl.innerHTML = '<i class="fas fa-check-circle text-accent"></i> <strong>Riesgo Moderado:</strong> Equilibrado para traders con setups probados de alta fiabilidad.';
                 } else {

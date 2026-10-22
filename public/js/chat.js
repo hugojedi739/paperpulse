@@ -300,8 +300,8 @@ window.Chat = (function () {
             ? window.Charts.state.currentTimeframe 
             : '1D';
         const tradeMode = (window.App && window.App.state && window.App.state.tradeMode === 'pro') 
-            ? 'Avanzado / Pro' 
-            : 'Fácil / Principiante';
+            ? 'Avanzado' 
+            : 'Fácil';
 
         // Activos a incluir en el contexto de mercado: activo abierto + principales (BTC, ETH, SOL)
         const activeSymUpper = String(activeSymbol || 'BTC').toUpperCase().trim();
