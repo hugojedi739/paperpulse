@@ -1904,10 +1904,10 @@ async def serve_index(request):
     if not os.path.exists(index_path):
         return Response("index.html not found in public directory", status_code=404)
 
-    is_dev = os.environ.get("ENV", "production").lower() in ("dev", "development") or os.environ.get("DEBUG", "0") == "1"
+    is_prod = os.environ.get("ENV", "").lower() == "production"
     app_domain = os.environ.get("APP_DOMAIN", "").strip().rstrip("/")
     if not app_domain:
-        if not is_dev:
+        if is_prod:
             # En producción, exigir APP_DOMAIN obligatoriamente para prevenir ataques de envenenamiento de cabecera Host
             return Response(
                 "Error 500: La variable de entorno APP_DOMAIN es obligatoria en entorno de producción. No se permite el uso de la cabecera Host controlada por el cliente.",
