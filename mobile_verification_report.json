@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-10-22T10:09:34.241439+00:00",
+  "chrome_path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "total_tested_cases": 60,
+  "overflow_issues_count": 0,
+  "overflow_issues": [],
+  "total_console_errors": 2,
+  "console_errors": [
+    "Fetch API cannot load https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=7d. Refused to connect because it violates the document's Content Security Policy.",
+    "Connecting to 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=7d' violates the following Content Security Policy directive: \"connect-src 'self' wss://stream.binance.com:* wss://data-stream.binance.vision:* https://api.binance.com https://api.frankfurter.app\". The action has been blocked."
+  ],
+  "total_404_resources": 0,
+  "network_404s": [],
+  "status": "PASS"
+}
