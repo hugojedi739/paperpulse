@@ -1988,7 +1988,7 @@ class SecurityHeadersMiddleware:
                     headers.append((b"strict-transport-security", b"max-age=31536000; includeSubDomains"))
                 if b"content-security-policy" not in existing:
                     # Bloque I.5: CSP estricta de producción sin localhost en connect-src salvo en modo desarrollo
-                    is_dev = os.environ.get("ENV", "production").lower() in ("dev", "development") or os.environ.get("DEBUG", "0") == "1"
+                    is_dev = os.environ.get("ENV", "").lower() != "production" or os.environ.get("DEBUG", "0") == "1"
                     local_ws = " ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*" if is_dev else ""
                     csp_policy = (
                         "default-src 'self'; "

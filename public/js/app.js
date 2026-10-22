@@ -3791,7 +3791,11 @@ window.App = (function () {
         }, 300);
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
     /* ---------- Public API ---------- */
     return {

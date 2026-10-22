@@ -22,7 +22,20 @@ with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.write(full_path, arcname=f"public/{rel_path}")
             print(f"  + {rel_path}")
 
-    # 3. Pruebas
+    # 3. Pruebas y módulos requeridos para ejecutarlas
+    core_modules = [
+        "public/js/store.js",
+        "public/js/currency.js",
+        "public/index.html",
+        "server.py"
+    ]
+    for m in core_modules:
+        if os.path.exists(m):
+            zf.write(m, arcname=m)
+            if m.startswith("public/"):
+                zf.write(m, arcname=os.path.basename(m))
+            print(f"  + {m}")
+
     tests = [
         "tests/test_calculations.js",
         "tests/test_calculations.py",

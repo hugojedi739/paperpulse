@@ -36,8 +36,23 @@ global.window = {
 };
 
 // 2. Cargar módulos de la app
-const storeCode = fs.readFileSync(path.join(__dirname, '../public/js/store.js'), 'utf-8');
-const currencyCode = fs.readFileSync(path.join(__dirname, '../public/js/currency.js'), 'utf-8');
+function resolveModuleFile(filename) {
+    const candidatePaths = [
+        path.join(__dirname, '../public/js', filename),
+        path.join(__dirname, 'public/js', filename),
+        path.join(__dirname, 'js', filename),
+        path.join(__dirname, filename),
+        path.join(process.cwd(), 'public/js', filename),
+        path.join(process.cwd(), filename)
+    ];
+    for (const p of candidatePaths) {
+        if (fs.existsSync(p)) return p;
+    }
+    throw new Error(`[test_calculations.js] No se encontró ${filename} en ninguna ruta.`);
+}
+
+const storeCode = fs.readFileSync(resolveModuleFile('store.js'), 'utf-8');
+const currencyCode = fs.readFileSync(resolveModuleFile('currency.js'), 'utf-8');
 
 eval(storeCode);
 eval(currencyCode);
