@@ -1244,6 +1244,76 @@ def parse_rss_datetime(date_str: str) -> str:
     except Exception:
         return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+# ==============================================================================
+# 7.5 Filtro de Noticias Financieras y Clasificación por Temas Reales
+# ==============================================================================
+FINANCIAL_TOPICS = {
+    "crypto": [
+        r"\bbitcoin\b", r"\bbtc\b", r"\bethereum\b", r"\beth\b", r"\bsolana\b", r"\bsol\b",
+        r"\bcripto\b", r"\bcrypto\b", r"\bcriptomoneda[s]?\b", r"\bblockchain\b",
+        r"\bbinance\b", r"\bcoinbase\b", r"\bhalving\b", r"\betf[s]?\b", r"\btoken[s]?\b",
+        r"\bcardano\b", r"\bripple\b", r"\bxrp\b", r"\bdogecoin\b"
+    ],
+    "stocks": [
+        r"\bbolsa\b", r"\bbolsas\b", r"\bacci[oó]n\b", r"\bacciones\b", r"\bibex\b", r"\bibex 35\b",
+        r"\bwall street\b", r"\bnasdaq\b", r"\bnyse\b", r"\bdow jones\b", r"\beurostoxx\b",
+        r"\bdax\b", r"\bbme\b", r"\bcnmv\b", r"\bsec\b", r"\bs&p\b", r"\bs&p 500\b",
+        r"\bdividendo[s]?\b", r"\bearnings\b",
+        r"\bbpa\b", r"\bebitda\b", r"\bcapitalizac[ií][oó]n\b", r"\bopa\b", r"\bfusi[oó]n\b",
+        r"\badquisici[oó]n\b", r"\bjunta de accionistas\b", r"\bsalida a bolsa\b", r"\bipo\b",
+        r"\bsantander\b", r"\bbbva\b", r"\binditex\b", r"\brepsol\b", r"\btelef[oó]nica\b",
+        r"\biberdrola\b", r"\bcaixabank\b", r"\bapple\b", r"\bnvidia\b", r"\btesla\b",
+        r"\bmicrosoft\b", r"\bamazon\b", r"\bgoogle\b", r"\balphabet\b", r"\bmeta\b"
+    ],
+    "economy": [
+        r"\btipo[s]? de inter[eé]s\b", r"\btasa[s]? de inter[eé]s\b",
+        r"\binflac[ií][oó]n\b", r"\bipc\b", r"\bdeflac[ií][oó]n\b", r"\bestanflac[ií][oó]n\b",
+        r"\bbce\b", r"\bfed\b", r"\breserva federal\b", r"\bbanco central\b", r"\bpol[ií]tica monetaria\b",
+        r"\beuribor\b", r"\bdeuda\b", r"\bbono[s]?\b", r"\btesoro\b", r"\brendimiento[s]?\b",
+        r"\bpib\b", r"\brecesi[oó]n\b", r"\bcrecimiento econ[oó]mico\b", r"\bempleo\b", r"\bdesempleo\b",
+        r"\barancel\b", r"\baranceles\b", r"\bcomercio exterior\b", r"\bexportac[ií][oó]n\b",
+        r"\bexportaciones\b", r"\bimportac[ií][oó]n\b", r"\bimportaciones\b",
+        r"\bpetr[oó]leo\b", r"\bbrent\b", r"\bcrudo\b", r"\bgas natural\b", r"\boro\b",
+        r"\bdivisa[s]?\b", r"\bd[oó]lar\b", r"\beuro[s]?\b", r"\bforex\b",
+        r"\bcotizac[ií][oó]n\b", r"\bcotiza[n]?\b",
+        r"\binversi[oó]n\b", r"\binversores\b", r"\bmercado financiero\b", r"\bmercados financieros\b",
+        r"\bclima econ[oó]mico\b", r"\bclima empresarial\b", r"\bclima de inversi[oó]n\b", r"\bclima de negocios\b"
+    ]
+}
+
+FINANCIAL_FEED_CATEGORIES = {
+    "crypto": {"crypto", "cryptocurrency", "bitcoin", "blockchain", "altcoin", "web3", "defi"},
+    "stocks": {"stocks", "equities", "markets", "bursatil", "mercados", "acciones", "wall street"},
+    "economy": {"business", "economy", "economics", "finance", "finanzas", "economía", "macro"}
+}
+
+def is_financial_headline(title: str, feed_categories: List[str] = None) -> Tuple[bool, str]:
+    """Determina si un titular es genuinamente financiero utilizando temas permitidos y categorías oficiales."""
+    if not title:
+        return False, "economy"
+
+    lower_title = title.lower()
+    categories_clean = [c.lower().strip() for c in (feed_categories or []) if c]
+
+    # 1. Comprobar categorías oficiales del feed
+    for cat_name, keywords in FINANCIAL_FEED_CATEGORIES.items():
+        if any(cat in keywords or any(kw in cat for kw in keywords) for cat in categories_clean):
+            return True, cat_name
+
+    # 2. Comprobar patrones financieros permitidos
+    for cat_name, patterns in FINANCIAL_TOPICS.items():
+        for pat in patterns:
+            if re.search(pat, lower_title, re.IGNORECASE):
+                # Refinar: si es catalogado como economy pero menciona stocks o crypto
+                if cat_name == "economy":
+                    if any(re.search(p, lower_title, re.IGNORECASE) for p in FINANCIAL_TOPICS["stocks"]):
+                        return True, "stocks"
+                    if any(re.search(p, lower_title, re.IGNORECASE) for p in FINANCIAL_TOPICS["crypto"]):
+                        return True, "crypto"
+                return True, cat_name
+
+    return False, "economy"
+
 def fetch_real_news_sync() -> List[Dict[str, Any]]:
     """Consulta feeds RSS oficiales de información financiera (CoinDesk + Google News Economía/Bolsa).
     Cero noticias inventadas, solo titulares reales, medio oficial, enlace original y fecha verificada."""
@@ -1313,41 +1383,13 @@ def fetch_real_news_sync() -> List[Dict[str, Any]]:
                     if not source_name or source_name == "Google News":
                         source_name = parts[1].strip()
 
-                lower_title = title.lower()
+                # Extracción de categorías oficiales del feed RSS
+                feed_categories = [c.text.strip().lower() for c in item.findall("category") if c is not None and c.text]
 
-                # Bloque G.6: Filtro de relevancia de mercados (descartar cultivos, recetas, deportes, etc.)
-                irrelevant_topics = [
-                    "cultivo", "cultivos", "agrícola", "agricultura", "cosecha", "ganadería", "pesca",
-                    "receta", "cocina", "farándula", "horóscopo", "moda", "belleza", "futbol", "fútbol",
-                    "fichaje", "concierto", "celebridad", "lotería", "sabor", "gastronomía", "restaurante",
-                    "clima", "meteorología", "carnaval", "concurso", "festival"
-                ]
-                stock_keywords = [
-                    "ibex", "santander", "bbva", "inditex", "repsol", "telefónica", "telefonica",
-                    "iberdrola", "nvidia", "apple", "tesla", "wall street", "nasdaq", "nyse",
-                    "acciones", "bolsa", "dividendo", "earnings", "bpa", "capitalización", "cotización", "s&p"
-                ]
-                financial_keywords = [
-                    "bolsa", "mercado", "mercados", "acción", "acciones", "ibex", "wall street", "nasdaq",
-                    "bce", "fed", "banco central", "inflación", "tipos de interés", "deuda", "bonos", "tesoro",
-                    "pib", "dividendo", "dividendos", "beneficio", "ingresos", "resultados", "trimestre", "bpa",
-                    "santander", "bbva", "inditex", "telefónica", "telefonica", "repsol", "iberdrola", "caixabank",
-                    "apple", "nvidia", "tesla", "microsoft", "amazon", "google", "meta", "crypto", "bitcoin",
-                    "ethereum", "petróleo", "brent", "gas", "oro", "divisas", "dólar", "dolar", "euro", "cotización",
-                    "cotiza", "inversión", "inversores", "capital", "opa", "fusión", "adquisición", "aranceles",
-                    "banca", "entidad", "cnmv", "sec", "recesión", "crecimiento", "política monetaria", "euribor",
-                    "economía", "financiero", "financiera", "arancel", "comercio exterior", "exportaciones", "empleo"
-                ]
-
-                # Descartar si coincide con temas irrelevantes sin mención bursátil
-                if any(bad in lower_title for bad in irrelevant_topics) and not any(k in lower_title for k in stock_keywords):
+                # Filtro positivo de relevancia financiera basado en temas permitidos y categorías del feed
+                is_fin, cat = is_financial_headline(title, feed_categories)
+                if not is_fin:
                     continue
-
-                # Exigir relevancia financiera mínima
-                if not any(good in lower_title for good in financial_keywords):
-                    continue
-
-                cat = "stocks" if any(k in lower_title for k in stock_keywords) else "economy"
 
                 if title and link and link not in seen_urls:
                     seen_urls.add(link)
