@@ -270,6 +270,14 @@ SQLite **no funciona en carpetas compartidas con el anfitrión, de red o de máq
 - Con un `DATABASE_PATH` en uno de ellos, el servidor no arranca y lo explica. Usa una ruta del contenedor, p. ej. `DATABASE_PATH=~/paperpulse/prueba.db`.
 - `python -m backend.db status` muestra también la integridad de la base local.
 
+### Despliegue a producción sin riesgo
+1. **Copia de seguridad de Turso**: `turso db shell paperpulse .dump > backup-$(date +%F).sql` y, si quieres, una copia viva `turso db create paperpulse-copia --from-db paperpulse`. Guarda el `.sql` fuera del repositorio.
+2. **Variables en Vercel** (producción): `ENV=production`, `APP_DOMAIN=https://tu-dominio`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_API_KEY` y `CRON_SECRET` (mismo valor, `openssl rand -hex 32`), y el inicio de sesión con Google (`OAUTH_GOOGLE_ENABLED=true`, `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, con la URI `https://tu-dominio/api/auth/oauth/google/callback` registrada en Google Cloud Console). No definas `DATABASE_PATH`; deja `ADMIN_EMAILS` vacío.
+3. **Migraciones** antes de desplegar: `vercel env pull .env.production.local --environment=production`, cárgalo (`set -a; . ./.env.production.local; set +a`) y ejecuta `python -m backend.db status` (verás las pendientes) y `python -m backend.db migrate`. Son solo aditivas: no borran ni bloquean cuentas existentes.
+4. **Desplegar** (`vercel --prod`). Comprueba `GET /api/health`, que el cron aparece en Vercel → Settings → Cron Jobs y que `curl -H "Authorization: Bearer $CRON_SECRET" https://tu-dominio/api/cron/daily` devuelve 200.
+5. **Tu administrador**: entra en la web con **Google** con `admin@example.com`, acepta los términos y, con las variables de producción cargadas, `python -m backend.db admin admin@example.com`. Comprueba con `python -m backend.db admins` (solo ese correo, «verificado») y `python -m backend.db users` (ningún `@paperpulse.local`).
+6. **Antes de abrir al público**: completa los `[PENDIENTE: …]` de `frontend/js/lib/legal-content.js` y pasa los textos por revisión legal; crea una cuenta de prueba por email, comprueba que no es admin y bórrala desde el menú.
+
 ### Turso y Vercel
 
 Las variables de Turso solo las lee el backend; el navegador nunca las recibe.
