@@ -9,6 +9,7 @@ import { createEquityChart, sparkline } from '../lib/charts.js';
 import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.js';
 import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.js';
 import { go } from '../lib/router.js';
+import { mountCard } from '../ui/retention-card.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -52,6 +53,7 @@ function renderAll() {
   equity?.destroy();
   equity = null;
   render(root, html`
+    <div id="d-retention" class="stack"></div>
     <div class="dash">
       <div class="stack">
         ${practice ? html`
@@ -119,6 +121,7 @@ function renderAll() {
     equity = createEquityChart($('#d-chart', root), { formatter: (v) => money(v) });
     drawEquity();
   }
+  mountCard($('#d-retention', root));
   renderSummary();
   renderWatchlist();
   renderMovers();

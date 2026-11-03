@@ -4,6 +4,7 @@
 import * as store from './store.js';
 import { api } from './api.js';
 import { findAsset } from './catalog.js';
+import * as notifications from './notifications.js';
 
 let active = false;
 let timer = null;
@@ -46,15 +47,9 @@ export function toStore(p) {
   };
 }
 
-const ORDER_WORDS = { limit: 'límite', stop: 'stop', market: 'a mercado' };
+/** Los avisos de órdenes ejecutadas, rechazadas o caducadas los crea el servidor (notificaciones): aquí solo se refresca la campana. */
 function announce(events) {
-  for (const e of events ?? []) {
-    const o = e.order;
-    const what = `${o.side === 'buy' ? 'compra' : 'venta'} ${ORDER_WORDS[o.type]} de ${o.symbol}`;
-    if (e.type === 'filled') store.notify('Orden ejecutada', `Tu ${what} se ha ejecutado a ${o.fill.price} ${o.quote}.`, 'success');
-    else if (e.type === 'rejected') store.notify('Orden rechazada', `Tu ${what} no se pudo ejecutar: ${e.reason}`, 'error');
-    else if (e.type === 'expired') store.notify('Orden caducada', `Tu ${what} caducó a los 30 días sin ejecutarse.`, 'info');
-  }
+  if (events?.length) notifications.refresh().catch(() => {});
 }
 
 /** Descarga la cuenta (el servidor resuelve antes las órdenes pendientes) y la vuelca en el store. */

@@ -18,11 +18,14 @@ import * as community from './views/community.js';
 import * as dialogs from './ui/dialogs.js';
 import * as auth from './lib/auth.js';
 import * as account from './lib/account.js';
+import * as notifs from './lib/notifications.js';
+import { h, svgIcon, mount as putNodes } from './lib/el.js';
+import * as learn from './views/learn.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, admin };
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, admin };
 const mounted = new Set();
 let active = null;
 
@@ -56,6 +59,8 @@ function route() {
   if (changing) scrollTo({ top: 0 });
 }
 addEventListener('hashchange', route);
+// PWA: service worker propio (solo estáticos; nunca cachea /api). Falla en silencio si el navegador no lo admite.
+if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
 /* ---------- Tema y privacidad ---------- */
 function applyTheme(theme) {
@@ -97,6 +102,17 @@ function renderAuth(user) {
       <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
 }
 auth.onAuth(renderAuth);
+notifs.onChange(renderNotifications);
+// Notificaciones del servidor: se consultan al abrir la app y al abrir la campana (sin sondeo)
+$('#notif-pop')?.addEventListener('toggle', (e) => { if (e.newState === 'open' && notifs.active()) notifs.refresh().catch(() => {}); });
+on($('#notif-list'), 'click', '[data-nid]', (_, b) => {
+  const id = Number(b.dataset.nid);
+  notifs.markRead([id]).catch(() => {});
+  if (b.dataset.link.startsWith('/')) { $('#notif-pop')?.hidePopover?.(); go(b.dataset.link); }
+});
+on($('#notif-list'), 'click', '[data-ndel]', (_, b) => notifs.remove(Number(b.dataset.ndel)).catch(() => {}));
+on($('#notif-list'), 'click', '[data-nmore]', () => notifs.more().catch(() => {}));
+on($('#notif-list'), 'click', '[data-nclear]', () => notifs.remove('all').catch(() => {}));
 // Con sesión, la cuenta de práctica es la del servidor. onAuth también salta tras cada sincronización:
 // solo se recarga la cuenta cuando cambia el usuario.
 let accountUserId;
@@ -104,6 +120,7 @@ auth.onAuth((user) => {
   if ((user?.id ?? null) === accountUserId) return;
   accountUserId = user?.id ?? null;
   account.setUser(user);
+  if (user) notifs.refresh().catch(() => {}); else notifs.reset();
 });
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 
@@ -114,8 +131,25 @@ function renderFeedStatus(state) {
   $('#offline-banner').hidden = state !== 'offline';
 }
 
-const NOTIF_ICON = { alert: 'bell-ring', order: 'circle-check', error: 'triangle-alert', info: 'info' };
+const NOTIF_ICON = { alert: 'bell-ring', order: 'circle-check', error: 'triangle-alert', info: 'info',
+  reply: 'message-square', follower: 'user-plus', hidden: 'eye-off', achievement: 'trophy', challenge: 'flame' };
+/** Campana con sesión: notificaciones del servidor. Sus textos incluyen alias y títulos de otros usuarios, así que
+ *  se construyen con nodos de texto (nunca con plantillas HTML). */
+function renderServerNotifications() {
+  const { items, unread, hasMore } = notifs.state();
+  $('#notif-badge').hidden = unread === 0;
+  const box = $('#notif-list');
+  if (!items.length) return putNodes(box, h('p', { class: 'hint menu-head' }, 'Sin notificaciones. Aquí verás respuestas, seguidores, órdenes ejecutadas, alertas y logros.'));
+  putNodes(box, items.map((n) => h('div', { class: `notif ${n.read ? '' : 'unread'}` },
+    svgIcon(NOTIF_ICON[n.kind] ?? 'info'),
+    h('button', { type: 'button', class: 'notif-main', dataset: { nid: n.id, link: n.link } },
+      h('strong', {}, n.title), n.body ? h('small', {}, n.body) : null, h('small', {}, timeAgo(n.createdAt * 1000))),
+    h('button', { type: 'button', class: 'icon-btn sm', dataset: { ndel: n.id }, 'aria-label': 'Borrar notificación' }, svgIcon('x', 'sm')))),
+  hasMore ? h('button', { type: 'button', class: 'link menu-head', dataset: { nmore: '1' } }, 'Cargar más') : null,
+  h('button', { type: 'button', class: 'link menu-head', dataset: { nclear: '1' } }, 'Borrar todas'));
+}
 function renderNotifications() {
+  if (notifs.active()) return renderServerNotifications();
   const list = store.notifications();
   $('#notif-badge').hidden = !list.some((n) => !n.read);
   render($('#notif-list'), list.length ? list.map((n) => html`<div class="notif ${n.read ? '' : 'unread'}">${icon(NOTIF_ICON[n.type] ?? 'info')}
@@ -154,7 +188,7 @@ const ACTIONS = {
   tour: () => startTour(),
   chat: () => toggleChat(),
   privacy: () => store.setSetting('privacyMode', !store.settings().privacyMode),
-  'read-all': () => store.markNotificationsRead(),
+  'read-all': () => (notifs.active() ? notifs.markRead('all').catch(() => {}) : store.markNotificationsRead()),
   'collapse-nav': () => {
     const collapsed = document.documentElement.classList.toggle('nav-collapsed');
     store.setSetting('sidebarCollapsed', collapsed);
@@ -205,9 +239,10 @@ addEventListener('keydown', (e) => {
 let chipTimer = null;
 store.on('prices', (symbols) => {
   updateLive(symbols);
-  checkTriggers(symbols, (type, message) => {
+  checkTriggers(symbols, (type, message, alert) => {
     const title = { alert: 'Alerta de precio', order: 'Orden ejecutada', error: 'Orden no ejecutada' }[type];
-    store.notify(title, message, type);
+    if (type === 'alert' && alert && notifs.active()) notifs.alertTriggered(alert.symbol, alert.condition, alert.target).catch(() => store.notify(title, message, type));
+    else store.notify(title, message, type);
     toast(message, type === 'error' ? 'error' : type === 'alert' ? 'warning' : 'success', 6000);
   });
   chipTimer ??= setTimeout(() => { chipTimer = null; renderAccountChip(); }, 1000);

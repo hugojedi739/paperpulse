@@ -20,7 +20,7 @@ import os
 import secrets
 import sys
 import time
-from contextlib import closing
+from contextlib import closing, contextmanager
 from typing import Dict, List, Optional
 
 import libsql
@@ -194,6 +194,20 @@ def connect() -> Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA busy_timeout = 5000")
     return Connection(conn)
+
+
+@contextmanager
+def transaction():
+    """BEGIN IMMEDIATE toma el bloqueo de escritura al empezar: dos peticiones simultáneas del mismo usuario
+    se ejecutan una detrás de otra y la segunda ve el saldo ya actualizado por la primera."""
+    with closing(connect()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            yield conn
+            conn.execute("COMMIT")
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
 
 
 def _get_version(conn) -> int:
@@ -443,7 +457,7 @@ def put_settings(values: Dict[str, Optional[str]], by: Optional[int]) -> None:
 def list_users(query: str = "", limit: int = 50, offset: int = 0) -> Dict:
     like = f"%{query.strip()}%"
     with closing(connect()) as conn:
-        where = "WHERE u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?"
+        where = "WHERE u.owner_id IS NULL AND (u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?)"
         total = conn.execute(f"SELECT COUNT(*) FROM users u LEFT JOIN profiles pr ON pr.user_id = u.id {where}", (like, like, like)).fetchone()[0]
         rows = conn.execute(
             f"""SELECT u.*, GROUP_CONCAT(DISTINCT i.provider) AS providers,
@@ -485,16 +499,16 @@ def stats() -> Dict:
     with closing(connect()) as conn:
         one = lambda sql, *a: conn.execute(sql, a).fetchone()[0]
         signups = conn.execute(
-            "SELECT date(created_at, 'unixepoch') AS d, COUNT(*) AS n FROM users WHERE created_at > ? GROUP BY d ORDER BY d",
+            "SELECT date(created_at, 'unixepoch') AS d, COUNT(*) AS n FROM users WHERE owner_id IS NULL AND created_at > ? GROUP BY d ORDER BY d",
             (now - 30 * 86400,),
         ).fetchall()
         return {
-            "users": one("SELECT COUNT(*) FROM users"),
-            "admins": one("SELECT COUNT(*) FROM users WHERE role = 'admin'"),
-            "disabled": one("SELECT COUNT(*) FROM users WHERE disabled = 1"),
+            "users": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL"),
+            "admins": one("SELECT COUNT(*) FROM users WHERE role = 'admin' AND owner_id IS NULL"),
+            "disabled": one("SELECT COUNT(*) FROM users WHERE disabled = 1 AND owner_id IS NULL"),
             "activeSessions": one("SELECT COUNT(*) FROM sessions WHERE expires_at > ?", now),
-            "activeUsers7d": one("SELECT COUNT(*) FROM users WHERE last_login_at > ?", now - 7 * 86400),
-            "newUsers7d": one("SELECT COUNT(*) FROM users WHERE created_at > ?", now - 7 * 86400),
+            "activeUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND last_login_at > ?", now - 7 * 86400),
+            "newUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND created_at > ?", now - 7 * 86400),
             "withData": one("SELECT COUNT(*) FROM practice_data"),
             "byProvider": {r[0]: r[1] for r in conn.execute("SELECT provider, COUNT(*) FROM identities GROUP BY provider")},
             "signups30d": [{"date": r["d"], "count": r["n"]} for r in signups],

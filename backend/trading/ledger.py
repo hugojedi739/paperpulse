@@ -13,10 +13,12 @@ import math
 import re
 import time
 import unicodedata
-from contextlib import closing, contextmanager
+from contextlib import closing
 from typing import Dict, List, Optional, Tuple
 
 from backend import db, settings
+from backend.db import transaction  # noqa: F401  (se mantiene aquí por compatibilidad: lo usan otros módulos)
+from backend.retention import hooks
 from backend.trading import prices
 from backend.trading.rules import (
     E8, MAX_PRICE_E8, MAX_QTY_E8, MIN_ORDER_CENTS, SIDES, TYPES, OrderError, candle_fill_price, fee_cents, immediate_price, marketable_now, notional_cents, parse_e8, reservation_cents,
@@ -43,20 +45,6 @@ class NotFound(OrderError):
 
 
 # ---------------------------------------------------------------- utilidades
-@contextmanager
-def transaction():
-    """BEGIN IMMEDIATE toma el bloqueo de escritura al empezar: dos peticiones simultáneas del mismo usuario
-    se ejecutan una detrás de otra y la segunda ve el saldo ya actualizado por la primera."""
-    with closing(db.connect()) as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            yield conn
-            conn.execute("COMMIT")
-        except BaseException:
-            conn.execute("ROLLBACK")
-            raise
-
-
 def config() -> Dict[str, int]:
     return {
         "feeBps": settings.get("trading_fee_bps"),
@@ -158,6 +146,7 @@ def execute(conn, order: Dict, price_e8: int, fx: int, executed_at: int, source:
         (order["id"], uid, sym, order["side"], qty, price_e8, fx, notional, fee, *extra, source, executed_at),
     )
     conn.execute("UPDATE orders SET status = 'filled', reserved_cents = 0, updated_at = ? WHERE id = ?", (executed_at, order["id"]))
+    hooks.after_fill(conn, uid, order, price_e8, executed_at, source)  # racha, notificación y logros (nunca deshace la operación)
     return dict(conn.execute("SELECT * FROM fills WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 
@@ -232,6 +221,8 @@ def place_order(user_id: int, req: Dict, now: Optional[int] = None) -> Tuple[Dic
                  o["journal"], now, now, now),
             )
             order_id = cur.lastrowid
+            if not fill_now:
+                hooks.after_order_placed(conn, user_id)
             if fill_now:
                 row = dict(conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone())
                 price = immediate_price(o["side"], o["type"], o["trigger_e8"], last, cfg["slippageBps"])
@@ -364,6 +355,7 @@ def resolve(user_id: int, now: Optional[int] = None, force: bool = False) -> Lis
                 except OrderError as exc:
                     conn.execute("UPDATE orders SET status = 'rejected', reason = ?, reserved_cents = 0, updated_at = ? WHERE id = ?",
                                  (str(exc), t, o["id"]))
+                    hooks.order_rejected(conn, user_id, row, str(exc))
                     events.append({"type": "rejected", "orderId": o["id"], "reason": str(exc)})
             elif checked >= o["created_at"] + ORDER_TTL or deadline < now:
                 conn.execute("UPDATE orders SET status = 'expired', reserved_cents = 0, checked_until = ?, updated_at = ? WHERE id = ?",

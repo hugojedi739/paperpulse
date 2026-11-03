@@ -11,6 +11,7 @@ from starlette.routing import Route
 
 from backend.http import current_user, error, ok, read_json, same_origin
 from backend.security import IP_TRADING_CALLS, USER_TRADING_CALLS, check_ip_rate_limit, get_client_ip
+from backend.retention import challenges
 from backend.trading import ledger
 from backend.trading.rules import OrderError
 
@@ -34,6 +35,14 @@ async def _guard(request, kind: str):
     return user, None
 
 
+async def _owner(request, user) -> int:
+    """Titular de la cuenta sobre la que se opera: el propio usuario, o su usuario sombra en /api/challenge/*
+    (reto mensual). Así el reto reutiliza TODA la lógica de trading sin duplicarla."""
+    if request.url.path.startswith("/api/challenge/"):
+        return await run_in_threadpool(challenges.ledger_for, user["id"], request.method != "GET")
+    return user["id"]
+
+
 def _status(exc: OrderError) -> int:
     return 404 if isinstance(exc, ledger.NotFound) else 409 if isinstance(exc, ledger.Conflict) else 400
 
@@ -42,8 +51,12 @@ async def api_portfolio(request):
     user, err = await _guard(request, "read")
     if err:
         return err
-    events = await run_in_threadpool(ledger.resolve, user["id"])
-    data = await run_in_threadpool(ledger.portfolio, user["id"])
+    try:
+        owner = await _owner(request, user)
+        events = await run_in_threadpool(ledger.resolve, owner)
+        data = await run_in_threadpool(ledger.portfolio, owner)
+    except OrderError as exc:
+        return error(str(exc), _status(exc))
     return ok({**data, "events": events})
 
 
@@ -60,7 +73,10 @@ async def api_list_orders(request):
         before = int(q["before"]) if q.get("before") else None
     except ValueError:
         return error("limit y before deben ser números.", 400)
-    return ok(await run_in_threadpool(ledger.list_orders, user["id"], status, limit, before))
+    try:
+        return ok(await run_in_threadpool(ledger.list_orders, await _owner(request, user), status, limit, before))
+    except OrderError as exc:
+        return error(str(exc), _status(exc))
 
 
 async def api_place_order(request):
@@ -72,8 +88,9 @@ async def api_place_order(request):
         return err
     try:
         # Antes de operar se resuelven las pendientes: el saldo y las posiciones están al día
-        await run_in_threadpool(ledger.resolve, user["id"], None, True)
-        order, created = await run_in_threadpool(ledger.place_order, user["id"], body)
+        owner = await _owner(request, user)
+        await run_in_threadpool(ledger.resolve, owner, None, True)
+        order, created = await run_in_threadpool(ledger.place_order, owner, body)
     except OrderError as exc:
         return error(str(exc), _status(exc))
     return ok({"order": order, "replayed": not created}, 201 if created else 200)
@@ -91,7 +108,7 @@ async def api_cancel_order(request):
     if err:
         return err
     try:
-        return ok({"order": await run_in_threadpool(ledger.cancel_order, user["id"], _order_id(request))})
+        return ok({"order": await run_in_threadpool(ledger.cancel_order, await _owner(request, user), _order_id(request))})
     except OrderError as exc:
         return error(str(exc), _status(exc))
 
@@ -104,7 +121,7 @@ async def api_update_order(request):
     if err:
         return err
     try:
-        return ok({"order": await run_in_threadpool(ledger.update_journal, user["id"], _order_id(request), body.get("journal"))})
+        return ok({"order": await run_in_threadpool(ledger.update_journal, await _owner(request, user), _order_id(request), body.get("journal"))})
     except OrderError as exc:
         return error(str(exc), _status(exc))
 
@@ -115,4 +132,9 @@ routes = [
     Route("/api/orders", api_place_order, methods=["POST"]),
     Route("/api/orders/{order_id:int}", api_cancel_order, methods=["DELETE"]),
     Route("/api/orders/{order_id:int}", api_update_order, methods=["PATCH"]),
+    # Reto mensual: mismas funciones, sobre la cuenta del reto (ver _owner)
+    Route("/api/challenge/portfolio", api_portfolio, methods=["GET"]),
+    Route("/api/challenge/orders", api_list_orders, methods=["GET"]),
+    Route("/api/challenge/orders", api_place_order, methods=["POST"]),
+    Route("/api/challenge/orders/{order_id:int}", api_cancel_order, methods=["DELETE"]),
 ]

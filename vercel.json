@@ -2,6 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "echo 'Sin paso de build: server.py sirve frontend/'",
   "functions": {
-    "server.py": { "maxDuration": 60, "includeFiles": "{backend,frontend}/**" }
-  }
+    "server.py": {
+      "maxDuration": 60,
+      "includeFiles": "{backend,frontend}/**"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/daily",
+      "schedule": "0 4 * * *"
+    }
+  ]
 }

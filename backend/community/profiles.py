@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from backend import db
 from backend.community import ranking, text
 from backend.community.common import CommunityError, Conflict, Forbidden, NotFound, actor, is_suspended, now, require_member
+from backend.retention import achievements, hooks, streak
 from backend.trading.ledger import transaction
 
 
@@ -72,6 +73,7 @@ def public(alias: str, viewer_id: Optional[int]) -> Dict:
             "followers": count("SELECT COUNT(*) FROM follows WHERE followee_id = ?"),
             "following": count("SELECT COUNT(*) FROM follows WHERE follower_id = ?"),
             "posts": count("SELECT COUNT(*) FROM posts WHERE author_id = ? AND status = 'visible'"),
+            "achievements": achievements.earned(conn, uid), "streak": streak.current(conn, uid)["current"],
             "isFollowing": bool(viewer_id) and conn.execute(
                 "SELECT 1 FROM follows WHERE follower_id = ? AND followee_id = ?", (viewer_id, uid)).fetchone() is not None,
         }
@@ -106,15 +108,15 @@ def search(q: str, limit: int) -> Dict:
 
 def follow(user_id: int, alias: str, on: bool) -> Dict:
     with transaction() as conn:
-        if on:
-            require_member(conn, user_id)  # un suspendido no puede seguir a nadie
+        actor_ = require_member(conn, user_id) if on else None  # un suspendido no puede seguir a nadie
         target = _profile_row(conn, alias)
         if target["user_id"] == user_id:
             raise CommunityError("No puedes seguirte a ti mismo.")
         if on:
             if target["is_private"]:
                 raise Forbidden("Ese perfil es privado.")
-            conn.execute("INSERT OR IGNORE INTO follows VALUES (?, ?, ?)", (user_id, target["user_id"], now()))
+            if conn.execute("INSERT OR IGNORE INTO follows VALUES (?, ?, ?)", (user_id, target["user_id"], now())).rowcount:
+                hooks.new_follower(conn, target["user_id"], actor_["alias"])
         else:
             conn.execute("DELETE FROM follows WHERE follower_id = ? AND followee_id = ?", (user_id, target["user_id"]))
     return {"alias": target["alias"], "isFollowing": on}

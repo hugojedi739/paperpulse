@@ -23,6 +23,7 @@ from typing import Dict, List, Optional
 
 from backend import db, settings
 from backend.community.common import CommunityError, now
+from backend.retention import achievements
 from backend.trading import prices
 from backend.trading.ledger import transaction
 from backend.trading.rules import notional_cents
@@ -53,26 +54,30 @@ def _base(acc: Dict, days: int, snaps: List[Dict], at: int):
 
 
 def compute(at: Optional[int] = None) -> int:
-    """Recalcula patrimonios, guarda la instantánea del día y la tabla de clasificación. Devuelve cuántas cuentas."""
+    """Recalcula patrimonios, guarda la instantánea del día y las tablas de clasificación (principal y retos).
+    Devuelve cuántas cuentas principales entraron."""
     at = at or now()
     with closing(db.connect()) as conn:
         accounts = [dict(r) for r in conn.execute(
-            "SELECT a.user_id, a.cash_cents, a.initial_cents, a.created_at, "
-            "(SELECT COUNT(*) FROM fills f WHERE f.user_id = a.user_id) AS trades FROM accounts a "
+            "SELECT a.user_id, a.cash_cents, a.initial_cents, a.created_at, u.owner_id, "
+            "(SELECT COUNT(*) FROM fills f WHERE f.user_id = a.user_id) AS trades FROM accounts a JOIN users u ON u.id = a.user_id "
             "WHERE EXISTS (SELECT 1 FROM fills f WHERE f.user_id = a.user_id)")]
         positions: Dict[int, List[Dict]] = {}
         for r in conn.execute("SELECT user_id, symbol, qty_e8, cost_cents FROM positions"):
             positions.setdefault(r["user_id"], []).append(dict(r))
         snaps: Dict[int, List[Dict]] = {}
         for r in conn.execute("SELECT user_id, day, equity_cents FROM equity_snapshots WHERE day >= ? ORDER BY day",
-                              (day_of(at - 45 * 86400),)):
+                              (day_of(at - 400 * 86400),)):
             snaps.setdefault(r["user_id"], []).append(dict(r))
+        # Cuentas de retos aún abiertos de calcular: ledger_id -> (reto, usuario)
+        open_ledgers = {r["ledger_id"]: (r["challenge_id"], r["user_id"]) for r in conn.execute(
+            "SELECT e.ledger_id, e.challenge_id, e.user_id FROM challenge_entries e JOIN challenges c ON c.id = e.challenge_id WHERE c.finalized = 0")}
 
     # Red: fuera de cualquier transacción
     symbols = {p["symbol"] for ps in positions.values() for p in ps}
     px = prices.valuation_prices(symbols) if symbols else {}
 
-    rows, today = [], day_of(at)
+    rows, challenge_rows, today, equities = [], [], day_of(at), {}
     for acc in accounts:
         uid, missing = acc["user_id"], False
         equity = acc["cash_cents"]
@@ -83,23 +88,35 @@ def compute(at: Optional[int] = None) -> int:
             else:
                 equity += p["cost_cents"]
                 missing = True
+        if acc["owner_id"]:  # cuenta de un reto: rentabilidad sobre su saldo inicial
+            if uid in open_ledgers:
+                cid, owner = open_ledgers[uid]
+                challenge_rows.append((cid, owner, (equity - acc["initial_cents"]) * 10_000 // acc["initial_cents"], equity, acc["trades"], at))
+            continue
         user_snaps = [s for s in snaps.get(uid, []) if s["day"] != today]
         for period, days in PERIODS.items():
             base, approx = (acc["initial_cents"], False) if days is None else _base(acc, days, user_snaps, at)
             base = max(base, 1)
             rows.append((period, uid, (equity - base) * 10_000 // base, equity, base, acc["trades"], int(approx or missing), at))
-        acc["equity"] = equity
+        equities[uid] = (equity, [s["equity_cents"] for s in user_snaps] + [equity])
 
     with transaction() as conn:
-        for acc in accounts:
+        for uid, (equity, series) in equities.items():
             conn.execute("INSERT INTO equity_snapshots VALUES (?, ?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET "
-                         "equity_cents = excluded.equity_cents, created_at = excluded.created_at", (acc["user_id"], today, acc["equity"], at))
+                         "equity_cents = excluded.equity_cents, created_at = excluded.created_at", (uid, today, equity, at))
+            if achievements.survived_drop(series):
+                achievements.grant(conn, uid, "survive_drop")
         conn.execute("DELETE FROM equity_snapshots WHERE day < ?", (day_of(at - 400 * 86400),))  # tamaño acotado
         conn.execute("DELETE FROM leaderboard")
         for row in rows:
             conn.execute("INSERT INTO leaderboard VALUES (?, ?, ?, ?, ?, ?, ?, ?)", row)
+        # Retos: los ya cerrados (finalized) no se recalculan; al cerrarse un mes queda su clasificación final
+        conn.execute("DELETE FROM challenge_scores WHERE challenge_id IN (SELECT id FROM challenges WHERE finalized = 0)")
+        for row in challenge_rows:
+            conn.execute("INSERT INTO challenge_scores VALUES (?, ?, ?, ?, ?, ?)", row)
+        conn.execute("UPDATE challenges SET finalized = 1 WHERE ends_at <= ? AND finalized = 0", (at,))
     _state["computed_at"] = at
-    return len(accounts)
+    return len(equities)
 
 
 def refresh(force: bool = False) -> None:

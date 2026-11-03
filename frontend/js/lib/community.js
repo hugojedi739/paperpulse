@@ -19,7 +19,7 @@ async function cached(key, ttl, load) {
 export function invalidate(...prefixes) {
   for (const key of cache.keys()) if (prefixes.some((p) => key.startsWith(p))) cache.delete(key);
 }
-auth.onAuth(() => invalidate('me', 'thread:', 'threads:', 'profile:', 'feed'));
+auth.onAuth(() => invalidate('me', 'thread:', 'threads:', 'profile:', 'feed', 'summary'));
 
 const enc = encodeURIComponent;
 
@@ -44,6 +44,7 @@ export const needsProfile = (err) => err?.status === 403 && /perfil/i.test(err.m
 
 /* ---------- Lectura ---------- */
 export const loggedIn = () => Boolean(auth.currentUser());
+export const summary = () => cached('summary', 60_000, () => api('/api/retention/summary'));
 
 /** Mi perfil y estado (null sin sesión). */
 export const me = (force = false) => {

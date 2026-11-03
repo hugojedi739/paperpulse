@@ -6,26 +6,76 @@
   "scope": "/",
   "start_url": "/",
   "display": "standalone",
-  "description": "Simulador de trading con cotizaciones reales de cripto y bolsa",
+  "orientation": "any",
+  "description": "Simulador educativo de trading con cotizaciones reales y dinero virtual",
+  "categories": [
+    "finance",
+    "education"
+  ],
   "background_color": "#0a0b0f",
   "theme_color": "#0a0b0f",
   "icons": [
     {
-      "src": "img/icon-192.png",
+      "src": "/img/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "img/icon-512.png",
+      "src": "/img/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "img/brand/favicon.svg",
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/brand/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Operar",
+      "url": "/#/trade",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Comunidad",
+      "url": "/#/community",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Aprender",
+      "url": "/#/learn",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

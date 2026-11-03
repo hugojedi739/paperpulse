@@ -8,6 +8,7 @@ from typing import Dict, Optional
 from backend import db
 from backend.community import text
 from backend.community.common import CommunityError, Conflict, Forbidden, NotFound, log, now
+from backend.retention import hooks
 from backend.trading.ledger import transaction
 
 FOREVER = 253402300799  # 31/12/9999: suspensión indefinida
@@ -52,7 +53,7 @@ def list_reports(status: str, limit: int, offset: int) -> Dict:
 def _set_post(admin_id: int, post_id: int, hide: bool, reason) -> Dict:
     reason = text.clean(reason, "reason")
     with transaction() as conn:
-        p = conn.execute("SELECT po.status, po.thread_id, t.first_post_id FROM posts po JOIN threads t ON t.id = po.thread_id "
+        p = conn.execute("SELECT po.status, po.thread_id, po.author_id, t.first_post_id FROM posts po JOIN threads t ON t.id = po.thread_id "
                          "WHERE po.id = ?", (post_id,)).fetchone()
         if not p:
             raise NotFound("Ese mensaje no existe.")
@@ -66,6 +67,8 @@ def _set_post(admin_id: int, post_id: int, hide: bool, reason) -> Dict:
             conn.execute("UPDATE reports SET status = 'resolved', resolved_at = ?, resolved_by = ? WHERE post_id = ? AND status = 'open'",
                          (now(), admin_id, post_id))
         log(conn, admin_id, "hide_post" if hide else "restore_post", "post", post_id, reason)
+        if hide and p["status"] == "visible":
+            hooks.post_hidden(conn, p["author_id"], reason)
     return {"postId": post_id, "status": new}
 
 

@@ -181,7 +181,7 @@ export function checkTriggers(symbols, onEvent) {
     if (alert.condition === 'above' ? px >= alert.target : px <= alert.target) {
       store.markAlertTriggered(alert.id);
       const quote = findAsset(alert.symbol)?.quote ?? 'USDT';
-      onEvent?.('alert', `${alert.symbol} ${alert.condition === 'above' ? 'supera' : 'cae por debajo de'} ${fmtPrice(alert.target, quote)} (ahora ${fmtPrice(px, quote)})`);
+      onEvent?.('alert', `${alert.symbol} ${alert.condition === 'above' ? 'supera' : 'cae por debajo de'} ${fmtPrice(alert.target, quote)} (ahora ${fmtPrice(px, quote)})`, { symbol: alert.symbol, condition: alert.condition, target: alert.target });
     }
   }
 }

@@ -13,6 +13,7 @@ from typing import Dict, List, Optional
 from backend import db
 from backend.community import text
 from backend.community.common import CommunityError, Conflict, Forbidden, NotFound, check_quota, log, now, require_member
+from backend.retention import hooks
 from backend.trading import prices
 from backend.trading.ledger import transaction
 from backend.trading.rules import E8
@@ -198,6 +199,7 @@ def _create_thread(conn, a: Dict, category_id: int, title: str, body: str, fill_
     tid = cur.lastrowid
     pid = _insert_post(conn, tid, a["id"], body)
     conn.execute("UPDATE threads SET first_post_id = ? WHERE id = ?", (pid, tid))
+    hooks.after_thread(conn, a["id"])
     return tid
 
 
@@ -225,6 +227,7 @@ def reply(user_id: int, thread_id: int, body) -> Dict:
             raise Conflict("Ese hilo ya no admite respuestas.")
         check_quota(conn, a, new_thread=False, body=body)
         pid = _insert_post(conn, thread_id, user_id, body)
+        hooks.reply_posted(conn, thread_id, user_id, a["alias"])
     return {"postId": pid, "threadId": thread_id}
 
 

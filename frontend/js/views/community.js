@@ -7,14 +7,16 @@
 // lib/el.js, es decir, con nodos de texto. Aquí no se usa innerHTML ni la plantilla html`` para datos de usuarios.
 import * as C from '../lib/community.js';
 import * as auth from '../lib/auth.js';
+import * as R from '../lib/retention.js';
 import { h, svgIcon, mount as put, userText, emptyState, loading, button } from '../lib/el.js';
 import { on, toast, confirmDialog, openDialog, $ } from '../lib/dom.js';
 import { pct, price, num, timeAgo, money } from '../lib/format.js';
 import { go } from '../lib/router.js';
+import { viewChallenge } from './challenge.js';
 
 export const title = 'Comunidad';
 
-const TABS = [['ranking', 'Clasificación', 'trophy'], ['forum', 'Foro', 'message-square'], ['feed', 'Siguiendo', 'rss'], ['me', 'Mi perfil', 'user']];
+const TABS = [['ranking', 'Clasificación', 'trophy'], ['challenge', 'Reto del mes', 'flame'], ['forum', 'Foro', 'message-square'], ['feed', 'Siguiendo', 'rss'], ['me', 'Mi perfil', 'user']];
 const DISCLAIMER = 'PaperPulse es un simulador educativo. Nada de lo publicado es asesoramiento financiero.';
 const RULES = [
   ['Respeto', 'Critica ideas, no a personas. Nada de insultos, acoso ni discriminación.'],
@@ -29,7 +31,7 @@ let root, body, tabsBox, noticeBox;
 let state = { tab: 'ranking', param: '' };
 let period = 'total', rankPage = 1;
 let sort = 'top', listPage = 1, threadSort = 'top', threadPage = 1;
-let promptedAlias = false;
+let promptedAlias = false, visitedForum = false;
 let renderId = 0; // descarta respuestas de una vista que ya no está en pantalla
 
 /* ============================================================ montaje y navegación */
@@ -37,7 +39,7 @@ export function mount(el) {
   root = el;
   tabsBox = h('div', { class: 'tabs cm-tabs', role: 'tablist', 'aria-label': 'Secciones de la comunidad' });
   noticeBox = h('div', { class: 'cm-notice', role: 'note' },
-    svgIcon('info', 'sm'), h('span', {}, DISCLAIMER), h('button', { type: 'button', class: 'link', dataset: { c: 'rules' } }, 'Normas de la comunidad'));
+    svgIcon('info', 'sm'), h('span', {}, DISCLAIMER), h('span', { class: 'cm-notice-links' }, h('button', { type: 'button', class: 'link', dataset: { c: 'rules' } }, 'Normas de la comunidad'), h('a', { class: 'link', href: '#/learn/glosario' }, 'Glosario'), h('a', { class: 'link', href: '#/learn' }, 'Aprender')));
   body = h('div', { class: 'stack cm-body' });
   root.replaceChildren(tabsBox, noticeBox, body);
 
@@ -57,6 +59,7 @@ export function show(param = '') {
   state = { tab, kind: kind in VIEWS ? kind : 'ranking', arg, param };
   render();
   maybeAskAlias();
+  if (!visitedForum && C.loggedIn() && ['forum', 'thread'].includes(state.kind)) { visitedForum = true; R.onboarding('visit-forum').catch(() => {}); }
 }
 
 function render() {
@@ -300,6 +303,7 @@ async function viewUser(alias, id) {
     h('div', { class: 'kpis cm-kpis' },
       stat('Rentabilidad total', perf ? [pct(perf.returnPct), perf.approximate ? approxMark() : null] : '—', perf ? (perf.returnPct >= 0 ? 'up' : 'down') : ''),
       stat('Operaciones', num(p.trades, 0)), stat('Mensajes', num(p.posts, 0)), stat('Seguidores', num(p.followers, 0))),
+    badges(p.achievements, p.streak),
     h('div', { id: 'cm-user-threads' }, card(loading('Cargando sus hilos…'))),
   );
   let th;
@@ -311,6 +315,16 @@ async function viewUser(alias, id) {
   put($('#cm-user-threads', root), card(head('Hilos y operaciones compartidas'),
     th.threads.length ? h('ul', { class: 'cm-threads' }, th.threads.map(threadRow)) : emptyState('message-square', 'Todavía no ha publicado nada'),
     pager(listPage, th.hasMore, 'list-page')));
+}
+
+/** Insignias conseguidas (y racha) de un perfil. `locked` = catálogo completo, con lo no conseguido atenuado. */
+function badges(list, streak, locked = null) {
+  const items = locked ?? list ?? [];
+  if (!items.length && !streak) return null;
+  return card(head('Logros'),
+    streak ? h('p', {}, h('span', { class: 'chip up' }, svgIcon('flame', 'sm'), ` Racha: ${streak} ${streak === 1 ? 'día' : 'días'} operando`)) : null,
+    items.length ? h('ul', { class: 'badges' }, items.map((a) => h('li', { class: `badge${a.earnedAt ? '' : ' locked'}`, title: a.description },
+      svgIcon(a.icon, 'sm'), h('span', {}, h('strong', {}, a.name), h('small', {}, a.earnedAt ? `Conseguido ${C.dateShort(a.earnedAt)}` : a.description))))) : null);
 }
 
 /* ============================================================ Siguiendo (feed) */
@@ -353,6 +367,9 @@ async function viewMe(_, id) {
   try { m = await C.me(); } catch (err) { return fail(err, id); }
   if (!current(id)) return;
   const pr = m.profile;
+  let sum = null;
+  try { sum = await C.summary(); } catch { /* los logros no son imprescindibles */ }
+  if (!current(id)) return;
   put(body,
     m.suspension ? h('div', { class: 'cm-suspended', role: 'alert' }, svgIcon('ban', 'sm'),
       h('span', {}, `Tu participación en la comunidad está suspendida hasta el ${new Date(m.suspension.until * 1000).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}.`,
@@ -360,6 +377,7 @@ async function viewMe(_, id) {
     card(head(pr ? 'Mi perfil' : 'Crea tu perfil', pr ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', dataset: { c: 'user', alias: pr.alias } }, svgIcon('eye', 'sm'), ' Ver mi perfil público') : null),
       pr ? null : h('p', { class: 'hint' }, 'Elige un alias para publicar en el foro y aparecer en la clasificación. Tu email nunca se muestra.'),
       profileForm(pr)),
+    sum ? badges(null, sum.streak.current, sum.achievements) : null,
   );
 }
 
@@ -574,4 +592,4 @@ const forms = {
   },
 };
 
-const VIEWS = { ranking: viewRanking, forum: viewForum, thread: viewThread, user: viewUser, feed: viewFeed, me: viewMe };
+const VIEWS = { challenge: (_, id) => viewChallenge(body, () => id === renderId && !root.hidden), ranking: viewRanking, forum: viewForum, thread: viewThread, user: viewUser, feed: viewFeed, me: viewMe };
