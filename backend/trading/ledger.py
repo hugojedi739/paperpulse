@@ -387,6 +387,7 @@ def _order_json(r: Dict, fill: Optional[Dict]) -> Dict:
         "status": r["status"], "reason": r["reason"], "journal": json.loads(r["journal"]) if r["journal"] else None,
         "createdAt": r["created_at"], "updatedAt": r["updated_at"],
         "fill": None if not fill else {
+            "id": fill["id"],  # para compartir la operación en el foro (POST /api/forum/share)
             "price": num(fill["price_e8"]), "fx": num(fill["fx_e8"]), "notionalCents": fill["notional_cents"],
             "feeCents": fill["fee_cents"], "pnlCents": fill["pnl_cents"], "costBasisCents": fill["cost_basis_cents"],
             "entryPrice": num(fill["entry_price_e8"]), "openedAt": fill["opened_at"], "source": fill["source"],

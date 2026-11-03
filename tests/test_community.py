@@ -301,6 +301,12 @@ class ShareTest(Base):
                 forum.share_fill(ana, fid, "Mira qué operación")
         self.assertEqual(self.scalar("SELECT COUNT(*) FROM threads WHERE fill_id IS NOT NULL"), 0)
 
+    def test_el_id_de_la_ejecucion_llega_al_cliente(self):
+        uid = self.user("Ana")
+        order, _ = ledger.place_order(uid, {"clientOrderId": "ana-0001", "symbol": "BTC", "side": "buy", "type": "market", "quantity": "1"})
+        self.assertEqual(order["fill"]["id"], self.fill_id(order["id"]))
+        self.assertEqual(forum.share_fill(uid, order["fill"]["id"], "Entrada")["threadId"] > 0, True)
+
     def test_cada_operacion_una_vez(self):
         uid = self.user("Ana")
         fid = self.buy(uid, "ana-0001")
