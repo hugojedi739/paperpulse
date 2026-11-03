@@ -292,7 +292,7 @@ export async function authDialog(mode = 'login') {
   const d = show(html`${head(reg ? 'Crear cuenta' : 'Iniciar sesión', 'Guarda tu cuenta de práctica y tu diario en el servidor y recupéralos en cualquier dispositivo.')}
     <form class="dlg-body" id="auth-form" novalidate>${sso}${form}
       <p class="hint">PaperPulse es un simulador educativo con dinero virtual. ${reg ? 'Si entras con Google, te pediremos aceptar los términos al terminar.' : ''}
-        <a href="#/legal/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="#/legal/terminos" target="_blank" rel="noopener">Términos</a></p></form>`, 'dlg-sm');
+        <a href="#/legal/aviso-legal" target="_blank" rel="noopener">Aviso legal</a> · <a href="#/legal/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="#/legal/terminos" target="_blank" rel="noopener">Términos</a> · <a href="#/legal/cookies" target="_blank" rel="noopener">Cookies</a> · <a href="#/legal/normas" target="_blank" rel="noopener">Normas</a></p></form>`, 'dlg-sm');
   d.querySelectorAll('[data-provider]').forEach((b) => { b.onclick = () => auth.loginWith(b.dataset.provider); });
   const sw = d.querySelector('[data-act="switch"]');
   if (sw) sw.onclick = () => authDialog(reg ? 'login' : 'register');

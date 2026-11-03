@@ -59,6 +59,12 @@ test('el manifest es instalable: nombre, inicio, iconos 192/512 y maskable por s
     assert.ok(m.icons.some((i) => i.sizes === size && i.purpose === 'maskable'), `maskable ${size}`);
   }
   assert.ok(m.icons.every((i) => !i.purpose.includes(' ')), 'purpose no debe mezclar any y maskable');
+  for (const size of ['192x192', '512x512']) { // el icono maskable es un fichero propio (dibujo en la zona segura), no el mismo PNG
+    const any = m.icons.find((i) => i.sizes === size && i.purpose === 'any').src;
+    const mask = m.icons.find((i) => i.sizes === size && i.purpose === 'maskable').src;
+    assert.notEqual(any, mask, `maskable ${size} distinto del any`);
+    assert.ok(readFileSync(new URL(`../frontend${mask}`, import.meta.url)).length > 100, `existe ${mask}`);
+  }
   assert.ok(m.shortcuts.length >= 2);
 });
 
@@ -173,4 +179,9 @@ test('ningún fichero del frontend propio contiene una dirección de correo', ()
     if (m) found.push(`${f}: ${m.join(', ')}`);
   }
   assert.deepEqual(found, []);
+});
+
+test('el registro enlaza a los cinco textos legales', () => {
+  const dialogs = read('frontend/js/ui/dialogs.js');
+  for (const id of ['aviso-legal', 'privacidad', 'terminos', 'cookies', 'normas']) assert.match(dialogs, new RegExp(`href="#/legal/${id}"`), id);
 });
