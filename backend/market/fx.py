@@ -21,6 +21,32 @@ FX_CACHE = {
     }
 }
 
+def _fetch_rates():
+    resp = requests.get("https://api.frankfurter.app/latest?from=USD", timeout=4)
+    if resp.status_code == 200:
+        rates = resp.json().get("rates", {})
+        rates["USD"] = 1.0
+        return rates
+    return None
+
+
+def real_rates_sync():
+    """Tipos reales (base USD) con caché de 1 h, para la simulación del servidor.
+
+    A diferencia del endpoint público, nunca devuelve los valores de respaldo fijos: si nunca se han podido
+    descargar devuelve None y quien llama rechaza la operación en vez de usar un tipo inventado.
+    """
+    now = time.time()
+    if now - FX_CACHE["timestamp"] >= 3600:
+        try:
+            fresh = _fetch_rates()
+            if fresh:
+                FX_CACHE["rates"], FX_CACHE["timestamp"] = fresh, now
+        except Exception as e:
+            print(f"[FX] Advertencia obteniendo divisas: {e}", file=sys.stderr)
+    return FX_CACHE["rates"] if FX_CACHE["timestamp"] else None
+
+
 async def get_exchange_rates(request):
     """Retorna tipos de cambio actualizados con caché de 1 hora."""
     now = time.time()
@@ -35,16 +61,7 @@ async def get_exchange_rates(request):
 
     try:
         loop = asyncio.get_event_loop()
-        def fetch_fx():
-            resp = requests.get("https://api.frankfurter.app/latest?from=USD", timeout=4)
-            if resp.status_code == 200:
-                data = resp.json()
-                rates = data.get("rates", {})
-                rates["USD"] = 1.0
-                return rates
-            return None
-
-        new_rates = await loop.run_in_executor(None, fetch_fx)
+        new_rates = await loop.run_in_executor(None, _fetch_rates)
         if new_rates:
             FX_CACHE["rates"] = new_rates
             FX_CACHE["timestamp"] = now

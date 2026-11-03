@@ -27,8 +27,18 @@ SCHEMA: Dict[str, tuple] = {
     "anthropic_model": ("ANTHROPIC_MODEL", "claude-haiku-5-5", str, False),
     "stock_data_provider": ("STOCK_DATA_PROVIDER", "yfinance", str, False),
     "finnhub_api_key": ("FINNHUB_API_KEY", "", str, True),
+    # Simulación de la cuenta del servidor (usuarios con sesión)
+    "trading_initial_balance_usd": ("TRADING_INITIAL_BALANCE_USD", 10000, int, False),
+    "trading_fee_bps": ("TRADING_FEE_BPS", 10, int, False),
+    "trading_slippage_bps": ("TRADING_SLIPPAGE_BPS", 5, int, False),
 }
 CHOICES = {"stock_data_provider": ("yfinance", "finnhub")}
+# Rangos válidos de los ajustes enteros. bps = puntos básicos (10 bps = 0,10 %)
+INT_RANGES = {
+    "trading_initial_balance_usd": (100, 10_000_000),
+    "trading_fee_bps": (0, 500),
+    "trading_slippage_bps": (0, 500),
+}
 
 _cache: Dict[str, Any] = {"time": 0.0, "values": {}}
 _TTL = 5  # varios procesos (workers) ven los cambios en segundos
@@ -37,6 +47,8 @@ _TTL = 5  # varios procesos (workers) ven los cambios en segundos
 def _parse(kind, raw: str):
     if kind is bool:
         return str(raw).strip().lower() in ("1", "true", "yes", "on")
+    if kind is int:
+        return int(str(raw).strip())
     return str(raw)
 
 
@@ -58,10 +70,13 @@ def source(key: str) -> str:
 def get(key: str):
     env, default, kind, _ = SCHEMA[key]
     stored = _stored()
-    if key in stored:
-        return _parse(kind, stored[key])
-    raw = os.getenv(env)
-    return _parse(kind, raw) if raw not in (None, "") else default
+    try:
+        if key in stored:
+            return _parse(kind, stored[key])
+        raw = os.getenv(env)
+        return _parse(kind, raw) if raw not in (None, "") else default
+    except ValueError:  # p. ej. un entero mal escrito en .env: se usa el valor por defecto
+        return default
 
 
 def _mask(value: str) -> str:
@@ -95,6 +110,13 @@ def validate(values: Dict[str, Any]) -> Optional[str]:
             return f"{key} debe ser verdadero o falso."
         if kind is str and (not isinstance(value, str) or len(value) > 2000):
             return f"{key} no es válido."
+        if kind is int:
+            # El panel envía los campos de texto como cadena: se acepta "25" igual que 25 (pero no true/false)
+            if isinstance(value, bool) or not (isinstance(value, int) or (isinstance(value, str) and value.strip().isdigit())):
+                return f"{key} debe ser un número entero."
+            low, high = INT_RANGES[key]
+            if not low <= int(value) <= high:
+                return f"{key} debe estar entre {low} y {high}."
         if key in CHOICES and value not in CHOICES[key]:
             return f"{key} debe ser uno de: {', '.join(CHOICES[key])}."
         if key == "oauth_okta_issuer" and value and not value.startswith("https://"):
@@ -103,6 +125,6 @@ def validate(values: Dict[str, Any]) -> Optional[str]:
 
 
 def save(values: Dict[str, Any], by: Optional[int]) -> None:
-    serialized = {k: (None if v is None else ("true" if v is True else "false" if v is False else v.strip())) for k, v in values.items()}
+    serialized = {k: (None if v is None else ("true" if v is True else "false" if v is False else str(v).strip())) for k, v in values.items()}
     db.put_settings(serialized, by)
     _cache["time"] = 0
