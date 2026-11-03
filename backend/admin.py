@@ -83,6 +83,8 @@ async def user_detail(request):
         return error("Rol no válido.", 400)
     if disabled is not None and not isinstance(disabled, bool):
         return error("disabled debe ser verdadero o falso.", 400)
+    if role == "admin" and not target["emailVerified"]:
+        return error("Solo se puede dar el rol de administrador a cuentas con el email verificado (acceso con Google).", 400)
     if uid == admin["id"] and (role == "user" or disabled):
         return error("No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.", 400)
     if target["role"] == "admin" and (role == "user" or disabled) and await run_in_threadpool(db.count_admins) <= 1:

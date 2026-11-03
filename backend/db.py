@@ -10,7 +10,8 @@ CLI:
   python -m backend.db status               muestra la versión del esquema y las migraciones pendientes
   python -m backend.db demo                 crea demo@paperpulse.local (usuario) y admin@paperpulse.local (admin)
   python -m backend.db users                lista los usuarios
-  python -m backend.db admin <email>        da el rol de administrador a un usuario existente
+  python -m backend.db admin <email>        da el rol de administrador a una cuenta existente con email verificado
+  python -m backend.db admins               lista los administradores
 """
 import hashlib
 import hmac
@@ -260,12 +261,14 @@ token_hash = lambda token: hashlib.sha256(token.encode()).hexdigest()
 def public_user(row) -> Dict:
     return {
         "id": row["id"], "email": row["email"], "name": row["name"], "createdAt": row["created_at"],
-        "role": row["role"], "hasPassword": bool(row["password_hash"]),
+        "role": row["role"], "hasPassword": bool(row["password_hash"]), "emailVerified": bool(row["email_verified"]),
     }
 
 
-def _initial_role(email: str) -> str:
-    return "admin" if email.lower() in ADMIN_EMAILS else "user"
+def _initial_role(email: str, verified: bool) -> str:
+    """ADMIN_EMAILS solo concede el rol a emails VERIFICADOS (Google/Okta). Registrarse con email y contraseña
+    nunca da el rol de administrador, aunque se use un email de la lista: así nadie puede adelantarse a su dueño."""
+    return "admin" if verified and email.lower() in ADMIN_EMAILS else "user"
 
 
 def create_user(email: str, password: Optional[str], name: str) -> Optional[Dict]:
@@ -273,8 +276,8 @@ def create_user(email: str, password: Optional[str], name: str) -> Optional[Dict
     with closing(connect()) as conn:
         try:
             cur = conn.execute(
-                "INSERT INTO users (email, name, password_hash, created_at, role) VALUES (?, ?, ?, ?, ?)",
-                (email, name, hash_password(password) if password else "", int(time.time()), _initial_role(email)),
+                "INSERT INTO users (email, name, password_hash, created_at, role, email_verified) VALUES (?, ?, ?, ?, 'user', 0)",
+                (email, name, hash_password(password) if password else "", int(time.time())),
             )
         except (ValueError, libsql.Error) as exc:
             if not is_integrity_error(exc):
@@ -284,8 +287,8 @@ def create_user(email: str, password: Optional[str], name: str) -> Optional[Dict
 
 
 def _touch_login(conn, row) -> Row:
-    """Registra el acceso y aplica ADMIN_EMAILS (promociona, nunca degrada)."""
-    role = "admin" if row["email"].lower() in ADMIN_EMAILS else row["role"]
+    """Registra el acceso y aplica ADMIN_EMAILS solo a cuentas verificadas (promociona, nunca degrada)."""
+    role = "admin" if row["email_verified"] and row["email"].lower() in ADMIN_EMAILS else row["role"]
     conn.execute("UPDATE users SET last_login_at = ?, role = ? WHERE id = ?", (int(time.time()), role, row["id"]))
     return conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
 
@@ -305,12 +308,18 @@ def get_user(user_id: int) -> Optional[Dict]:
         return public_user(row) if row else None
 
 
-def oauth_user(provider: str, subject: str, email: str, name: str, allow_create: bool) -> Dict:
+def oauth_user(provider: str, subject: str, email: str, name: str, allow_create: bool, email_verified: bool = False) -> Dict:
     """Resuelve el usuario de un inicio de sesión externo.
 
     Orden: identidad ya vinculada → usuario con ese email (se vincula) → usuario nuevo (si el registro está abierto).
+    `email_verified` es el campo del id_token del proveedor: sin él no se crea ni se vincula nada.
+    Si el email ya tenía una cuenta de email y contraseña SIN verificar, se le quitan la contraseña y las sesiones al
+    vincularla: quien la registró no tiene por qué ser el dueño del email (ataque de «pre-registro»), y el dueño
+    real acaba de demostrarlo con el proveedor. Seguirá entrando con Google.
     Devuelve {"user": ...} o {"error": código}.
     """
+    if not email_verified:
+        return {"error": "email_unverified"}
     now = int(time.time())
     with closing(connect()) as conn:
         row = conn.execute(
@@ -323,8 +332,8 @@ def oauth_user(provider: str, subject: str, email: str, name: str, allow_create:
                 if not allow_create:
                     return {"error": "registration_closed"}
                 cur = conn.execute(
-                    "INSERT INTO users (email, name, password_hash, created_at, role) VALUES (?, ?, '', ?, ?)",
-                    (email, name[:40] or email.split("@")[0][:40], now, _initial_role(email)),
+                    "INSERT INTO users (email, name, password_hash, created_at, role, email_verified) VALUES (?, ?, '', ?, ?, 1)",
+                    (email, name[:40] or email.split("@")[0][:40], now, _initial_role(email, True)),
                 )
                 row = conn.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
             conn.execute(
@@ -333,6 +342,10 @@ def oauth_user(provider: str, subject: str, email: str, name: str, allow_create:
             )
         if row["disabled"]:
             return {"error": "disabled"}
+        if not row["email_verified"]:
+            conn.execute("UPDATE users SET email_verified = 1, password_hash = '' WHERE id = ?", (row["id"],))
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
+            row = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
         return {"user": public_user(_touch_login(conn, row))}
 
 
@@ -489,7 +502,39 @@ def stats() -> Dict:
 
 
 # ---------------------------------------------------------------- CLI
+def promote_admin(email: str, force: bool = False):
+    """Da el rol de administrador a una cuenta EXISTENTE. Devuelve (ok, mensaje).
+
+    Solo cuentas con email verificado (Google/Okta): una cuenta de email y contraseña pudo registrarla cualquiera.
+    `force` (solo desarrollo) lo permite para cuentas sin verificar.
+    """
+    with closing(connect()) as conn:
+        row = conn.execute("SELECT id, email_verified FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+        if not row:
+            return False, f"No existe ningún usuario con el email {email}. Crea primero la cuenta (en producción, entrando con Google)."
+        if not row["email_verified"] and not force:
+            return False, (f"La cuenta {email} no tiene el email verificado (se registró con email y contraseña). "
+                           "Entra una vez con Google con ese email para verificarla. Solo en desarrollo: --force.")
+        conn.execute("UPDATE users SET role = 'admin', disabled = 0 WHERE id = ?", (row["id"],))
+    return True, f"{email} ahora es administrador."
+
+
+def list_admins() -> List[Dict]:
+    with closing(connect()) as conn:
+        rows = conn.execute(
+            "SELECT u.id, u.email, u.name, u.email_verified, u.disabled, u.last_login_at, GROUP_CONCAT(i.provider) AS providers "
+            "FROM users u LEFT JOIN identities i ON i.user_id = u.id WHERE u.role = 'admin' GROUP BY u.id ORDER BY u.id").fetchall()
+    return [dict(r) for r in rows]
+
+
+def refuse_demo_in_production() -> None:
+    if TURSO_URL or os.getenv("ENV", "").lower() == "production" or IS_VERCEL:
+        sys.exit("Error: `demo` crea usuarios de prueba con contraseñas públicas y solo es para desarrollo. "
+                 "Se niega a ejecutarse con TURSO_DATABASE_URL definida, ENV=production o en Vercel.")
+
+
 def _demo() -> None:
+    refuse_demo_in_production()
     accounts = [("demo@paperpulse.local", "demo1234", "Demo", "user"), ("admin@paperpulse.local", "admin1234", "Admin", "admin")]
     with closing(connect()) as conn:
         conn.executemany("DELETE FROM users WHERE email = ?", [(a[0],) for a in accounts])
@@ -544,6 +589,8 @@ def _main(argv: List[str]) -> None:
                 print(f"AVISO: {unsafe_message(DB_PATH, fs)}")
         print(f"Base de datos: {DB_LABEL}")
         return
+    if cmd == "demo":
+        refuse_demo_in_production()  # antes de tocar la base de datos
     before = schema_status()["current"] if cmd in ("migrate", "init") else None
     init_db()
     if before is not None:
@@ -556,9 +603,16 @@ def _main(argv: List[str]) -> None:
             for r in conn.execute("SELECT id, email, name, role, disabled, datetime(created_at, 'unixepoch') FROM users"):
                 print(*r, sep=" | ")
     elif cmd == "admin" and len(argv) > 2:
-        with closing(connect()) as conn:
-            changed = conn.execute("UPDATE users SET role = 'admin', disabled = 0 WHERE email = ?", (argv[2],)).rowcount
-        print(f"{argv[2]} ahora es administrador." if changed else f"No existe ningún usuario con el email {argv[2]}.")
+        ok, msg = promote_admin(argv[2], force="--force" in argv[3:])
+        print(msg)
+        if not ok:
+            sys.exit(1)
+    elif cmd == "admins":
+        admins = list_admins()
+        for a in admins:
+            print(a["id"], a["email"], "verificado" if a["email_verified"] else "SIN VERIFICAR", "DESACTIVADO" if a["disabled"] else "activo",
+                  f"({a['providers'] or 'email+contraseña'})", sep=" | ")
+        print(f"{len(admins)} administrador(es).")
     print(f"Base de datos: {DB_LABEL}")
 
 

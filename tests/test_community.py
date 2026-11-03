@@ -481,6 +481,25 @@ class LimitsTest(Base):
         with self.assertRaisesRegex(TooMany, "hilos"):
             self.thread(nueva2, title="Uno de más", body="Texto extra")
 
+    def test_verificadas_y_admins_quedan_exentas_de_los_limites_de_cuentas_nuevas(self):
+        google, jefa = self.user("Google1", days_old=0), self.user("Jefa", days_old=0, admin=True)
+        with closing(db.connect()) as conn:
+            conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (google,))
+        tid = forum.asset_thread("SOL")["threadId"]
+        for i in range(common.QUOTAS["new"]["posts"] + 2):
+            forum.reply(google, tid, f"Mensaje verificado {i}")
+            forum.reply(jefa, tid, f"Mensaje admin {i}")
+        forum.reply(google, tid, "Mira https://ejemplo.com")  # las verificadas pueden poner enlaces (se ven como texto)
+
+    def test_cuentas_sin_verificar_nuevas_no_publican_enlaces(self):
+        nueva, veterana = self.user("Nueva", days_old=0), self.user("Veterana", days_old=5)
+        tid = forum.asset_thread("ADA")["threadId"]
+        for text in ("https://estafa.example", "visita www.estafa.es hoy", "mi canal t.me/senales", "ofertas.com/vip"):
+            with self.assertRaisesRegex(Forbidden, "enlaces"):
+                forum.reply(nueva, tid, text)
+        forum.reply(nueva, tid, "Sin enlaces, solo una duda sobre el stop")
+        forum.reply(veterana, tid, "Mira https://ejemplo.com")
+
     def test_borrar_no_devuelve_cupo(self):
         nueva = self.user("Nueva", days_old=0)
         tid = forum.asset_thread("ETH")["threadId"]

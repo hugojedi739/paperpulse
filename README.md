@@ -9,11 +9,11 @@ Nada de dinero real: no hay brokers ni órdenes reales. Todo el saldo y las oper
 ```bash
 cp .env.example .env               # opcional: ANTHROPIC_API_KEY, ADMIN_EMAILS...
 pip install -r requirements.txt
-python -m backend.db demo          # usuarios de prueba (ver abajo)
+python -m backend.db demo          # SOLO desarrollo: usuarios de prueba (ver abajo)
 python server.py                   # http://localhost:8000
 ```
 
-Usuarios de prueba creados por `demo`:
+Usuarios de prueba creados por `demo` (**solo para desarrollo**, con contraseñas públicas; el comando se niega a ejecutarse con `TURSO_DATABASE_URL` definida, `ENV=production` o en Vercel, y nunca deben existir en producción):
 
 | Email | Contraseña | Rol |
 |---|---|---|
@@ -151,7 +151,9 @@ Hay dos modos:
 - Contraseñas con scrypt. La sesión es una cookie HttpOnly SameSite=Strict (`__Host-` y Secure en producción); en la BD solo se guarda el hash SHA-256 del token. Sesiones de 30 días.
 - CSRF: todas las escrituras comprueban `Origin` y exigen JSON.
 - Roles: `user` y `admin` (columna `users.role`). Un usuario desactivado pierde sus sesiones y no puede entrar.
-- Cómo crear el primer administrador: `ADMIN_EMAILS=tu@email.com` en `.env` (se aplica al registrarse o entrar) o `python -m backend.db admin tu@email.com`.
+- **Email verificado**: solo lo están las cuentas que entran con Google (u Okta) y el proveedor devuelve `email_verified=true`. Las de email y contraseña son «sin verificar»: tienen los límites de comunidad de las cuentas nuevas (10 mensajes y 3 hilos en sus primeras 24 h, sin enlaces) y nunca reciben el rol de administrador. Los administradores y las cuentas verificadas están exentos de esos límites.
+- **Rol de administrador** (`ADMIN_EMAILS` solo aplica a cuentas verificadas): registrarse con email y contraseña **nunca** da el rol, ni siquiera con un email de la lista. Si alguien registró antes ese email con contraseña, al entrar el dueño con Google esa cuenta pierde la contraseña y las sesiones (ataque de pre-registro) y queda verificada. El panel tampoco permite hacer admin a una cuenta sin verificar. Comandos: `python -m backend.db admin <email>` (cuenta existente y verificada; `--force` solo en desarrollo) y `python -m backend.db admins` (lista los administradores).
+- **Procedimiento en producción** (administrador único `admin@example.com`): 1) con `ADMIN_EMAILS` vacío, entra en la web con **Google** con ese correo (se crea la cuenta verificada); 2) con las variables de Turso cargadas, `python -m backend.db admin admin@example.com`; 3) `python -m backend.db admins` debe listar solo ese correo, «verificado»; 4) comprueba en Administración → Usuarios que no hay otros administradores y que no hay usuarios `@paperpulse.local`.
 
 ### Inicio de sesión con Google y Okta
 - Se configuran en **Administración → Inicio de sesión** (o con las variables `OAUTH_*` de `.env`). El panel muestra la **URI de redirección** que hay que registrar en Google Cloud Console / Okta: `{APP_DOMAIN}/api/auth/oauth/{google|okta}/callback`.

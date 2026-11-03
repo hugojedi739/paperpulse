@@ -1,4 +1,5 @@
 """Piezas comunes de la comunidad: errores con su código HTTP, quién es el usuario y cuotas anti-spam."""
+import re
 import time
 from typing import Dict, Optional
 
@@ -9,6 +10,7 @@ QUOTAS = {
     "new": {"posts": 10, "threads": 3},
     "regular": {"posts": 100, "threads": 20},
 }
+LINK_RE = re.compile(r"(https?://|www\.|t\.me/|wa\.me/|\b[a-z0-9-]+\.(com|net|org|io|es|app|xyz|me|ly)/)", re.I)
 DUPLICATE_WINDOW = 600  # el mismo mensaje dos veces en 10 minutos se rechaza
 
 
@@ -40,7 +42,7 @@ def now() -> int:
 def actor(conn, user_id: int) -> Optional[Dict]:
     """Datos del usuario que actúa. Nunca incluye el email."""
     row = conn.execute(
-        "SELECT u.id, u.role, u.created_at, u.disabled, u.suspended_until, u.suspension_reason, p.alias, p.is_private "
+        "SELECT u.id, u.role, u.created_at, u.disabled, u.email_verified, u.suspended_until, u.suspension_reason, p.alias, p.is_private "
         "FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ?", (user_id,)).fetchone()
     return dict(row) if row else None
 
@@ -66,14 +68,18 @@ def require_member(conn, user_id: int) -> Dict:
 def check_quota(conn, a: Dict, new_thread: bool, body: Optional[str]) -> None:
     """Cuotas diarias, más estrictas para cuentas nuevas, y rechazo de mensajes duplicados (si se pasa `body`)."""
     t = now()
-    tier = "new" if t - a["created_at"] < NEW_ACCOUNT_SECONDS else "regular"
+    # Límites de cuentas NO verificadas (email y contraseña) durante sus primeras 24 h. Las cuentas verificadas
+    # (Google) y las de administrador quedan exentas; el administrador, además, de las cuotas diarias.
+    tier = "new" if (not a["email_verified"] and a["role"] != "admin" and t - a["created_at"] < NEW_ACCOUNT_SECONDS) else "regular"
     since = t - 24 * 3600
+    if tier == "new" and body and LINK_RE.search(body):
+        raise Forbidden("Las cuentas sin verificar no pueden publicar enlaces durante sus primeras 24 horas.")
     # Se cuentan también los mensajes borrados u ocultos: borrar no devuelve cupo
     posts = conn.execute("SELECT COUNT(*) FROM posts WHERE author_id = ? AND created_at > ?", (a["id"], since)).fetchone()[0]
-    if posts >= QUOTAS[tier]["posts"]:
+    if a["role"] != "admin" and posts >= QUOTAS[tier]["posts"]:
         extra = " Las cuentas nuevas tienen un límite menor durante sus primeras 24 horas." if tier == "new" else ""
         raise TooMany(f"Has alcanzado el máximo de {QUOTAS[tier]['posts']} mensajes en 24 horas.{extra}")
-    if new_thread:
+    if new_thread and a["role"] != "admin":
         threads = conn.execute("SELECT COUNT(*) FROM threads WHERE author_id = ? AND created_at > ?", (a["id"], since)).fetchone()[0]
         if threads >= QUOTAS[tier]["threads"]:
             extra = " Las cuentas nuevas tienen un límite menor durante sus primeras 24 horas." if tier == "new" else ""

@@ -253,7 +253,7 @@ def build_routes(client_ip: Callable) -> List[Route]:
             return back_to_app("email_unverified")
         result = await run_in_threadpool(
             db.oauth_user, pid, str(claims["sub"]), email, str(claims.get("name") or claims.get("given_name") or ""),
-            settings.get("auth_registration_enabled"),
+            settings.get("auth_registration_enabled"), claims.get("email_verified") in (True, "true"),
         )
         if "error" in result:
             return back_to_app(result["error"])

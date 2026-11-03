@@ -118,10 +118,11 @@ class SessionTest(Base):
         self.assertIsNone(self.client.get("/api/auth/me").json()["user"])
         self.assertEqual(self.client.post("/api/auth/login", json={"email": "ana@example.com", "password": "secreto123"}).status_code, 401)
 
-    def test_admin_emails_promote_on_register(self):
+    def test_admin_emails_no_promueve_al_registrarse_con_contrasena(self):
         with mock.patch.object(db, "ADMIN_EMAILS", {"jefa@example.com"}):
             self.register(email="jefa@example.com")
-        self.assertEqual(self.client.get("/api/auth/me").json()["user"]["role"], "admin")
+        me = self.client.get("/api/auth/me").json()["user"]
+        self.assertEqual((me["role"], me["emailVerified"]), ("user", False))
 
 
 class OAuthTest(Base):
@@ -177,7 +178,10 @@ class OAuthTest(Base):
         self.login_with_google()
         users = db.list_users()["users"]
         self.assertEqual(len(users), 1)
-        self.assertEqual(sorted(users[0]["providers"]), ["google", "password"])
+        # Pre-registro: la cuenta de email y contraseña sin verificar pierde la contraseña al vincular Google
+        self.assertEqual(users[0]["providers"], ["google"])
+        self.assertTrue(db.get_user(users[0]["id"])["emailVerified"])
+        self.assertEqual(self.client.post("/api/auth/login", json={"email": "luis@gmail.com", "password": "secreto123"}).status_code, 401)
 
     def test_rejects_bad_state_nonce_and_unverified_email(self):
         self.configure_google()
@@ -246,6 +250,10 @@ class AdminTest(Base):
         # Desactivar cierra sus sesiones
         self.assertTrue(self.client.patch(f"/api/admin/users/{bea['id']}", json={"disabled": True}).json()["user"]["disabled"])
         self.assertIsNone(other.get("/api/auth/me").json()["user"])
+        # Sin email verificado no se puede dar el rol de administrador (ni desde el panel)
+        self.assertEqual(self.client.patch(f"/api/admin/users/{bea['id']}", json={"role": "admin", "disabled": False}).status_code, 400)
+        with closing(db.connect()) as conn:
+            conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (bea["id"],))
         self.assertEqual(self.client.patch(f"/api/admin/users/{bea['id']}", json={"role": "admin", "disabled": False}).json()["user"]["role"], "admin")
         self.assertEqual(self.client.request("DELETE", f"/api/admin/users/{bea['id']}").status_code, 200)
         self.assertEqual(self.client.get("/api/admin/users").json()["total"], 1)
