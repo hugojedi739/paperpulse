@@ -30,11 +30,16 @@ def list_reports(status: str, limit: int, offset: int) -> Dict:
         out = []
         for r in rows:
             reports = conn.execute(
-                "SELECT r.id, r.reason, r.details, r.created_at, p.alias AS reporter FROM reports r "
+                "SELECT r.id, r.reason, r.details, r.created_at, r.post_body, r.post_author_alias, p.alias AS reporter FROM reports r "
                 "LEFT JOIN profiles p ON p.user_id = r.reporter_id WHERE r.post_id = ? AND r.status = ? ORDER BY r.id",
                 (r["post_id"], status)).fetchall()
+            first = reports[0] if reports else None
             out.append({
-                "postId": r["post_id"], "body": r["body"], "postStatus": r["post_status"], "isThreadStart": r["post_id"] == r["first_post_id"],
+                # Texto actual: no se muestra si lo borró su autor (lo que se denunció está en reportedBody)
+                "postId": r["post_id"], "body": None if r["post_status"] == "deleted" else r["body"], "postStatus": r["post_status"], "isThreadStart": r["post_id"] == r["first_post_id"],
+                # Lo que se denunció, copiado al denunciar (sigue ahí aunque el autor lo borre o cambie de alias)
+                "reportedBody": first["post_body"] if first and first["post_body"] is not None else None,
+                "reportedAuthor": first["post_author_alias"] if first and first["post_author_alias"] else r["author"],
                 "threadId": r["thread_id"], "threadTitle": r["title"],
                 "author": {"userId": r["author_id"], "alias": r["author"], "suspended": (r["suspended_until"] or 0) > now()},
                 "count": r["n"], "reasons": (r["reasons"] or "").split(","), "lastAt": r["last_at"],

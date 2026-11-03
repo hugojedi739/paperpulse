@@ -308,14 +308,17 @@ def report(user_id: int, post_id: int, reason, details) -> Dict:
     details = text.clean(details, "details")
     with transaction() as conn:
         require_member(conn, user_id)
-        p = conn.execute("SELECT author_id, status FROM posts WHERE id = ?", (post_id,)).fetchone()
+        p = conn.execute("SELECT po.author_id, po.status, po.body, pr.alias FROM posts po "
+                         "LEFT JOIN profiles pr ON pr.user_id = po.author_id WHERE po.id = ?", (post_id,)).fetchone()
         if not p or p["status"] == "deleted":
             raise NotFound("Ese mensaje no existe.")
         if p["author_id"] == user_id:
             raise CommunityError("No puedes denunciar tus propios mensajes.")
         try:
-            conn.execute("INSERT INTO reports (post_id, reporter_id, reason, details, created_at) VALUES (?, ?, ?, ?, ?)",
-                         (post_id, user_id, reason, details, now()))
+            # Copia del mensaje y del autor: el moderador verá lo denunciado aunque luego se borre o cambie
+            conn.execute("INSERT INTO reports (post_id, reporter_id, reason, details, created_at, post_body, post_author_id, "
+                         "post_author_alias) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                         (post_id, user_id, reason, details, now(), p["body"], p["author_id"], p["alias"]))
         except Exception as exc:
             if db.is_integrity_error(exc):
                 raise Conflict("Ya has denunciado ese mensaje. Lo revisará un moderador.") from None

@@ -379,6 +379,19 @@ class ModerationTest(Base):
         actions = [i["action"] for i in moderation.moderation_log(50, None)["items"]]
         self.assertEqual(actions, ["restore_post", "hide_post"])
 
+    def test_la_denuncia_conserva_el_texto_aunque_el_autor_lo_borre(self):
+        forum.report(self.otro, self.pid, "estafa", "Promete beneficios")
+        forum.delete_own(self.autor, self.pid)
+        profiles.save_mine(self.autor, {"alias": "OtroNombre"})  # cambiar de alias tampoco borra el rastro
+        item = moderation.list_reports("open", 25, 0)["items"][0]
+        self.assertEqual(item["postStatus"], "deleted")
+        self.assertIsNone(item["body"])  # el mensaje actual ya no tiene texto visible...
+        self.assertEqual(item["reportedBody"], "Compra ya esta moneda, es seguro x100")  # ...pero la copia sí
+        self.assertEqual(item["reportedAuthor"], "Autor")
+        self.assertEqual(item["author"]["alias"], "OtroNombre")
+        # El público sigue sin ver el texto borrado
+        self.assertIsNone(forum.get_thread(self.tid, "top", 1, self.otro, False)["replies"][0]["body"])
+
     def test_ocultar_el_primer_mensaje_retira_el_hilo(self):
         first = self.scalar("SELECT first_post_id FROM threads WHERE id = ?", self.tid)
         moderation.hide_post(self.admin, first, "Fuera de tema")
