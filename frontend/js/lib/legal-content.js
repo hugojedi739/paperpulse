@@ -89,7 +89,7 @@ export const PAGES = [
       { h: '4. Destinatarios y encargados del tratamiento', p: [
         'No vendemos tus datos. Para prestar el servicio utilizamos estos proveedores, que actúan como encargados del tratamiento:',
         { list: [
-          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan por defecto en la región de Washington D. C. (EE. UU.), de modo que los datos de cada petición (por ejemplo, tu sesión y lo que envías) se procesan allí de forma transitoria; lo que se guarda se almacena en Dublín.',
+          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan en la región de París (Francia, UE), y lo que se guarda se almacena en Dublín (Irlanda, UE/EEE).',
           `Turso (ChiselStrike, Inc., EE. UU.): base de datos donde se guardan los datos de tu cuenta. Región: ${PENDING.region}.`,
           'Google LLC (EE. UU.): solo si eliges iniciar sesión con Google; recibe los datos propios de ese inicio de sesión.',
           'Anthropic PBC (EE. UU.): solo si usas el asistente con IA; recibe los mensajes que le envías.',
@@ -98,8 +98,8 @@ export const PAGES = [
         ] },
       ] },
       { h: '5. Transferencias internacionales', p: [
-        `Almacenamiento: tus datos se guardan en una base de datos de Turso alojada en ${PENDING.region}. El almacenamiento no supone una transferencia internacional de datos por parte de Turso.`,
-        'Tratamiento en Estados Unidos: Vercel (ejecución de la aplicación, por defecto en Washington D. C.), Google (solo si inicias sesión con Google) y Anthropic (solo si usas el asistente con IA) son proveedores estadounidenses. Esas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. (cuando el proveedor está adherido) o en cláusulas contractuales tipo aprobadas por la Comisión Europea.',
+        `Almacenamiento y ejecución: tus datos se guardan en una base de datos de Turso alojada en ${PENDING.region}, y las funciones de Vercel que los tratan se ejecutan en París (Francia, UE). El almacenamiento no supone una transferencia internacional de datos por parte de Turso.`,
+        'Proveedores con sede en Estados Unidos: Vercel y Turso son empresas estadounidenses aunque los datos se alojen en la UE; Google (solo si inicias sesión con Google) y Anthropic (solo si usas el asistente con IA) tratan datos en Estados Unidos. Esas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. (cuando el proveedor está adherido) o en cláusulas contractuales tipo aprobadas por la Comisión Europea.',
       ] },
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',

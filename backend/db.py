@@ -206,8 +206,32 @@ def transaction():
             yield conn
             conn.execute("COMMIT")
         except BaseException:
-            conn.execute("ROLLBACK")
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:  # Turso ya la canceló: que no tape el error original
+                pass
             raise
+
+
+TRANSIENT_MARKERS = ("stream was idle", "sqlite_busy", "database is locked", "no transaction is active", "stream error")
+
+
+def is_transient(exc: Exception) -> bool:
+    """Errores de Turso/libSQL que se resuelven reintentando la transacción entera (flujo interactivo cancelado, bloqueo)."""
+    return isinstance(exc, (ValueError, libsql.Error)) and any(m in str(exc).lower() for m in TRANSIENT_MARKERS)
+
+
+def retry_transaction(fn, attempts: int = 3):
+    """Ejecuta fn(conn) dentro de una transacción y la repite entera si Turso la cancela a mitad (p. ej. «stream was idle
+    for too long» en transacciones con muchas sentencias). Para operaciones largas e idempotentes dentro de la transacción."""
+    for attempt in range(1, attempts + 1):
+        try:
+            with transaction() as conn:
+                return fn(conn)
+        except Exception as exc:
+            if attempt == attempts or not is_transient(exc):
+                raise
+            time.sleep(0.3 * attempt)
 
 
 def _get_version(conn) -> int:

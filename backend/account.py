@@ -16,7 +16,7 @@ from starlette.routing import Route
 
 from backend import db
 from backend.community.api import _guard
-from backend.db import transaction
+from backend.db import retry_transaction, transaction
 from backend.http import allow, error, ok, read_json
 
 # Versión de los textos legales (términos, privacidad, normas). Si cambian de forma relevante, súbela: a las
@@ -85,7 +85,8 @@ def export_data(user_id: int) -> Dict:
 def delete_account(user_id: int) -> None:
     """Borra o anonimiza todos los datos del usuario (ver el docstring del módulo). Una sola transacción."""
     now = int(time.time())
-    with transaction() as conn:
+
+    def _delete(conn):
         u = conn.execute("SELECT id, owner_id FROM users WHERE id = ?", (user_id,)).fetchone()
         if not u or u["owner_id"]:
             return
@@ -113,6 +114,9 @@ def delete_account(user_id: int) -> None:
         run("UPDATE users SET email = ?, name = 'Usuario eliminado', password_hash = '', disabled = 1, role = 'user', email_verified = 0, "
             "suspended_until = NULL, suspension_reason = NULL, last_login_at = NULL, terms_version = NULL, terms_accepted_at = NULL, "
             "age_confirmed_at = NULL, deleted_at = ? WHERE id = ?", f"eliminado-{user_id}@eliminado.invalid", now, user_id)
+
+    # Son ~35 sentencias: en Turso (red) la transacción puede cancelarse por inactividad, así que se reintenta entera
+    retry_transaction(_delete)
 
 
 # ---------------------------------------------------------------- API

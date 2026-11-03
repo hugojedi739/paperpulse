@@ -100,7 +100,8 @@ test('la política de privacidad nombra a Vercel y Turso, las transferencias y l
   for (const word of ['Vercel', 'Turso', 'Estados Unidos', 'cláusulas contractuales', 'Marco de Privacidad', 'AEPD', 'RGPD', 'LOPDGDD', 'portabilidad', '14 años', 'Anthropic', 'Google']) assert.ok(t.includes(word), word);
   assert.match(t, /Dublín \(Irlanda\), dentro de la UE\/EEE/); // región de Turso
   assert.match(t, /no supone una transferencia internacional/);
-  assert.match(t, /Washington D\. C\./); // las funciones de Vercel usan la región por defecto
+  assert.match(t, /París \(Francia, UE\)/); // región de las funciones de Vercel (cdg1, observada en los logs)
+  assert.doesNotMatch(t, /Washington/);
   assert.match(t, /formulario de contacto/);
 });
 
