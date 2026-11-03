@@ -79,7 +79,7 @@ frontend/
 scripts/vendor.mjs           Copia dependencias de node_modules y genera el sprite (lista ICONS)
 scripts/screenshots.mjs      Capturas de todas las vistas con Playwright (requiere el servidor)
 tests/                       frontend.test.js (node --test) y test_*.py (unittest)
-data/                        Base de datos local sin Turso (se crea sola; ignorada por git)
+data/                        Base de datos local sin Turso (se crea sola; ignorada por git). Ver «Base local y dev containers»
 ```
 
 ## Cómo funciona
@@ -206,6 +206,12 @@ docker compose up --build
 - La base de datos vive en el volumen `paperpulse-data` (`/app/data`).
 - Detrás de un proxy, añade su IP a `TRUSTED_PROXIES` y reenvía también las conexiones WebSocket de `/ws/market`.
 - **Vercel** (`vercel.json`): funciona sin WebSockets (el frontend usa el respaldo REST). Necesita **Turso** para que los datos persistan; sin `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` usa `/tmp`, que es efímero.
+
+### Base local y dev containers
+SQLite **no funciona en carpetas compartidas con el anfitrión, de red o de máquina virtual**. En un dev container sobre Windows o macOS, `/workspaces` es virtiofs: el número de inodo de un fichero cambia tras el primer `fsync`, y SQLite corrompe la base (modo WAL: «database disk image is malformed») o la trata como movida (modo DELETE: «attempt to write a readonly database»). Por eso:
+- Sin `DATABASE_PATH`, si `data/` está en uno de esos sistemas de ficheros, la base se crea en el disco del contenedor: `~/.local/share/paperpulse/paperpulse.db`.
+- Con un `DATABASE_PATH` en uno de ellos, el servidor no arranca y lo explica. Usa una ruta del contenedor, p. ej. `DATABASE_PATH=~/paperpulse/prueba.db`.
+- `python -m backend.db status` muestra también la integridad de la base local.
 
 ### Turso y Vercel
 

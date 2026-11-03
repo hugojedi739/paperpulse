@@ -8,6 +8,7 @@ frontend estático de frontend/ (desactivable con SERVE_FRONTEND=false si se des
 import asyncio
 import hmac
 import os
+import sys
 import time
 from contextlib import asynccontextmanager
 
@@ -176,7 +177,11 @@ middleware = [
 
 @asynccontextmanager
 async def lifespan(app):
-    db.init_db()
+    try:
+        db.init_db()
+    except db.UnsafeFilesystemError as exc:
+        print(f"\n[DB] {exc}\n", file=sys.stderr)
+        raise
     print("==================================================")
     print("  PaperPulse — backend")
     print(f"  http://localhost:{PORT}  (frontend: {'servido desde ' + FRONTEND_DIR if SERVE_FRONTEND else 'aparte'})")

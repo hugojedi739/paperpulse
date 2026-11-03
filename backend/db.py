@@ -30,9 +30,60 @@ TURSO_URL = os.getenv("TURSO_DATABASE_URL", "").strip()
 TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
 USE_TURSO = bool(TURSO_URL and TURSO_TOKEN)
 
-# Sin Turso, en Vercel solo /tmp es escribible (y efímero)
-_DEFAULT_DB = "/tmp/paperpulse.db" if IS_VERCEL else os.path.join(ROOT_DIR, "data", "paperpulse.db")
-DB_PATH = os.getenv("DATABASE_PATH", _DEFAULT_DB)
+# ---------------------------------------------------------------- dónde vive el fichero local
+# SQLite no funciona de forma fiable en carpetas compartidas con el anfitrión, de red o de VM. En un dev container
+# sobre Windows, /workspaces es virtiofs y el número de inodo de un fichero cambia tras el primer fsync: SQLite cree
+# que la base «se ha movido» (modo DELETE: «attempt to write a readonly database») o pierde la cuenta de qué
+# conexiones comparten bloqueos y memoria compartida (modo WAL: SIGBUS y «database disk image is malformed»).
+UNSAFE_FS = {"virtiofs", "9p", "nfs", "nfs4", "cifs", "smb3", "smbfs", "vboxsf", "drvfs", "fakeowner",
+             "fuse.grpcfuse", "fuse.osxfs", "fuse.sshfs"}
+
+
+class UnsafeFilesystemError(RuntimeError):
+    """La base local está en un sistema de ficheros donde SQLite se corrompe."""
+
+
+def filesystem_type(path: str, mounts_file: str = "/proc/mounts") -> Optional[str]:
+    """Tipo del sistema de ficheros que contiene `path` (el punto de montaje más largo que lo contiene). None si no se sabe."""
+    target = os.path.realpath(os.path.dirname(os.path.abspath(path)))
+    try:
+        with open(mounts_file, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return None  # no es Linux (macOS/Windows nativos): se asume disco local
+    best, kind = "", None
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        mount = parts[1].replace("\\040", " ")
+        if (target == mount or target.startswith(mount.rstrip("/") + "/")) and len(mount) > len(best):
+            best, kind = mount, parts[2]
+    return kind
+
+
+def unsafe_filesystem(path: str) -> Optional[str]:
+    """Nombre del sistema de ficheros si SQLite no es fiable en él; None si es un disco local normal."""
+    fs = filesystem_type(path)
+    return fs if fs in UNSAFE_FS else None
+
+
+def unsafe_message(path: str, fs: str) -> str:
+    return (f"La base de datos {path} está en un sistema de ficheros «{fs}» (carpeta compartida con el anfitrión, "
+            "de red o de máquina virtual) y SQLite la corrompería. Usa una ruta en el disco del contenedor "
+            "(p. ej. DATABASE_PATH=~/paperpulse/prueba.db), quita DATABASE_PATH para usar la ruta por defecto o configura Turso.")
+
+
+def _default_db_path() -> str:
+    if IS_VERCEL:
+        return "/tmp/paperpulse.db"  # sin Turso, en Vercel solo /tmp es escribible (y efímero)
+    in_repo = os.path.join(ROOT_DIR, "data", "paperpulse.db")
+    if unsafe_filesystem(in_repo):  # p. ej. dev container sobre Windows: se usa el disco del contenedor
+        return os.path.join(os.path.expanduser("~"), ".local", "share", "paperpulse", "paperpulse.db")
+    return in_repo
+
+
+DB_PATH = os.path.expanduser(os.getenv("DATABASE_PATH", "").strip()) or _default_db_path()
 DB_LABEL = TURSO_URL if USE_TURSO else DB_PATH  # la URL no contiene secretos; el token nunca se muestra
 SESSION_TTL = 30 * 86400
 OAUTH_STATE_TTL = 600
@@ -162,6 +213,8 @@ def _set_version(conn, version: int) -> None:
 
 def init_db() -> None:
     """Aplica las migraciones pendientes (PRAGMA user_version; tabla schema_version en Turso), cada una en su transacción."""
+    if not USE_TURSO and (fs := unsafe_filesystem(DB_PATH)):
+        raise UnsafeFilesystemError(unsafe_message(DB_PATH, fs))  # mejor no arrancar que corromper la base
     with closing(connect()) as conn:
         if not USE_TURSO:
             conn.execute("PRAGMA journal_mode = WAL")
@@ -466,12 +519,27 @@ def schema_status() -> Dict:
     return {"current": current, "latest": len(load_migrations())}
 
 
+def integrity() -> str:
+    """'ok' si la base local está sana; si no, el error. PRAGMA user_version se lee de la cabecera y puede decir
+    «al día» aunque el resto del fichero esté dañado, así que `status` comprueba también esto."""
+    try:
+        with closing(connect()) as conn:
+            return str(conn.execute("PRAGMA quick_check").fetchone()[0])
+    except Exception as exc:  # noqa: BLE001  (libsql lanza ValueError genérico)
+        return str(exc)
+
+
 def _main(argv: List[str]) -> None:
     cmd = argv[1] if len(argv) > 1 else "migrate"
     if cmd == "status":
         st = schema_status()
         pending = st["latest"] - st["current"]
         print(f"Esquema en la versión {st['current']} de {st['latest']}" + (f" ({pending} pendientes)" if pending else " (al día)"))
+        if not USE_TURSO:
+            check = integrity()
+            print(f"Integridad: {check}" if check == "ok" else f"Integridad: DAÑADA ({check}). Borra el fichero (y sus -wal/-shm) o restaura una copia.")
+            if (fs := unsafe_filesystem(DB_PATH)):
+                print(f"AVISO: {unsafe_message(DB_PATH, fs)}")
         print(f"Base de datos: {DB_LABEL}")
         return
     before = schema_status()["current"] if cmd in ("migrate", "init") else None
@@ -493,4 +561,7 @@ def _main(argv: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    _main(sys.argv)
+    try:
+        _main(sys.argv)
+    except UnsafeFilesystemError as exc:
+        sys.exit(f"Error: {exc}")
