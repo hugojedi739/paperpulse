@@ -103,9 +103,9 @@ def validate(values: Dict[str, Any]) -> Optional[str]:
     for key, value in values.items():
         if key not in SCHEMA:
             return f"Ajuste desconocido: {key}"
-        if value is None:
-            continue
         kind = SCHEMA[key][2]
+        if value is None or (kind is int and isinstance(value, str) and not value.strip()):
+            continue  # None (o un número vacío en el panel) = volver al valor de .env
         if kind is bool and not isinstance(value, bool):
             return f"{key} debe ser verdadero o falso."
         if kind is str and (not isinstance(value, str) or len(value) > 2000):
@@ -125,6 +125,7 @@ def validate(values: Dict[str, Any]) -> Optional[str]:
 
 
 def save(values: Dict[str, Any], by: Optional[int]) -> None:
+    values = {k: (None if SCHEMA[k][2] is int and isinstance(v, str) and not v.strip() else v) for k, v in values.items()}
     serialized = {k: (None if v is None else ("true" if v is True else "false" if v is False else str(v).strip())) for k, v in values.items()}
     db.put_settings(serialized, by)
     _cache["time"] = 0

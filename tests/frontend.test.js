@@ -104,3 +104,32 @@ test('une páginas de histórico sin duplicados y en orden', () => {
   const current = [{ time: 3, close: 30 }, { time: 4, close: 4 }];
   assert.deepEqual(mergeCandles(older, current).map((c) => c.time), [1, 2, 3, 4]);
 });
+
+const account = await import('../frontend/js/lib/account.js');
+
+test('la cuenta del servidor se convierte de céntimos a la forma del store', () => {
+  const snap = account.toStore({
+    account: { initialCents: 1_000_000, availableCents: 899_990, cashCents: 989_990 },
+    positions: [{ symbol: 'BTC', name: 'Bitcoin', assetType: 'crypto', quote: 'USDT', quantity: 0.5, avgPrice: 100, costCents: 5_005, openedAt: 1_700_000_000 }],
+    orders: [{ id: 7, symbol: 'SAN', name: 'Banco Santander', assetType: 'stock', quote: 'EUR', side: 'sell', type: 'stop', quantity: 10, triggerPrice: 4.5, reservedCents: 0, createdAt: 1_700_000_100 }],
+    trades: [{ id: 3, orderId: 9, symbol: 'ETH', name: 'Ethereum', quote: 'USDT', quantity: 1, entryPrice: 100, exitPrice: 110, costBasisCents: 10_010, pnlCents: 978, feeCents: 11, executedAt: 1_700_000_200, openedAt: 1_700_000_000, journal: { setup: 'Ruptura', notes: '' } }],
+  });
+  assert.equal(snap.capital, 10_000);
+  assert.equal(snap.cash, 8_999.9);
+  assert.deepEqual([snap.positions[0].investedUsd, snap.positions[0].openedAt], [50.05, 1_700_000_000_000]);
+  assert.deepEqual([snap.orders[0].id, snap.orders[0].side, snap.orders[0].limitPrice], ['7', 'sell', 4.5]);
+  assert.deepEqual([snap.trades[0].pnl, snap.trades[0].orderId, snap.trades[0].setup], [9.78, 9, 'Ruptura']);
+  assert.ok(Math.abs(snap.trades[0].pnlPct - (9.78 / 100.1) * 100) < 1e-9);
+});
+
+test('en modo servidor el store no se sube a /api/data y vuelve a local al salir', () => {
+  const events = [];
+  const off = store.on('account', (d) => events.push(d));
+  store.applyServer({ capital: 10_000, cash: 9_000, positions: [], orders: [], trades: [] });
+  assert.equal(store.isServerMode(), true);
+  assert.equal(store.cash(), 9_000);
+  assert.deepEqual(events.at(-1), { server: true });
+  store.leaveServerMode();
+  assert.equal(store.isServerMode(), false);
+  off();
+});

@@ -52,8 +52,8 @@ async function reconcile(choose) {
  * (mismo diálogo que tras el login con contraseña); si no, ganan los datos más recientes.
  */
 export async function init(chooseAfterOAuth) {
-  for (const ev of ['account', 'trades', 'alerts', 'watchlist', 'settings']) store.on(ev, () => {
-    if (applying) return;
+  for (const ev of ['account', 'trades', 'alerts', 'watchlist', 'settings']) store.on(ev, (detail) => {
+    if (applying || detail?.server) return; // la cuenta del servidor no se copia en /api/data
     touch();
     if (user) schedulePush();
   });
@@ -91,7 +91,7 @@ export async function logout() {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   user = null;
   applying = true;
-  try { store.clearAll(); } finally { applying = false; }
+  try { store.leaveServerMode(); store.clearAll(); } finally { applying = false; }
   changed();
 }
 

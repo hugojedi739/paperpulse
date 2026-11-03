@@ -264,6 +264,28 @@ export function snapshotEquity(valueUsd) {
   persist('equity_history');
 }
 
+/* ---------- Cuenta del servidor (con sesión) ---------- */
+// Con sesión, saldo, posiciones, órdenes y operaciones cerradas vienen de /api/portfolio (lib/account.js) y el store
+// solo guarda una copia para pintar. Los eventos llevan { server: true } para que auth.js no los suba a /api/data.
+let serverMode = false;
+export const isServerMode = () => serverMode;
+
+/** Sustituye la cuenta por la del servidor. `snap` ya viene convertido a la forma del store (ver account.js). */
+export function applyServer(snap) {
+  serverMode = true;
+  Object.assign(state, {
+    practice: true, capital: snap.capital, cash: snap.cash,
+    positions: snap.positions, orders: snap.orders, trades: snap.trades,
+  });
+  if (!state.equity.length) state.equity = [{ time: Math.floor(Date.now() / 1000), value: snap.capital }];
+  persist('practice_active', 'initial_capital', 'balance', 'positions', 'pending_orders', 'trades', 'equity_history');
+  emit('account', { server: true });
+  emit('trades', { server: true });
+}
+
+/** Al cerrar sesión se vuelve al modo local (clearAll borra después la copia). */
+export function leaveServerMode() { serverMode = false; }
+
 /* ---------- Diario ---------- */
 export function addTrade(t) {
   const trade = normalizeTrade(t);

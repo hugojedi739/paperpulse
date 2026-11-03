@@ -5,6 +5,7 @@ import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.js';
 import { money, price, units, pct, currency, convert, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
+import * as account from '../lib/account.js';
 import * as auth from '../lib/auth.js';
 import { safeUrl } from '../lib/marketdata.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.js';
@@ -28,7 +29,28 @@ export const EMOTIONS = ['Disciplinado', 'Confiado', 'Dudoso', 'Impaciente', 'FO
 const options = (list, current) => list.map((x) => html`<option ${x === current ? 'selected' : ''}>${x}</option>`);
 
 /* ---------- Cuenta de práctica ---------- */
+/** Con sesión la cuenta vive en el servidor: no se puede reiniciar ni cambiar el capital (sería trampa en las clasificaciones). */
+function serverAccountDialog() {
+  const p = trading.portfolio();
+  const cfg = account.config();
+  show(html`
+    ${head('Tu cuenta de práctica', 'Guardada en el servidor y ligada a tu usuario.')}
+    <div class="dlg-body">
+      <dl class="summary">
+        <div><dt>Patrimonio</dt><dd class="money">${money(p.equityUsd)}</dd></div>
+        <div><dt>Efectivo libre</dt><dd class="money">${money(p.cashUsd)}</dd></div>
+        <div><dt>Reservado en órdenes</dt><dd class="money">${money(p.reservedUsd)}</dd></div>
+        <div><dt>Capital inicial</dt><dd class="money">${money(store.initialCapital())}</dd></div>
+        <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
+      <p class="hint">${icon('info', 'sm')} Los precios de ejecución los decide el servidor con cotizaciones reales.
+        Comisión: ${(cfg.feeBps / 100).toLocaleString('es-ES')} % por operación; las órdenes a mercado y stop tienen además un deslizamiento de ${(cfg.slippageBps / 100).toLocaleString('es-ES')} %.</p>
+      <p class="hint">${icon('shield-check', 'sm')} Esta cuenta no se puede reiniciar. Sin sesión puedes seguir practicando en modo local con el capital que quieras.</p>
+    </div>
+    <footer class="dlg-foot"><button class="btn btn-primary" data-close>Entendido</button></footer>`, 'dlg-sm');
+}
+
 export function accountDialog() {
+  if (account.isActive()) return serverAccountDialog();
   const cur = currency();
   const presets = [500, 1000, 5000, 10000];
   let chosen = 1000;
@@ -84,14 +106,16 @@ export function closePositionDialog(id, amount) {
   if (!pos) return;
   const qty = Math.min(amount ?? pos.amount, pos.amount);
   const v = trading.valuePosition({ ...pos, amount: qty });
-  const pnl = v.valueUsd - pos.investedUsd * (qty / pos.amount);
+  const fee = account.isActive() ? account.estimateFeeUsd(v.valueUsd) : 0; // con sesión el servidor cobra comisión
+  const pnl = v.valueUsd - fee - pos.investedUsd * (qty / pos.amount);
   const d = show(html`
     ${head(`Vender ${pos.symbol}`, qty < pos.amount ? `Venta parcial de ${units(qty, pos.symbol)} de ${units(pos.amount, pos.symbol)}` : 'Cierre completo de la posición')}
     <div class="dlg-body">
       <dl class="summary">
         <div><dt>Precio de entrada</dt><dd>${price(pos.entryPrice, pos.quote)}</dd></div>
         <div><dt>Precio actual</dt><dd>${price(v.price, pos.quote)}</dd></div>
-        <div><dt>Recibirás</dt><dd class="money">${money(v.valueUsd)}</dd></div>
+        <div><dt>Recibirás${fee ? ' aprox.' : ''}</dt><dd class="money">${money(v.valueUsd - fee)}</dd></div>
+        ${fee ? html`<div><dt>Comisión estimada</dt><dd class="money">${money(fee)}</dd></div>` : ''}
         <div><dt>Resultado</dt><dd class="money delta ${trendClass(pnl)}">${money(pnl, { signed: true })}</dd></div>
       </dl>
       <div class="field"><label for="cp-setup">Estrategia</label><select id="cp-setup">${options(SETUPS)}</select></div>
@@ -101,14 +125,18 @@ export function closePositionDialog(id, amount) {
     </div>
     <footer class="dlg-foot"><button class="btn btn-ghost" data-close>Cancelar</button>
       <button class="btn btn-down" data-act="sell">Confirmar venta</button></footer>`);
-  d.querySelector('[data-act="sell"]').onclick = () => {
+  d.querySelector('[data-act="sell"]').onclick = async (e) => {
+    e.currentTarget.disabled = true;
     try {
-      const t = trading.closePosition(id, {
+      const t = await trading.closePosition(id, {
         amount: qty, setup: d.querySelector('#cp-setup').value, emotion: d.querySelector('#cp-emotion').value, notes: d.querySelector('#cp-notes').value.trim(),
       });
       d.close();
       toast(`Venta registrada en tu diario: ${money(t.pnl, { signed: true })}`, t.pnl >= 0 ? 'success' : 'info');
-    } catch (err) { toast(err.message, 'error'); }
+    } catch (err) {
+      toast(err.message, 'error');
+      e.currentTarget.disabled = false;
+    }
   };
 }
 
@@ -123,10 +151,14 @@ export function noteDialog(tradeId) {
       <div class="field"><label for="n-notes">Reflexión</label><textarea id="n-notes" maxlength="1000">${t.notes}</textarea></div>
     </div>
     <footer class="dlg-foot"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" data-act="save">Guardar</button></footer>`, 'dlg-sm');
-  d.querySelector('[data-act="save"]').onclick = () => {
-    store.updateTrade(tradeId, { setup: d.querySelector('#n-setup').value, emotion: d.querySelector('#n-emotion').value, notes: d.querySelector('#n-notes').value.trim() });
-    d.close();
-    toast('Notas guardadas', 'success', 2000);
+  d.querySelector('[data-act="save"]').onclick = async () => {
+    const journal = { setup: d.querySelector('#n-setup').value, emotion: d.querySelector('#n-emotion').value, notes: d.querySelector('#n-notes').value.trim() };
+    try {
+      if (account.isActive() && t.orderId) await account.saveJournal(t.orderId, journal); // operación del servidor
+      else store.updateTrade(tradeId, journal);
+      d.close();
+      toast('Notas guardadas', 'success', 2000);
+    } catch (err) { toast(err.message, 'error'); }
   };
 }
 

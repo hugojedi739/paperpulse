@@ -211,6 +211,14 @@ async function renderIntegrations() {
         <p class="hint">Las criptomonedas usan siempre la API pública de Binance y CoinGecko a través del servidor.</p>
         ${save()}
       </form></section>
+      <section class="card"><form class="admin-form" data-form>
+        <div class="card-head"><h2 class="card-title">${icon('scale')} Simulación (usuarios con sesión)</h2></div>
+        ${text('trading_initial_balance_usd', 'Saldo inicial de las cuentas nuevas (USD)', '10000', 'number')}
+        ${text('trading_fee_bps', 'Comisión por operación (puntos básicos; 10 = 0,10 %)', '10', 'number')}
+        ${text('trading_slippage_bps', 'Deslizamiento en órdenes a mercado y stop (puntos básicos)', '5', 'number')}
+        <p class="hint">El saldo inicial solo se aplica a las cuentas que se crean a partir de ahora. Sin sesión, el modo local no cobra comisiones.</p>
+        ${save()}
+      </form></section>
     </div>`);
 }
 

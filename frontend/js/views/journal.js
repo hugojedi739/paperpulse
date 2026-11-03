@@ -20,6 +20,7 @@ export function mount(el) {
   on(root, 'click', '[data-note]', (_, b) => noteDialog(b.dataset.note));
   on(root, 'click', '[data-act="csv"]', exportCsv);
   on(root, 'click', '[data-act="reset"]', async () => {
+    if (store.isServerMode()) return toast('Las operaciones de tu cuenta del servidor no se pueden borrar: son tu historial real de práctica.', 'info');
     if (await confirmDialog({ title: '¿Vaciar el diario?', body: 'Se borrarán todas las operaciones cerradas y sus notas. Tu cuenta y posiciones abiertas no cambian.', confirm: 'Vaciar diario', danger: true })) {
       store.clearTrades();
       toast('Diario vaciado', 'info');

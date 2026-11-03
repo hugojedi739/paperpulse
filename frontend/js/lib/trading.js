@@ -1,5 +1,8 @@
 // Motor de operativa simulada: compras a mercado, órdenes límite/stop, cierres, alertas y valoración.
+// Sin sesión todo se ejecuta aquí, en el navegador (modo local). Con sesión, las operaciones se envían al servidor
+// (lib/account.js), que decide precio, comisión y saldo; las funciones de este módulo son asíncronas en ambos casos.
 import * as store from './store.js';
+import * as account from './account.js';
 import { priceOf, tick } from './feed.js';
 import { toUsd, convert, price as fmtPrice, units } from './format.js';
 import { findAsset } from './catalog.js';
@@ -48,8 +51,14 @@ function requireAccount() {
   if (!store.hasPractice()) throw new TradeError('Activa tu cuenta de práctica para operar.');
 }
 
+const server = () => account.isActive();
+
 /** Compra a mercado. `amount` en unidades del activo. */
-export function buyMarket(asset, amount) {
+export async function buyMarket(asset, amount) {
+  if (server()) {
+    const o = await account.placeOrder({ symbol: asset.symbol, side: 'buy', type: 'market', quantity: amount });
+    return { amount: o.quantity, price: o.fill.price, costUsd: (o.fill.notionalCents + o.fill.feeCents) / 100, feeUsd: o.fill.feeCents / 100 };
+  }
   requireAccount();
   const px = priceOf(asset.symbol);
   if (!(px > 0)) throw new TradeError(`Sin cotización disponible para ${asset.symbol}.`);
@@ -79,8 +88,15 @@ function fill(asset, amount, px, prepaidUsd = 0) {
   return { amount, price: px, costUsd };
 }
 
-/** Orden límite o stop-limit de compra: reserva el saldo hasta que se ejecuta o se cancela. */
-export function placeOrder(asset, { type, amount, limitPrice, stopPrice }) {
+/**
+ * Orden pendiente. Local: límite o stop-limit de compra (reserva saldo). Servidor: límite o stop, de compra o de venta
+ * (`side`), con un único nivel (`limitPrice`); si el nivel ya se cumple, el servidor la ejecuta al momento.
+ */
+export async function placeOrder(asset, { type, amount, limitPrice, stopPrice, side = 'buy' }) {
+  if (server()) {
+    const o = await account.placeOrder({ symbol: asset.symbol, side, type: type === 'stop-limit' ? 'stop' : type, quantity: amount, triggerPrice: limitPrice });
+    return { filled: o.status === 'filled', order: o };
+  }
   requireAccount();
   if (!(limitPrice > 0)) throw new TradeError('Introduce un precio límite válido.');
   if (type === 'stop-limit' && !(stopPrice > 0)) throw new TradeError('Introduce un precio stop válido.');
@@ -89,7 +105,7 @@ export function placeOrder(asset, { type, amount, limitPrice, stopPrice }) {
   if (reservedUsd > store.cash()) throw new TradeError('Saldo de práctica insuficiente.');
 
   const current = priceOf(asset.symbol);
-  if (type === 'limit' && current > 0 && current <= limitPrice) return { filled: true, ...buyMarket(asset, amount) };
+  if (type === 'limit' && current > 0 && current <= limitPrice) return { filled: true, ...(await buyMarket(asset, amount)) };
 
   store.setCash(store.cash() - reservedUsd);
   const order = store.addOrder({
@@ -99,14 +115,22 @@ export function placeOrder(asset, { type, amount, limitPrice, stopPrice }) {
   return { filled: false, order };
 }
 
-export function cancelOrder(id) {
+export async function cancelOrder(id) {
+  if (server()) return account.cancelOrder(id);
   const order = store.removeOrder(id);
   if (order) store.setCash(store.cash() + order.reservedUsd);
   return order;
 }
 
 /** Vende `amount` unidades (todo por defecto) y registra la operación en el diario. */
-export function closePosition(id, { amount, setup = '', emotion = '', notes = '' } = {}) {
+export async function closePosition(id, { amount, setup = '', emotion = '', notes = '' } = {}) {
+  if (server()) {
+    const pos = store.positions().find((p) => p.id === id);
+    if (!pos) throw new TradeError('La posición ya no existe.');
+    const qty = Math.min(pos.amount, amount > 0 ? amount : pos.amount);
+    const o = await account.placeOrder({ symbol: pos.symbol, side: 'sell', type: 'market', quantity: qty, journal: { setup, emotion, notes } });
+    return { symbol: o.symbol, pnl: o.fill.pnlCents / 100, feeUsd: o.fill.feeCents / 100 };
+  }
   requireAccount();
   const pos = store.positions().find((p) => p.id === id);
   if (!pos) throw new TradeError('La posición ya no existe.');
@@ -133,7 +157,8 @@ export function closePosition(id, { amount, setup = '', emotion = '', notes = ''
 
 /* ---------- Disparadores en cada lote de precios ---------- */
 export function checkTriggers(symbols, onEvent) {
-  for (const order of store.orders()) {
+  // Con sesión las órdenes las resuelve el servidor (con velas): aquí solo se revisan las alertas
+  for (const order of server() ? [] : store.orders()) {
     if (!symbols.has(order.symbol)) continue;
     const px = priceOf(order.symbol);
     if (!(px > 0)) continue;

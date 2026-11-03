@@ -53,7 +53,9 @@ backend/
   http.py                    Utilidades HTTP: CSRF (Origin), JSON, límites, cookie de sesión, require_admin
   auth.py                    /api/auth/*: email+contraseña, Google y Okta (OIDC + PKCE), copia de datos /api/data
   admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth
-  security.py                IP real del cliente (proxies de confianza), límites por IP, contadores de uso de IA
+  security.py                IP real del cliente (proxies de confianza), límites por IP y por usuario, contadores de uso de IA
+  trading/                   Cuenta de práctica del servidor: rules (cálculo en enteros), prices (precios del servidor),
+                             ledger (transacciones, idempotencia, resolución de límite/stop), api (/api/portfolio, /api/orders)
   chat.py                    /api/chat: asistente con Claude (SSE), desafío anti-bot, límites de gasto
   news.py                    /api/news: RSS financieros con filtro positivo de temas
   market/
@@ -83,9 +85,30 @@ data/                        Base de datos local sin Turso (se crea sola; ignora
 ## Cómo funciona
 
 ### Cuenta de práctica y datos del usuario
-- Sin sesión, todo (saldo, posiciones, órdenes, diario, alertas, favoritos, ajustes) se guarda en `localStorage` (`frontend/js/lib/store.js`, claves `paperpulse_*`).
-- Con sesión, `lib/auth.js` sube una copia JSON a `/api/data` (debounce de 2 s) y la descarga al entrar. Si la nube y el navegador tienen datos distintos, se pregunta al usuario cuál conservar.
-- La ejecución de órdenes es 100 % del lado del cliente (`lib/trading.js`): mercado al precio en vivo, límite/stop cuando el precio cruza el nivel (`checkTriggers`). Sin comisiones ni cortos.
+Hay dos modos:
+
+- **Modo local (sin sesión)**: todo (saldo, posiciones, órdenes, diario, alertas, favoritos, ajustes) vive en `localStorage` (`frontend/js/lib/store.js`, claves `paperpulse_*`). Las órdenes se ejecutan en el navegador (`lib/trading.js`, `checkTriggers`), sin comisiones. El usuario elige su capital y puede reiniciar. No cuenta para clasificaciones.
+- **Cuenta del servidor (con sesión)**: saldo, posiciones, órdenes y operaciones cerradas viven en la base de datos (`backend/trading/`) y el navegador solo guarda una copia para pintar (`lib/account.js` → `store.applyServer`). La cuenta empieza limpia con el saldo inicial del panel (no se importa nada de `localStorage`) y no se puede reiniciar.
+- Con sesión, `lib/auth.js` sigue subiendo a `/api/data` la copia de alertas, favoritos y ajustes (debounce de 2 s). Esa copia no afecta a la cuenta del servidor.
+
+### Cuenta del servidor: cómo se ejecutan las órdenes
+- **El servidor decide siempre el precio** (`backend/trading/prices.py`): Binance para cripto y Yahoo/Finnhub para bolsa, con el tipo de cambio del BCE para los activos en euros. El cliente solo envía `{clientOrderId, symbol, side, type, quantity, triggerPrice?}`; cualquier otro campo se ignora.
+- **Unidades**: importes en céntimos de USD y cantidades/precios en 1e-8, siempre enteros (`backend/trading/rules.py`). Las compras redondean hacia arriba y las ventas hacia abajo.
+- **Comisión y deslizamiento** configurables en Administración → Integraciones → Simulación (por defecto 0,10 % y 0,05 %). El deslizamiento se aplica a las órdenes a mercado y stop, no a las límite.
+- **Transacción única**: saldo, posición, ejecución (`fills`) y estado de la orden se escriben en una transacción `BEGIN IMMEDIATE` (`ledger.execute`).
+- **Idempotencia**: `UNIQUE(user_id, client_order_id)`. Un reintento con la misma clave devuelve la orden original (HTTP 200 con `replayed: true`); con otros datos, HTTP 409. El frontend reutiliza la clave al reintentar tras un fallo de red.
+- **Mercado cerrado**: las órdenes a mercado de bolsa se rechazan; las límite y stop se aceptan y esperan a la próxima sesión.
+- **Límite y stop, a demanda**: no hay ningún proceso en segundo plano. Cada `GET /api/portfolio` (como mucho cada 15 s por usuario) y cada orden nueva revisan las velas **cerradas** desde la última revisión (`orders.checked_until`) con la temporalidad más fina que quepa en una descarga: 1m (hasta ~16 h), 5m, 15m o 1h. Las ejecuciones se aplican en orden cronológico y con la hora de la vela, así que el resultado no depende de cuándo se consulte.
+  - Si la orden se colocó a mitad de vela, esa vela se revisa con una temporalidad más fina; el primer minuto parcial se descarta (al colocarla ya se comparó con la cotización en vivo).
+  - **Huecos de precio**: si una vela abre al otro lado del nivel, se ejecuta a la apertura. Una límite de compra a 100 que abre a 95 compra a 95; un stop de venta a 100 que abre a 90 vende a 90 (más el deslizamiento).
+  - Una compra stop reserva qty × stop × (1 + deslizamiento) + comisión. Si un hueco la deja corta y no hay efectivo libre, la orden se **rechaza** al ejecutarse.
+  - Las órdenes caducan a los 30 días. Como mucho hay 50 pendientes por usuario.
+- **Limitaciones** de este enfoque:
+  - Dentro de una vela no se sabe en qué orden ocurrieron máximo y mínimo; cuanto más tiempo pase sin consultar, más gruesas son las velas (hasta 1h).
+  - Tocar el nivel cuenta como ejecución (en un mercado real la orden podría quedarse en la cola) y se supone liquidez infinita: la orden se ejecuta entera.
+  - El tipo de cambio de las ejecuciones por vela es el actual, no el del momento de la vela.
+  - Yahoo puede dar las cotizaciones de algunas bolsas (p. ej. BME) con unos 15 minutos de retraso.
+  - Solo se pueden operar los activos del catálogo (los encontrados con la búsqueda, solo en modo local). No hay ventas en corto.
 
 ### Datos de mercado en vivo
 - El navegador abre **un único WebSocket** con el backend (`/ws/market`) usando el protocolo de Binance: `{"method":"SUBSCRIBE","params":["btcusdt@ticker","btcusdt@kline_1h","btcusdt@depth20@100ms","stocks"]}`. Recibe `{"stream": ..., "data": ...}`.
@@ -140,7 +163,10 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | POST | `/api/auth/register` · `/login` · `/logout` | Sesión con email |
 | GET/DELETE | `/api/auth/me` | Usuario actual (`role`, `hasPassword`) · borrar cuenta |
 | GET | `/api/auth/oauth/{google\|okta}/start` · `/callback` | Inicio de sesión OIDC |
-| GET/PUT | `/api/data` | Copia de la cuenta de práctica |
+| GET/PUT | `/api/data` | Copia de los datos del modo local (alertas, favoritos, ajustes) |
+| GET | `/api/portfolio` | Cuenta del servidor: saldo, posiciones, órdenes pendientes, operaciones cerradas y eventos (resuelve antes las pendientes) |
+| GET/POST | `/api/orders?status=&limit=&before=` | Historial paginado · `{clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?}` |
+| DELETE/PATCH | `/api/orders/{id}` | Cancelar una orden pendiente · `{journal}` notas del diario |
 | GET | `/api/admin/overview` · `/api/admin/users?q=&limit=&offset=` | Panel: métricas · usuarios |
 | PATCH/DELETE | `/api/admin/users/{id}` | `{role, disabled}` · eliminar |
 | GET/PUT | `/api/admin/settings` | Ajustes `{values: {clave: valor\|null}}` (`null` = volver a `.env`) |

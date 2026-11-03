@@ -133,8 +133,10 @@ def execute(conn, order: Dict, price_e8: int, fx: int, executed_at: int, source:
         extra = (None, None, None, None)
     else:
         held = pos["qty_e8"] if pos else 0
-        if qty > held - _reserved_qty(conn, uid, sym, exclude=order["id"]):
+        if qty > held:
             raise OrderError("No tienes unidades suficientes para vender (no se permiten ventas en corto).")
+        if qty > held - _reserved_qty(conn, uid, sym, exclude=order["id"]):
+            raise OrderError("Parte de tus unidades están bloqueadas por órdenes de venta pendientes. Cancélalas antes de vender.")
         notional = notional_cents(qty, price_e8, fx, round_up=False)
         fee = fee_cents(notional, fee_bps)
         closing_all = qty == held
@@ -253,8 +255,10 @@ def _check_pending(conn, user_id: int, o: Dict, fx: int, cfg: Dict) -> int:
         return need
     pos = _position(conn, user_id, o["symbol"])
     free = (pos["qty_e8"] if pos else 0) - _reserved_qty(conn, user_id, o["symbol"])
+    if o["qty_e8"] > (pos["qty_e8"] if pos else 0):
+        raise OrderError("No tienes unidades suficientes para vender (no se permiten ventas en corto).")
     if o["qty_e8"] > free:
-        raise OrderError("No tienes unidades libres suficientes para esa venta (no se permiten ventas en corto).")
+        raise OrderError("Parte de tus unidades están bloqueadas por órdenes de venta pendientes. Cancélalas antes de vender.")
     if o["qty_e8"] < pos["qty_e8"] and notional_cents(o["qty_e8"], o["trigger_e8"], fx, round_up=False) < MIN_ORDER_CENTS:
         raise OrderError(f"El importe mínimo por orden es {MIN_ORDER_CENTS // 100} USD.")
     return 0

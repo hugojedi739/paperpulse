@@ -3,8 +3,9 @@ import * as store from '../lib/store.js';
 import * as feed from '../lib/feed.js';
 import { findAsset, displayPair } from '../lib/catalog.js';
 import { html, icon, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.js';
-import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo } from '../lib/format.js';
+import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
+import * as account from '../lib/account.js';
 import { createTradingChart, INDICATORS } from '../lib/charts.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.js';
@@ -21,6 +22,37 @@ const interval = () => normalizeInterval(store.settings().interval);
 const dateLabel = (t) => new Date(t * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export const title = 'Operar';
+
+/* Con sesión las órdenes van al servidor: límite y stop de compra y de venta, con un solo nivel.
+   Sin sesión (modo local) se mantienen las de siempre: límite y stop-limit de compra. */
+const serverMode = () => account.isActive();
+const orderTypes = () => (serverMode()
+  ? [['market', 'Mercado'], ['limit', 'Límite'], ['stop', 'Stop']]
+  : [['market', 'Mercado'], ['limit', 'Límite'], ['stop-limit', 'Stop']]);
+function currentType() {
+  if (!orderTypes().some(([v]) => v === orderType)) orderType = 'market'; // cambió el modo (inicio/cierre de sesión)
+  return orderType;
+}
+const levelLabel = () => (orderType === 'stop' ? 'Precio de activación' : 'Precio límite');
+const ORDER_HINTS = {
+  'buy-limit': 'Compra si el precio baja hasta tu nivel. Nunca pagarás más que el límite.',
+  'buy-stop': 'Compra a mercado cuando el precio suba hasta tu nivel (ruptura).',
+  'sell-limit': 'Vende si el precio sube hasta tu nivel (recoger beneficios). Nunca venderás por menos.',
+  'sell-stop': 'Vende a mercado si el precio cae hasta tu nivel (stop-loss). Si el precio salta el nivel, se vende al siguiente precio disponible.',
+};
+const orderHint = () => (serverMode() && orderType !== 'market' ? html`<p class="hint">${icon('info', 'sm')} ${ORDER_HINTS[`${side}-${orderType}`]}</p>` : '');
+const levelField = () => html`<div class="field"><label for="t-limit">${levelLabel()} (${asset.quote})</label>
+  <div class="input-group"><input id="t-limit" inputmode="decimal" type="number" step="any" min="0" placeholder="${num(feed.priceOf(asset.symbol))}"><span>${asset.quote}</span></div></div>`;
+const feeText = (notionalUsd) => (serverMode()
+  ? `≈ ${money(account.estimateFeeUsd(notionalUsd))} (${(account.config().feeBps / 100).toLocaleString('es-ES')} %)`
+  : '0 (simulación)');
+/** Unidades que se pueden vender: con sesión, las bloqueadas por ventas pendientes no cuentan. */
+const freeUnits = (pos) => (serverMode()
+  ? Math.max(0, +(pos.amount - store.orders().filter((o) => o.side === 'sell' && o.symbol === pos.symbol).reduce((n, o) => n + o.amount, 0)).toFixed(8))
+  : pos.amount);
+export const orderLabel = (o) => (o.side
+  ? `${o.side === 'buy' ? 'Compra' : 'Venta'} ${o.type === 'limit' ? 'límite' : 'stop'}`
+  : o.type === 'limit' ? 'Límite' : 'Stop-límite');
 
 export function mount(el) {
   root = el;
@@ -322,7 +354,7 @@ function decorate() {
     lines.push({ price: p.entryPrice, color: c.accent, title: `Entrada ${units(p.amount)}`, lineStyle: 0 });
   }
   for (const o of store.orders().filter((x) => x.symbol === asset.symbol)) {
-    lines.push({ price: o.limitPrice, color: c.up, title: 'Límite', lineStyle: 2 });
+    lines.push({ price: o.limitPrice, color: o.side === 'sell' ? c.down : c.up, title: o.side ? orderLabel(o) : 'Límite', lineStyle: 2 });
     if (o.stopPrice) lines.push({ price: o.stopPrice, color: c.muted, title: 'Stop', lineStyle: 2 });
   }
   for (const a of store.alerts().filter((x) => x.symbol === asset.symbol && !x.triggered)) {
@@ -353,24 +385,26 @@ function renderTicket() {
       <button type="button" data-t="side" data-side="sell" aria-pressed="${side === 'sell'}">Vender</button>
     </div>
     ${side === 'buy' ? html`
-      ${seg('otype', [['market', 'Mercado'], ['limit', 'Límite'], ['stop-limit', 'Stop']], orderType)}
+      ${seg('otype', orderTypes(), currentType())}
+      ${orderHint()}
       ${orderType === 'stop-limit' ? html`<div class="field"><label for="t-stop">Precio de activación (${asset.quote})</label>
         <div class="input-group"><input id="t-stop" inputmode="decimal" type="number" step="any" min="0" placeholder="${num(feed.priceOf(asset.symbol))}"><span>${asset.quote}</span></div></div>` : ''}
-      ${orderType !== 'market' ? html`<div class="field"><label for="t-limit">Precio límite (${asset.quote})</label>
-        <div class="input-group"><input id="t-limit" inputmode="decimal" type="number" step="any" min="0" placeholder="${num(feed.priceOf(asset.symbol))}"><span>${asset.quote}</span></div></div>` : ''}
+      ${orderType !== 'market' ? levelField() : ''}
       <div class="field"><label for="t-amount">Importe a invertir</label>
         <div class="input-group"><input id="t-amount" inputmode="decimal" type="number" step="any" min="0" placeholder="0,00"><span>${cur}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Máx' : `${p}%`}</button>`)}</div>
       <dl class="summary" id="t-summary"></dl>
       <button class="btn btn-primary btn-lg btn-block" data-t="submit">${orderType === 'market' ? `Comprar ${asset.symbol}` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>`
     : pos ? html`
+      ${serverMode() ? html`${seg('otype', orderTypes(), currentType())}${orderHint()}` : ''}
+      ${serverMode() && orderType !== 'market' ? levelField() : ''}
       <div class="summary"><div><span>Tienes</span><strong>${units(pos.amount, pos.symbol)}</strong></div>
         <div><span>Precio medio</span><strong>${price(pos.entryPrice, pos.quote)}</strong></div></div>
       <div class="field"><label for="t-units">Cantidad a vender</label>
-        <div class="input-group"><input id="t-units" inputmode="decimal" type="number" step="any" min="0" max="${pos.amount}" value="${pos.amount}"><span>${asset.symbol}</span></div></div>
+        <div class="input-group"><input id="t-units" inputmode="decimal" type="number" step="any" min="0" max="${freeUnits(pos)}" value="${freeUnits(pos)}"><span>${asset.symbol}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Todo' : `${p}%`}</button>`)}</div>
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn btn-primary btn-lg btn-block" data-t="submit">Vender ${asset.symbol}</button>`
+      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Vender ${asset.symbol}`}</button>`
     : empty('wallet', `No tienes ${asset.symbol}`, 'Compra primero para poder vender. En esta simulación no se permiten ventas en corto.')}
     <p class="hint">Disponible: <span class="money">${money(store.cash())}</span></p>`);
   updateTicketSummary();
@@ -392,16 +426,20 @@ function updateTicketSummary() {
     const qty = amount && execPx ? convert(amount, currency(), asset.quote) / execPx : 0;
     render(box, html`
       <div><dt>Recibirás aprox.</dt><dd>${qty ? units(qty, asset.symbol) : '—'}</dd></div>
-      <div><dt>${orderType === 'market' ? 'Precio de mercado' : 'Precio límite'}</dt><dd>${price(execPx, asset.quote)}</dd></div>
-      <div><dt>Comisión</dt><dd>0 (simulación)</dd></div>`);
+      <div><dt>${orderType === 'market' ? 'Precio de mercado' : levelLabel()}</dt><dd>${price(execPx, asset.quote)}</dd></div>
+      <div><dt>Comisión</dt><dd>${feeText(amount ? convert(amount, currency(), 'USD') : 0)}</dd></div>`);
   } else {
     const pos = store.positions().find((p) => p.symbol === asset.symbol);
     const qty = readNumber('t-units');
     if (!pos || !qty || !px) return render(box, html`<div><dt>Recibirás aprox.</dt><dd>—</dd></div>`);
-    const proceeds = trading.valuePosition({ ...pos, amount: Math.min(qty, pos.amount) }).valueUsd;
-    const pnl = proceeds - pos.investedUsd * (Math.min(qty, pos.amount) / pos.amount);
+    const sold = Math.min(qty, pos.amount);
+    const level = serverMode() && orderType !== 'market' ? readNumber('t-limit') : null;
+    const gross = level ? toUsd(sold * level, pos.quote) : trading.valuePosition({ ...pos, amount: sold }).valueUsd;
+    const proceeds = serverMode() ? gross - account.estimateFeeUsd(gross) : gross;
+    const pnl = proceeds - pos.investedUsd * (sold / pos.amount);
     render(box, html`
       <div><dt>Recibirás aprox.</dt><dd class="money">${money(proceeds)}</dd></div>
+      ${serverMode() ? html`<div><dt>Comisión</dt><dd>${feeText(gross)}</dd></div>` : ''}
       <div><dt>Resultado estimado</dt><dd class="money delta ${trendClass(pnl)}">${money(pnl, { signed: true })}</dd></div>`);
   }
 }
@@ -419,7 +457,7 @@ const actions = {
       input.value = (Math.floor(convert(store.cash(), 'USD', currency()) * share * 100) / 100).toFixed(2);
     } else {
       const pos = store.positions().find((p) => p.symbol === asset.symbol);
-      if (pos) $('#t-units', root).value = share === 1 ? pos.amount : +(pos.amount * share).toFixed(8);
+      if (pos) $('#t-units', root).value = share === 1 ? freeUnits(pos) : +(freeUnits(pos) * share).toFixed(8);
     }
     updateTicketSummary();
   },
@@ -437,9 +475,15 @@ const actions = {
   },
   tab(b) { dockTab = b.dataset.tab; renderDock(); },
   close(b) { closePositionDialog(b.dataset.id); },
-  cancel(b) {
-    const o = trading.cancelOrder(b.dataset.id);
-    if (o) toast(`Orden de ${o.symbol} cancelada. Saldo liberado.`, 'info');
+  async cancel(b) {
+    b.disabled = true;
+    try {
+      const o = await trading.cancelOrder(b.dataset.id);
+      if (o) toast(`Orden de ${o.symbol} cancelada. Saldo liberado.`, 'info');
+    } catch (err) {
+      toast(err.message, 'error');
+      b.disabled = false;
+    }
   },
 };
 
@@ -448,26 +492,30 @@ async function submitBuy() {
   const input = $('#t-amount', root);
   input.closest('.input-group').classList.toggle('invalid', !amount);
   if (!amount) return toast('Introduce el importe que quieres invertir.', 'warning');
+  currentType();
   const limitPrice = orderType === 'market' ? null : readNumber('t-limit');
   const stopPrice = orderType === 'stop-limit' ? readNumber('t-stop') : null;
-  if (orderType !== 'market' && !limitPrice) return toast('Introduce el precio límite.', 'warning');
+  if (orderType !== 'market' && !limitPrice) return toast(`Introduce el ${levelLabel().toLowerCase()}.`, 'warning');
   if (orderType === 'stop-limit' && !stopPrice) return toast('Introduce el precio de activación.', 'warning');
   const px = limitPrice ?? feed.priceOf(asset.symbol);
   if (!px) return toast(`Sin cotización de ${asset.symbol} ahora mismo.`, 'warning');
   const qty = +(convert(amount, currency(), asset.quote) / px).toFixed(8);
 
   const ok = await confirmDialog({
-    title: orderType === 'market' ? `Comprar ${asset.symbol}` : `Orden ${orderType === 'limit' ? 'límite' : 'stop-limit'} de ${asset.symbol}`,
-    body: `${units(qty, asset.symbol)} por ${money(amount, { from: currency() })} a ${price(px, asset.quote)}${stopPrice ? `, se activa en ${price(stopPrice, asset.quote)}` : ''}. Operación simulada sin comisiones.`,
+    title: orderType === 'market' ? `Comprar ${asset.symbol}` : `Orden ${{ limit: 'límite', stop: 'stop', 'stop-limit': 'stop-limit' }[orderType]} de ${asset.symbol}`,
+    body: `${units(qty, asset.symbol)} por ${money(amount, { from: currency() })} a ${price(px, asset.quote)}${stopPrice ? `, se activa en ${price(stopPrice, asset.quote)}` : ''}. `
+      + (serverMode()
+        ? `Comisión estimada ${feeText(convert(amount, currency(), 'USD'))}. El precio final lo decide el servidor con la cotización real${orderType === 'market' ? ', con un pequeño deslizamiento' : ''}.`
+        : 'Operación simulada sin comisiones.'),
     confirm: orderType === 'market' ? 'Comprar' : 'Colocar orden',
   });
   if (!ok) return;
   try {
     if (orderType === 'market') {
-      trading.buyMarket(asset, qty);
-      toast(`Has comprado ${units(qty, asset.symbol)}`, 'success');
+      const r = await trading.buyMarket(asset, qty);
+      toast(`Has comprado ${units(r.amount, asset.symbol)} a ${price(r.price, asset.quote)}`, 'success');
     } else {
-      const r = trading.placeOrder(asset, { type: orderType, amount: qty, limitPrice, stopPrice });
+      const r = await trading.placeOrder(asset, { type: orderType, amount: qty, limitPrice, stopPrice });
       toast(r.filled ? `Orden ejecutada al instante: ${units(qty, asset.symbol)}` : 'Orden colocada. Se ejecutará cuando el precio alcance tu nivel.', 'success');
     }
     input.value = '';
@@ -477,11 +525,28 @@ async function submitBuy() {
   }
 }
 
-function submitSell() {
+async function submitSell() {
   const pos = store.positions().find((p) => p.symbol === asset.symbol);
   const qty = readNumber('t-units');
   if (!pos || !qty) return toast('Indica cuántas unidades quieres vender.', 'warning');
-  closePositionDialog(pos.id, Math.min(qty, pos.amount));
+  if (!serverMode() || currentType() === 'market') return closePositionDialog(pos.id, Math.min(qty, pos.amount));
+
+  // Venta límite o stop (solo con sesión): queda pendiente en el servidor
+  const level = readNumber('t-limit');
+  if (!level) return toast(`Introduce el ${levelLabel().toLowerCase()}.`, 'warning');
+  const amount = Math.min(qty, pos.amount);
+  const ok = await confirmDialog({
+    title: `Venta ${orderType === 'limit' ? 'límite' : 'stop'} de ${asset.symbol}`,
+    body: `${units(amount, asset.symbol)} a ${price(level, asset.quote)}. ${ORDER_HINTS[`sell-${orderType}`]} Las unidades quedan bloqueadas hasta que se ejecute o la canceles.`,
+    confirm: 'Colocar orden',
+  });
+  if (!ok) return;
+  try {
+    const r = await trading.placeOrder(asset, { side: 'sell', type: orderType, amount, limitPrice: level });
+    toast(r.filled ? 'El precio ya estaba en tu nivel: venta ejecutada al momento.' : 'Orden de venta colocada.', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 /* ---------- Libro de órdenes ---------- */
@@ -541,9 +606,9 @@ function renderDock() {
     updateDockValues();
   } else if (dockTab === 'orders') {
     if (!orders.length) return render(box, empty('clock', 'Sin órdenes pendientes', 'Las órdenes límite y stop reservan saldo hasta ejecutarse o cancelarse.'));
-    render(box, html`<table class="table"><thead><tr><th>Activo</th><th>Tipo</th><th class="r">Cantidad</th><th class="r">Límite</th><th class="r">Stop</th><th class="r">Reservado</th><th>Creada</th><th></th></tr></thead>
+    render(box, html`<table class="table"><thead><tr><th>Activo</th><th>Tipo</th><th class="r">Cantidad</th><th class="r">Precio</th><th class="r">Stop</th><th class="r">Reservado</th><th>Creada</th><th></th></tr></thead>
       <tbody>${orders.map((o) => html`<tr data-href="/trade/${o.symbol}">
-        <td><strong>${o.symbol}</strong></td><td><span class="chip">${o.type === 'limit' ? 'Límite' : 'Stop-límite'}</span></td>
+        <td><strong>${o.symbol}</strong></td><td><span class="chip">${orderLabel(o)}</span></td>
         <td class="r">${units(o.amount)}</td><td class="r">${price(o.limitPrice, o.quote)}</td><td class="r">${o.stopPrice ? price(o.stopPrice, o.quote) : '—'}</td>
         <td class="r money">${money(o.reservedUsd)}</td><td class="muted">${timeAgo(o.createdAt)}</td>
         <td class="r"><button class="btn btn-ghost btn-sm" data-t="cancel" data-id="${o.id}">Cancelar</button></td></tr>`)}</tbody></table>`);

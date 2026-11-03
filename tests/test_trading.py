@@ -166,7 +166,7 @@ class ExecutionTest(Base):
             self.order("orden-0001", side="sell", qty="1")
         self.order("orden-0002", qty="1")
         self.order("orden-0003", side="sell", type_="limit", qty="1", trigger="200")  # bloquea la unidad
-        with self.assertRaisesRegex(OrderError, "corto"):
+        with self.assertRaisesRegex(OrderError, "bloqueadas"):
             self.order("orden-0004", side="sell", qty="1")
 
     def test_mercado_cerrado(self):

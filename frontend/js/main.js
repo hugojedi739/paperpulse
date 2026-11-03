@@ -16,6 +16,7 @@ import * as journal from './views/journal.js';
 import * as admin from './views/admin.js';
 import * as dialogs from './ui/dialogs.js';
 import * as auth from './lib/auth.js';
+import * as account from './lib/account.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
@@ -95,6 +96,14 @@ function renderAuth(user) {
       <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
 }
 auth.onAuth(renderAuth);
+// Con sesión, la cuenta de práctica es la del servidor. onAuth también salta tras cada sincronización:
+// solo se recarga la cuenta cuando cambia el usuario.
+let accountUserId;
+auth.onAuth((user) => {
+  if ((user?.id ?? null) === accountUserId) return;
+  accountUserId = user?.id ?? null;
+  account.setUser(user);
+});
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 
 function renderFeedStatus(state) {
