@@ -74,6 +74,7 @@ def export_data(user_id: int) -> Dict:
             },
             "following": [r["alias"] for r in conn.execute("SELECT p.alias FROM follows f JOIN profiles p ON p.user_id = f.followee_id WHERE f.follower_id = ?", (user_id,))],
             "followersCount": one("SELECT COUNT(*) FROM follows WHERE followee_id = ?", user_id)[0],
+            "contactMessages": _rows(conn, "SELECT reason, message, created_at FROM contact_messages WHERE user_id = ? ORDER BY id", user_id),
             "notifications": _rows(conn, "SELECT kind, title, body, link, read_at, created_at FROM notifications WHERE user_id = ? ORDER BY id", user_id),
             "achievements": _rows(conn, "SELECT code, earned_at FROM achievements WHERE user_id = ?", user_id),
             "tradingDays": [r["day"] for r in conn.execute("SELECT day FROM trading_days WHERE user_id = ? ORDER BY day", (user_id,))],
@@ -92,6 +93,7 @@ def delete_account(user_id: int) -> None:
         run("DELETE FROM users WHERE owner_id = ?", user_id)  # cuentas de retos (en cascada: cuentas, órdenes, ejecuciones, posiciones)
         # Los hilos de operaciones compartidas cuelgan de un fill (ON DELETE CASCADE): se desvinculan antes de borrar el fill
         run("UPDATE threads SET fill_id = NULL WHERE fill_id IN (SELECT id FROM fills WHERE user_id = ?)", user_id)
+        run("DELETE FROM contact_messages WHERE user_id = ?", user_id)  # mensajes que envió con sesión
         run("DELETE FROM orders WHERE user_id = ?", user_id)  # y sus ejecuciones
         run("DELETE FROM positions WHERE user_id = ?", user_id)
         run("DELETE FROM accounts WHERE user_id = ?", user_id)

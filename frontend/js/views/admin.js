@@ -6,10 +6,11 @@ import { api } from '../lib/api.js';
 import * as auth from '../lib/auth.js';
 import { empty } from '../lib/ui.js';
 import * as moderation from './moderation.js';
+import * as messages from './messages.js';
 
 export const title = 'Administración';
 
-const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag']];
+const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag'], ['messages', 'Mensajes', 'message-square']];
 const PAGE = 25;
 let root, tab = 'overview';
 let usersQuery = '', usersOffset = 0;
@@ -37,7 +38,7 @@ export function show(param) {
     auth.currentUser() ? '' : html`<button class="btn btn-primary" data-action="login">${icon('log-in', 'sm')} Iniciar sesión</button>`)}</section>`);
   }
   render(body, html`<section class="card">${empty('refresh-cw', 'Cargando…')}</section>`);
-  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body) })[tab]();
+  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body), messages: () => messages.render(body) })[tab]();
 }
 
 const fail = (err) => render($('#ad-body', root), html`<section class="card">${empty('triangle-alert', 'No se pudo cargar', err.message)}</section>`);
@@ -80,6 +81,7 @@ async function renderOverview() {
           <div><span>Wall Street</span>${ok(o.markets.us.open, 'Abierto', 'Cerrado')}</div>
           <div><span>Bolsa de Madrid</span>${ok(o.markets.es.open, 'Abierta', 'Cerrada')}</div>
           <div><span>Peticiones de chat · errores</span><strong>${use.chatRequests} · ${use.errors}</strong></div>
+          <div><span>Mensajes de contacto sin leer</span><strong>${o.unreadMessages}</strong></div>
         </div>
       </section>
     </div>`);

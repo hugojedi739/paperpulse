@@ -20,9 +20,12 @@ LIMITS = {
     "comment": (0, 2000),
     "details": (0, 500),
     "reason": (0, 300),
+    "contact_reason": (3, 100),
+    "contact_message": (10, 2000),
 }
 NAMES = {"alias": "El alias", "bio": "La bio", "title": "El título", "body": "El mensaje", "comment": "El comentario",
-         "details": "El detalle", "reason": "El motivo"}
+         "details": "El detalle", "reason": "El motivo",
+         "contact_reason": "El motivo", "contact_message": "El mensaje"}
 ALIAS_RE = re.compile(r"^[A-Za-z0-9_]{3,20}$")
 RESERVED_ALIASES = {"admin", "administrador", "administracion", "moderador", "moderacion", "mod", "paperpulse",
                     "sistema", "system", "root", "soporte", "support", "staff", "anonimo", "eliminado"}

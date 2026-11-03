@@ -15,7 +15,12 @@ export function mount(el) {
 const tabs = (current) => h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Textos legales' }, PAGES.map((p) =>
   h('button', { type: 'button', role: 'tab', 'aria-selected': String(p.id === current), dataset: { legal: p.id } }, svgIcon(p.icon, 'sm'), ` ${p.title}`)));
 
-const block = (item) => (typeof item === 'string' ? h('p', { class: 'learn-p' }, item) : h('ul', { class: 'legal-list' }, item.list.map((x) => h('li', {}, x))));
+// Bloques: texto, {list: [...]} con viñetas o {link: [texto, '#/ruta']} con un enlace interno
+const block = (item) => {
+  if (typeof item === 'string') return h('p', { class: 'learn-p' }, item);
+  if (item.link) return h('p', { class: 'learn-p' }, h('a', { href: item.link[1] }, item.link[0]));
+  return h('ul', { class: 'legal-list' }, item.list.map((x) => h('li', {}, x)));
+};
 
 export function show(param = '') {
   const page = pageById(param) ?? PAGES[0];

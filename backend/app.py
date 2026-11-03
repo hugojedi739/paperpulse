@@ -19,7 +19,7 @@ from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
-from backend import account, admin, auth, db, settings
+from backend import account, admin, auth, contact, db, settings
 from backend.chat import api_chat_challenge, api_chat_stream
 from backend.config import (
     ADMIN_API_KEY, ALLOWED_ORIGINS, DEBUG, FRONTEND_DIR, IS_PRODUCTION, IS_VERCEL, PORT, app_domain,
@@ -95,6 +95,8 @@ routes = [
     *retention_api.routes,
     # Cuenta: aceptar términos, descargar mis datos
     *account.routes,
+    # Formulario de contacto y su bandeja en Administración
+    *contact.routes,
     WebSocketRoute("/ws/market", stream.ws_market),
 ]
 if SERVE_FRONTEND:

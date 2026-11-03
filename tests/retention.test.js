@@ -1,7 +1,7 @@
 // Pruebas de contenido y de ficheros de la capa de retención: lecciones, glosario, PWA y cron.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const { LESSONS, GLOSSARY, glossaryIndex } = await import('../frontend/js/lib/learn-content.js');
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
@@ -80,7 +80,7 @@ test('la CSP sigue sin scripts ni estilos inline y solo permite el worker propio
 
 /* ---------- Textos legales ---------- */
 const legal = await import('../frontend/js/lib/legal-content.js');
-const flat = (page) => page.sections.flatMap((s) => [s.h, ...s.p.flatMap((x) => (typeof x === 'string' ? [x] : x.list))]).join('\n');
+const flat = (page) => page.sections.flatMap((s) => [s.h, ...s.p.flatMap((x) => (typeof x === 'string' ? [x] : x.link ? [x.link[0]] : x.list))]).join('\n');
 
 test('hay cinco páginas legales marcadas como borrador, con versión y sin HTML', () => {
   assert.deepEqual(legal.PAGES.map((p) => p.id), ['aviso-legal', 'privacidad', 'terminos', 'cookies', 'normas']);
@@ -92,13 +92,31 @@ test('hay cinco páginas legales marcadas como borrador, con versión y sin HTML
 test('la política de privacidad nombra a Vercel y Turso, las transferencias y los derechos RGPD', () => {
   const t = flat(legal.pageById('privacidad'));
   for (const word of ['Vercel', 'Turso', 'Estados Unidos', 'cláusulas contractuales', 'Marco de Privacidad', 'AEPD', 'RGPD', 'LOPDGDD', 'portabilidad', '14 años', 'Anthropic', 'Google']) assert.ok(t.includes(word), word);
-  assert.match(t, /\[PENDIENTE:/);
+  assert.match(t, /\[PENDIENTE:/); // la región de Turso sigue sin confirmar
+  assert.match(t, /formulario de contacto/);
 });
 
-test('los datos que faltan están marcados como [PENDIENTE: …] (titular, contacto, dominio)', () => {
+test('los datos del titular están completos y solo quedan pendientes la región de Turso y las transferencias', () => {
   const t = flat(legal.pageById('aviso-legal'));
-  for (const word of ['titular', 'NIF', 'domicilio', 'contacto', 'dominio']) assert.match(t, new RegExp(`\\[PENDIENTE: [^\\]]*${word}`, 'i'), word);
+  assert.match(t, /Titular: PaperPulse \(proyecto personal sin ánimo de lucro\)/);
+  assert.match(t, /NIF\/CIF: No aplica/);
+  assert.match(t, /Dominio: https:\/\/paperpulse-delta\.vercel\.app/);
+  assert.doesNotMatch(t, /\[PENDIENTE/);
+  const pending = legal.PAGES.flatMap((p) => flat(p).match(/\[PENDIENTE: [^\]]*\]/g) ?? []);
+  assert.equal(pending.length, 2, pending.join(' | '));
+  assert.ok(pending.every((x) => /región de la base de datos|transferencias|adhesión/i.test(x)), pending.join(' | '));
 });
+
+test('el aviso legal, la privacidad y los términos enlazan al formulario de contacto y no publican ningún correo', () => {
+  for (const id of ['aviso-legal', 'privacidad', 'terminos']) {
+    const page = legal.pageById(id);
+    const links = page.sections.flatMap((s) => s.p).filter((x) => x.link);
+    assert.ok(links.some((x) => x.link[1] === '#/contact'), `${id} enlaza a #/contact`);
+  }
+  for (const p of legal.PAGES) assert.doesNotMatch(JSON.stringify(p), /[\w.+-]+@[\w-]+\.[\w.-]+|mailto:/i, p.id);
+  assert.match(flat(legal.pageById('privacidad')), /formulario de contacto/);
+});
+
 
 test('la política de cookies describe el almacenamiento real y justifica que no haya banner', () => {
   const t = flat(legal.pageById('cookies'));
@@ -126,4 +144,33 @@ test('el diálogo de términos bloquea a las cuentas nuevas sin aceptar y solo a
   const src = read('frontend/js/ui/terms.js');
   assert.match(src, /blocking = user\.termsVersion == null/);
   assert.match(src, /addEventListener\('cancel', \(e\) => e\.preventDefault\(\)/); // Escape no cierra el bloqueante
+});
+
+test('el formulario de contacto: campos de solo texto con límite, honeypot oculto y enlace en el pie', () => {
+  const view = read('frontend/js/views/contact.js');
+  assert.match(view, /reason: 100, message: 2000/);
+  assert.match(view, /HONEYPOT = 'website'/);
+  assert.match(view, /class: 'hp'/);
+  assert.doesNotMatch(view, /innerHTML|mailto:|style:|onclick/);
+  assert.match(read('frontend/index.html'), /<a href="#\/contact">Contacto<\/a>/);
+  assert.match(read('frontend/index.html'), /data-view="contact"/);
+  assert.match(read('frontend/css/app.css'), /\.hp \{/);
+});
+
+test('la bandeja de mensajes del panel pinta el texto de usuarios solo con nodos de texto', () => {
+  const view = read('frontend/js/views/messages.js');
+  assert.doesNotMatch(view, /innerHTML|html`|\braw\(/);
+  assert.match(view, /userText\(m\.message\)/);
+  assert.match(read('frontend/js/views/admin.js'), /\['messages', 'Mensajes'/);
+});
+
+test('ningún fichero del frontend propio contiene una dirección de correo', () => {
+  const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? (e.name === 'vendor' ? [] : walk(`${dir}/${e.name}`)) : [`${dir}/${e.name}`]);
+  const found = [];
+  for (const f of walk(new URL('../frontend', import.meta.url).pathname).filter((f) => /\.(js|html|css|json)$/.test(f))) {
+    const m = readFileSync(f, 'utf8').match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g);
+    if (m) found.push(`${f}: ${m.join(', ')}`);
+  }
+  assert.deepEqual(found, []);
 });

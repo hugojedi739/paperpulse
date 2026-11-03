@@ -1,6 +1,7 @@
 // Textos legales base de PaperPulse (España / UE). BORRADOR pendiente de revisión por un profesional del Derecho.
 // Los datos que faltan están marcados como [PENDIENTE: …] y deben completarse antes de publicar.
-// Cada párrafo es texto plano (se pinta con textContent). {list: [...]} = lista con viñetas.
+// No contiene ninguna dirección de correo: la vía de contacto es el formulario de la aplicación (#/contact).
+// Cada párrafo es texto plano (se pinta con textContent). {list: [...]} = lista con viñetas; {link: [texto, '#/ruta']} = enlace interno.
 
 /** Versión de los textos. Debe coincidir con LEGAL_VERSION de backend/account.py (lo comprueba un test). */
 export const LEGAL_VERSION = '2026-11-borrador-1';
@@ -18,14 +19,19 @@ export const RULES = [
   ['Una persona, una cuenta', 'No crees varias cuentas para manipular la clasificación, los retos o las votaciones.'],
 ];
 
+const CONTACT_PATH = '#/contact';
+const CONTACT_LINK = { link: ['Abrir el formulario de contacto', CONTACT_PATH] };
+
+// Datos del titular. PaperPulse es un proyecto personal sin ánimo de lucro y sin actividad económica: no hay NIF ni
+// registro mercantil. Si empezara a haber actividad económica, hay que completar estos datos (ver el informe de despliegue).
 const PENDING = {
-  owner: '[PENDIENTE: titular — nombre y apellidos o denominación social]',
-  nif: '[PENDIENTE: NIF/CIF]',
-  address: '[PENDIENTE: domicilio]',
-  email: '[PENDIENTE: email de contacto]',
-  domain: '[PENDIENTE: dominio]',
-  registry: '[PENDIENTE: datos del Registro Mercantil, solo si el titular es una sociedad]',
-  dpo: '[PENDIENTE: delegado de protección de datos, solo si procede]',
+  owner: 'PaperPulse (proyecto personal sin ánimo de lucro)',
+  nif: 'No aplica',
+  address: 'No se publica; la vía de contacto es el formulario de contacto de la aplicación',
+  contact: 'formulario de contacto de la aplicación (no se publica ninguna dirección de correo)',
+  domain: 'https://paperpulse-delta.vercel.app',
+  registry: 'No aplica (no es una sociedad)',
+  dpo: 'No procede',
   region: '[PENDIENTE: región de la base de datos Turso]',
 };
 
@@ -35,7 +41,9 @@ export const PAGES = [
     sections: [
       { h: '1. Datos identificativos', p: [
         'En cumplimiento del artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa de que el titular de este sitio web y aplicación («PaperPulse») es:',
-        { list: [`Titular: ${PENDING.owner}`, `NIF/CIF: ${PENDING.nif}`, `Domicilio: ${PENDING.address}`, `Correo electrónico de contacto: ${PENDING.email}`, `Dominio: ${PENDING.domain}`, `Registro Mercantil: ${PENDING.registry}`] },
+        { list: [`Titular: ${PENDING.owner}`, `NIF/CIF: ${PENDING.nif}`, `Domicilio: ${PENDING.address}`, `Contacto: ${PENDING.contact}`, `Dominio: ${PENDING.domain}`, `Registro Mercantil: ${PENDING.registry}`] },
+        'PaperPulse es un proyecto personal sin ánimo de lucro: no cobra, no muestra publicidad y no ofrece servicios de pago. La única vía de contacto con el titular es el formulario de contacto.',
+        CONTACT_LINK,
       ] },
       { h: '2. Objeto', p: ['PaperPulse es un simulador educativo de operaciones bursátiles («paper trading») con saldo virtual y cotizaciones reales. No es un bróker, no gestiona dinero real, no ejecuta órdenes en mercados reales ni presta servicios de inversión.'] },
       { h: '3. No es asesoramiento financiero', p: [
@@ -57,7 +65,8 @@ export const PAGES = [
     sections: [
       { h: '1. Responsable del tratamiento', p: [
         'El responsable del tratamiento de tus datos personales es:',
-        { list: [`Titular: ${PENDING.owner}`, `NIF/CIF: ${PENDING.nif}`, `Domicilio: ${PENDING.address}`, `Contacto en materia de protección de datos: ${PENDING.email}`, `Delegado de protección de datos: ${PENDING.dpo}`] },
+        { list: [`Titular: ${PENDING.owner}`, `NIF/CIF: ${PENDING.nif}`, `Domicilio: ${PENDING.address}`, `Contacto en materia de protección de datos: ${PENDING.contact}`, `Delegado de protección de datos: ${PENDING.dpo}`] },
+        CONTACT_LINK,
         'Esta política se ajusta al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica 3/2018 (LOPDGDD).',
       ] },
       { h: '2. Qué datos tratamos', p: [{ list: [
@@ -66,6 +75,7 @@ export const PAGES = [
         'Actividad de simulación: tu cuenta de práctica en el servidor (saldo virtual, órdenes, operaciones, posiciones), retos mensuales, logros, racha de días y notificaciones.',
         'Comunidad: hilos, mensajes, votos, seguidos y seguidores, denuncias que hagas y acciones de moderación que te afecten.',
         'Copia de tus datos locales (alertas, favoritos, ajustes) si inicias sesión.',
+        'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
         'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
         'Datos técnicos: tu dirección IP se usa en memoria para limitar el abuso y no se guarda en la base de datos. Las cookies y el almacenamiento local se describen en la Política de cookies.',
       ] }] },
@@ -73,7 +83,7 @@ export const PAGES = [
         'Crear y gestionar tu cuenta y prestarte el servicio: ejecución del contrato (art. 6.1.b RGPD).',
         'Mostrar tu perfil público y tus mensajes en la comunidad, y hacerte aparecer en las clasificaciones (si el perfil es público): ejecución del contrato y tu decisión de publicarlos.',
         'Seguridad, prevención del abuso, moderación y cumplimiento de las Normas: interés legítimo (art. 6.1.f RGPD).',
-        'Responder a tus solicitudes y cumplir obligaciones legales: obligación legal (art. 6.1.c RGPD).',
+        'Atender los mensajes del formulario de contacto y tus solicitudes, y cumplir obligaciones legales: tu solicitud y obligación legal (art. 6.1.c RGPD).',
         'Enviarte notificaciones dentro de la aplicación: ejecución del contrato. No enviamos correos comerciales.',
       ] }] },
       { h: '4. Destinatarios y encargados del tratamiento', p: [
@@ -93,16 +103,18 @@ export const PAGES = [
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',
         'Sesiones: 30 días. Notificaciones: 60 días. Estados de inicio de sesión: 10 minutos.',
+        'Mensajes del formulario de contacto: hasta que la administración los borre. Si los enviaste con la sesión iniciada, se eliminan al borrar tu cuenta.',
         'Registro de moderación: se conserva para poder justificar las decisiones y evitar abusos; no contiene el texto de tus mensajes.',
         'Datos que debamos conservar por obligación legal: durante los plazos que establezca la ley.',
       ] }] },
       { h: '7. Tus derechos', p: [
-        'Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a la dirección de contacto indicada arriba. Desde la propia aplicación puedes:',
+        'Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad a través del formulario de contacto (si tu consulta trata de tu cuenta, envíala con la sesión iniciada para que podamos identificarla). Desde la propia aplicación puedes:',
         { list: ['Descargar tus datos en formato JSON (menú de tu cuenta → «Descargar mis datos»).', 'Editar tu alias, biografía y privacidad (Comunidad → Mi perfil).', 'Eliminar tu cuenta (menú de tu cuenta → «Eliminar cuenta»).'] },
+        CONTACT_LINK,
         'Si consideras que no tratamos tus datos conforme a la normativa, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD, www.aepd.es).',
       ] },
       { h: '8. Qué ocurre cuando eliminas tu cuenta', p: [
-        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, copias de datos, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
+        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, copias de datos, mensajes de contacto enviados con la sesión iniciada, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
       ] },
       { h: '9. Menores', p: ['PaperPulse no está dirigido a menores de 14 años. Al registrarte declaras tener al menos 14 años (art. 7 LOPDGDD). Si detectamos una cuenta de una persona menor de esa edad, la eliminaremos.'] },
       { h: '10. Seguridad', p: ['Aplicamos medidas técnicas y organizativas razonables: contraseñas con scrypt, cookie de sesión HttpOnly, política de seguridad de contenidos (CSP) estricta, límites de peticiones y control de permisos en el servidor. Ningún sistema es infalible.'] },
@@ -133,7 +145,7 @@ export const PAGES = [
       { h: '7. Disponibilidad y cambios', p: ['El servicio se presta «tal cual», sin garantía de disponibilidad. Podemos modificar o retirar funciones y reiniciar los datos de la simulación por razones técnicas, con el menor perjuicio posible.'] },
       { h: '8. Baja', p: ['Puedes eliminar tu cuenta cuando quieras desde el menú de tu cuenta. Podemos suspender o cerrar cuentas que incumplan estos términos.'] },
       { h: '9. Responsabilidad', p: ['En la medida permitida por la ley, el titular no responde de pérdidas derivadas del uso del servicio ni de decisiones tomadas con su información. Esto no limita la responsabilidad que la ley no permita excluir ni los derechos que correspondan a las personas consumidoras.'] },
-      { h: '10. Ley aplicable', p: ['Estos términos se rigen por la ley española. Si eres consumidor o consumidora, puedes acudir a los tribunales de tu domicilio. Titular: ' + PENDING.owner + '. Contacto: ' + PENDING.email + '.'] },
+      { h: '10. Ley aplicable', p: ['Estos términos se rigen por la ley española. Si eres consumidor o consumidora, puedes acudir a los tribunales de tu domicilio. Titular: ' + PENDING.owner + '. Contacto: ' + PENDING.contact + '.', CONTACT_LINK] },
     ],
   },
   {

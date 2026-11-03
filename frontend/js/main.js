@@ -22,12 +22,13 @@ import * as notifs from './lib/notifications.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.js';
 import * as learn from './views/learn.js';
 import * as legal from './views/legal.js';
+import * as contact from './views/contact.js';
 import { maybeAskTerms } from './ui/terms.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, legal, admin };
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, legal, contact, admin };
 const mounted = new Set();
 let active = null;
 
