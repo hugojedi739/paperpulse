@@ -372,15 +372,16 @@ async function viewMe(_, id) {
   );
 }
 
-function profileForm(pr) {
+// `prefix` evita ids duplicados cuando el formulario sale a la vez en la página y en el diálogo «Elige tu alias»
+function profileForm(pr, prefix = 'cm') {
   return h('form', { class: 'cm-form', dataset: { form: 'profile' }, novalidate: true },
-    h('div', { class: 'field' }, h('label', { for: 'cm-alias' }, 'Alias'),
-      h('input', { id: 'cm-alias', name: 'alias', value: pr?.alias ?? '', required: true, minlength: '3', maxlength: '20', pattern: '[A-Za-z0-9_]{3,20}',
-        autocomplete: 'nickname', spellcheck: 'false', 'aria-describedby': 'cm-alias-hint' }),
-      h('small', { class: 'hint', id: 'cm-alias-hint' }, 'De 3 a 20 caracteres: letras sin tilde, números y guion bajo. Debe ser único.')),
-    h('div', { class: 'field' }, h('label', { for: 'cm-bio' }, 'Bio (opcional)'),
-      h('textarea', { id: 'cm-bio', name: 'bio', maxlength: '280', rows: '3', dataset: { count: '280' }, placeholder: 'Cuéntanos qué te interesa: cripto, bolsa española, análisis técnico…' }, pr?.bio ?? ''),
-      h('small', { class: 'muted', dataset: { counter: 'cm-bio' } }, `${(pr?.bio ?? '').length} / 280`)),
+    h('div', { class: 'field' }, h('label', { for: `${prefix}-alias` }, 'Alias'),
+      h('input', { id: `${prefix}-alias`, name: 'alias', value: pr?.alias ?? '', required: true, minlength: '3', maxlength: '20', pattern: '[A-Za-z0-9_]{3,20}',
+        autocomplete: 'nickname', spellcheck: 'false', 'aria-describedby': `${prefix}-alias-hint` }),
+      h('small', { class: 'hint', id: `${prefix}-alias-hint` }, 'De 3 a 20 caracteres: letras sin tilde, números y guion bajo. Debe ser único.')),
+    h('div', { class: 'field' }, h('label', { for: `${prefix}-bio` }, 'Bio (opcional)'),
+      h('textarea', { id: `${prefix}-bio`, name: 'bio', maxlength: '280', rows: '3', dataset: { count: '280' }, placeholder: 'Cuéntanos qué te interesa: cripto, bolsa española, análisis técnico…' }, pr?.bio ?? ''),
+      h('small', { class: 'muted', dataset: { counter: `${prefix}-bio` } }, `${(pr?.bio ?? '').length} / 280`)),
     h('label', { class: 'switch' }, h('span', {}, h('strong', {}, 'Perfil privado'), h('small', {}, 'No apareces en la clasificación ni en las búsquedas y nadie puede seguirte. Tus mensajes del foro siguen siendo públicos.')),
       h('input', { type: 'checkbox', role: 'switch', name: 'isPrivate', checked: Boolean(pr?.isPrivate) })),
     h('div', { class: 'cm-form-foot' }, h('span', { class: 'cm-form-error', role: 'alert' }),
@@ -417,11 +418,11 @@ async function maybeAskAlias() {
 }
 
 function askAlias(subtitle) {
-  const d = dialog('Elige tu alias', subtitle, h('div', { class: 'dlg-body' }, profileForm(null)));
+  const d = dialog('Elige tu alias', subtitle, h('div', { class: 'dlg-body' }, profileForm(null, 'cd')));
   const form = d.querySelector('form');
   form.addEventListener('submit', (e) => { e.preventDefault(); forms.profile(form, d); });
   form.addEventListener('input', (e) => { if (e.target.dataset.count) updateCounter(e.target); });
-  d.querySelector('#cm-alias')?.focus();
+  d.querySelector('#cd-alias')?.focus();
 }
 
 function newThreadDialog(preset) {
