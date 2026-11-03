@@ -918,6 +918,120 @@
   .switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 
+/* -------------------------------------------------------------- comunidad y moderación */
+@layer views {
+  .cm-tabs { margin-bottom: 4px; }
+  .cm-tabs button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .cm-notice {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+    padding: 10px 14px; border-radius: var(--r-md); border: 1px solid var(--border);
+    background: var(--warn-fill); color: var(--text-1); font-size: var(--fs-md);
+  }
+  .cm-notice > .icon { color: var(--warn); flex: none; }
+  .cm-notice .link { margin-left: auto; font-weight: 600; }
+  .cm-body { margin-top: 16px; }
+  .cm-head-actions { justify-content: flex-end; }
+
+  /* Clasificación */
+  .cm-ranking td { vertical-align: middle; }
+  .cm-rank { width: 56px; }
+  .cm-pos { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cm-pos.top1, .cm-pos.top2, .cm-pos.top3 { background: var(--accent-fill); color: var(--accent-text); }
+  .cm-approx { margin-left: 4px; color: var(--text-3); text-decoration: none; cursor: help; font-size: var(--fs-sm); }
+  .cm-alias { font-weight: 600; }
+
+  /* Foro */
+  .cm-cats { display: grid; gap: 8px; }
+  .cm-cat {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    width: 100%; padding: 12px 14px; text-align: left; border: 1px solid var(--border); border-radius: var(--r-md);
+    background: var(--surface-1); color: var(--text-1); cursor: pointer;
+  }
+  .cm-cat:hover, .cm-cat:focus-visible { border-color: var(--border-strong); background: var(--surface-2); }
+  .cm-cat > .icon { color: var(--accent-text); }
+  .cm-cat-text { display: grid; gap: 2px; min-width: 0; }
+  .cm-cat-text small { color: var(--text-3); font-size: var(--fs-sm); }
+  .cm-cat-meta { display: grid; justify-items: end; gap: 2px; font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+  .cm-threads, .cm-posts, .cm-feed, .md-reports { list-style: none; margin: 0; padding: 0; display: grid; }
+  .cm-thread { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .cm-thread:first-child { border-top: 0; }
+  .cm-score { display: grid; justify-items: center; align-content: start; gap: 2px; color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cm-thread-main { display: grid; gap: 4px; min-width: 0; }
+  .cm-thread-title { all: unset; cursor: pointer; font-weight: 600; color: var(--text-1); overflow-wrap: anywhere; }
+  .cm-thread-title:hover { color: var(--accent-text); text-decoration: underline; }
+  .cm-thread-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+  .cm-meta { display: block; line-height: 1.6; } /* en línea: con flex se perderían los espacios entre textos */
+  .cm-trade-chip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
+  .cm-thread-top { margin-bottom: 8px; }
+  .cm-thread-h { font-size: var(--fs-xl); line-height: 1.3; overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cm-trade { margin: 12px 0; display: grid; gap: 8px; }
+  .cm-trade-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--fs-md); }
+  .cm-trade .summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .cm-trade .summary > div { display: grid; gap: 2px; align-content: start; }
+  .cm-trade dt { font-size: var(--fs-sm); color: var(--text-3); }
+  .cm-trade dd { font-weight: 600; text-align: left; }
+
+  /* Mensajes */
+  .cm-post { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--border); }
+  div.cm-post { border-top: 0; margin-top: 8px; }
+  .cm-post-off .user-text { opacity: 0.75; }
+  .cm-post-main { display: grid; gap: 6px; min-width: 0; }
+  .cm-post-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .cm-post-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  .cm-vote { display: grid; justify-items: center; align-content: start; gap: 2px; }
+  .cm-vote-score { font-weight: 700; }
+  .cm-vote-btn[aria-pressed='true'] { color: var(--accent-text); background: var(--accent-fill); }
+  .cm-vote-btn[data-value='-1'][aria-pressed='true'] { color: var(--down); background: var(--down-fill); }
+  .cm-chip-warn, .cm-warn { color: var(--warn); }
+  .cm-notice-text { display: flex; align-items: center; gap: 6px; font-style: italic; }
+  .user-text { overflow-wrap: anywhere; word-break: break-word; line-height: 1.55; }
+  .cm-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
+  .cm-form { display: grid; gap: 12px; }
+  .cm-form textarea { resize: vertical; min-height: 96px; font: inherit; }
+  .cm-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .cm-form-foot .btn { margin-left: auto; }
+  .cm-form-error { color: var(--down); font-size: var(--fs-sm); }
+  .cm-reasons { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+  .cm-radio { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .cm-rules { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+  .cm-rules li { display: grid; gap: 2px; }
+  .cm-rules span { color: var(--text-2); }
+
+  /* Perfil y feed */
+  .cm-profile-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .cm-profile-id { display: grid; gap: 4px; min-width: 0; flex: 1; }
+  .cm-profile-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cm-avatar { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--accent-fill); color: var(--accent-text); font-weight: 700; font-size: var(--fs-lg); flex: none; }
+  .cm-bio { color: var(--text-2); }
+  .cm-kpis .kpi strong { display: flex; align-items: baseline; gap: 2px; }
+  .cm-following { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 8px; font-size: var(--fs-md); }
+  .cm-feed-item { display: grid; gap: 6px; padding: 14px 0; border-top: 1px solid var(--border); }
+  .cm-feed-item:first-child { border-top: 0; }
+  .cm-suspended { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px; border-radius: var(--r-md); background: var(--down-fill); color: var(--text-1); }
+  .cm-suspended .icon { color: var(--down); flex: none; margin-top: 2px; }
+
+  /* Moderación (panel de administración) */
+  .md-nav { flex-wrap: wrap; }
+  .md-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .md-meta { font-size: var(--fs-md); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .md-quote { display: grid; gap: 4px; margin: 10px 0; padding: 12px 14px; border-left: 3px solid var(--warn); border-radius: var(--r-sm); background: var(--surface-2); }
+  .md-reports li { padding: 8px 0; border-top: 1px solid var(--border); font-size: var(--fs-md); }
+  .md-actions { margin-top: 12px; }
+  .md-user { display: grid; gap: 2px; }
+  .md-reason { display: block; max-width: 360px; overflow-wrap: anywhere; color: var(--text-2); }
+
+  @media (max-width: 767px) {
+    .cm-notice .link { margin-left: 0; }
+    .cm-cat { grid-template-columns: auto minmax(0, 1fr); }
+    .cm-cat-meta { grid-column: 2; justify-items: start; }
+    .cm-thread { grid-template-columns: 40px minmax(0, 1fr); gap: 8px; }
+    .cm-post { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; }
+    .cm-head-actions { justify-content: flex-start; width: 100%; }
+    .cm-thread-h { font-size: var(--fs-lg); }
+    .cm-avatar { width: 44px; height: 44px; font-size: var(--fs-base); }
+  }
+}
+
 /* -------------------------------------------------------------- utilities */
 @layer utilities {
   .up { color: var(--up); } .down { color: var(--down); } .flat, .muted { color: var(--text-3); }
@@ -962,7 +1076,7 @@
   .view[data-view='trade'] { padding-bottom: 64px; }
   .tabbar {
     position: fixed; z-index: 30; inset: auto 0 0;
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    display: grid; grid-template-columns: repeat(6, 1fr);
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
     background: var(--surface-1);
     border-top: 1px solid var(--border);

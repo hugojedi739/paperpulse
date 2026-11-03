@@ -14,6 +14,7 @@ import * as markets from './views/markets.js';
 import * as newsView from './views/news.js';
 import * as journal from './views/journal.js';
 import * as admin from './views/admin.js';
+import * as community from './views/community.js';
 import * as dialogs from './ui/dialogs.js';
 import * as auth from './lib/auth.js';
 import * as account from './lib/account.js';
@@ -21,7 +22,7 @@ import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, admin };
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, admin };
 const mounted = new Set();
 let active = null;
 

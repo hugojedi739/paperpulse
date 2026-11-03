@@ -123,6 +123,18 @@ class ProfileTest(Base):
         with self.assertRaises(Forbidden):
             profiles.follow(fan, "Secreta", True)
 
+    def test_hilos_de_un_perfil(self):
+        ana, eva = self.user("Ana"), self.user("Eva", private=True)
+        self.thread(ana, title="Hilo de Ana uno")
+        forum.share_fill(ana, self.buy(ana, "ana-0001"), "Entrada")
+        self.thread(eva, title="Hilo de una privada")
+        r = self.client().get("/api/community/profiles/Ana/threads").json()
+        self.assertEqual([t["title"][:5] for t in r["threads"]], ["Compr", "Hilo "])
+        self.assertEqual(r["threads"][0]["trade"]["symbol"], "BTC")
+        private = self.client().get("/api/community/profiles/Eva/threads").json()
+        self.assertEqual((private["isPrivate"], private["threads"]), (True, []))  # su contenido no se lista desde el perfil
+        self.assertEqual(len(profiles.threads_of("Eva", eva, 1)["threads"]), 1)  # ella sí lo ve
+
     def test_busqueda_trata_comodines_como_texto(self):
         self.user("a_b_c")
         self.user("axbxc")
@@ -306,6 +318,14 @@ class ShareTest(Base):
         order, _ = ledger.place_order(uid, {"clientOrderId": "ana-0001", "symbol": "BTC", "side": "buy", "type": "market", "quantity": "1"})
         self.assertEqual(order["fill"]["id"], self.fill_id(order["id"]))
         self.assertEqual(forum.share_fill(uid, order["fill"]["id"], "Entrada")["threadId"] > 0, True)
+
+    def test_la_cartera_indica_si_una_venta_ya_se_compartio(self):
+        uid = self.user("Ana")
+        self.buy(uid, "ana-0001")
+        fid = self.sell(uid, "ana-0002")
+        self.assertIsNone(ledger.portfolio(uid)["trades"][0]["sharedThreadId"])
+        tid = forum.share_fill(uid, fid, "")["threadId"]
+        self.assertEqual(ledger.portfolio(uid)["trades"][0]["sharedThreadId"], tid)
 
     def test_cada_operacion_una_vez(self):
         uid = self.user("Ana")

@@ -1,10 +1,11 @@
 // Vista Diario: estadísticas, curva de resultados, calendario de P&L y registro de operaciones.
 import * as store from '../lib/store.js';
-import { html, icon, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.js';
+import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.js';
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.js';
 import { createEquityChart } from '../lib/charts.js';
 import { assetIcon, empty, seg, pressSeg } from '../lib/ui.js';
 import { noteDialog } from '../ui/dialogs.js';
+import { shareButton, shareDialog } from '../ui/share.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];
 const DAY = 86400000;
@@ -18,6 +19,7 @@ export function mount(el) {
   on(root, 'click', '[data-seg="jf"] button', (_, b) => { filter = b.dataset.value; pressSeg(root, 'jf', filter); drawTable(); });
   on(root, 'input', '#j-search', debounce((e) => { query = e.target.value.trim().toLowerCase(); drawTable(); }, 150));
   on(root, 'click', '[data-note]', (_, b) => noteDialog(b.dataset.note));
+  on(root, 'click', '[data-share]', (_, b) => shareDialog(store.trades().find((t) => t.id === `f${b.dataset.share}`)));
   on(root, 'click', '[data-act="csv"]', exportCsv);
   on(root, 'click', '[data-act="reset"]', async () => {
     if (store.isServerMode()) return toast('Las operaciones de tu cuenta del servidor no se pueden borrar: son tu historial real de práctica.', 'info');
@@ -140,7 +142,7 @@ function drawTable() {
       <td class="r muted">${t.openedAt ? duration(Date.parse(t.date) - t.openedAt) : '—'}</td>
       <td class="r money delta ${trendClass(t.pnl)}"><strong>${money(t.pnl, { signed: true })}</strong> <small>${pct(t.pnlPct)}</small></td>
       <td>${t.setup || '—'}${t.emotion ? html` <span class="chip">${t.emotion}</span>` : ''}</td>
-      <td><button class="btn btn-ghost btn-sm" data-note="${t.id}">${icon('pencil', 'sm')} ${t.notes ? 'Ver' : 'Añadir'}</button></td></tr>`)}</tbody></table>`);
+      <td class="row-end"><button class="btn btn-ghost btn-sm" data-note="${t.id}">${icon('pencil', 'sm')} ${t.notes ? 'Ver' : 'Añadir'}</button>${raw(shareButton(t))}</td></tr>`)}</tbody></table>`);
 }
 
 /* CSV para Excel: separador ; con BOM y protección contra inyección de fórmulas */

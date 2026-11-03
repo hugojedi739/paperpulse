@@ -107,8 +107,9 @@ export function toast(message, type = 'info', ms = 4000) {
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
   el.setAttribute('role', type === 'error' ? 'alert' : 'status');
-  render(el, html`${icon(TOAST_ICONS[type] || 'info')}<span>${message}</span>
+  render(el, html`${icon(TOAST_ICONS[type] || 'info')}<span></span>
     <button class="icon-btn sm" aria-label="Cerrar">${icon('x')}</button>`);
+  el.querySelector('span').textContent = String(message ?? ''); // puede incluir texto de usuarios (alias, motivos)
   box.append(el);
   let timer;
   const dismiss = () => { el.classList.add('out'); setTimeout(() => el.remove(), 200); };

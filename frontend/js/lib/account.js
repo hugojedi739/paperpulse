@@ -38,6 +38,7 @@ export function toStore(p) {
       return {
         ...base(t), id: `f${t.id}`, orderId: t.orderId, amount: t.quantity, entryPrice: t.entryPrice, exitPrice: t.exitPrice,
         investedUsd: invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0, feeUsd: cents(t.feeCents),
+        sharedThreadId: t.sharedThreadId ?? null,
         date: iso(t.executedAt), openedAt: t.openedAt ? t.openedAt * 1000 : null,
         setup: t.journal?.setup ?? '', emotion: t.journal?.emotion ?? '', notes: t.journal?.notes ?? '',
       };

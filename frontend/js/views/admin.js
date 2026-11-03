@@ -5,10 +5,11 @@ import { num, timeAgo } from '../lib/format.js';
 import { api } from '../lib/api.js';
 import * as auth from '../lib/auth.js';
 import { empty } from '../lib/ui.js';
+import * as moderation from './moderation.js';
 
 export const title = 'Administración';
 
-const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap']];
+const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag']];
 const PAGE = 25;
 let root, tab = 'overview';
 let usersQuery = '', usersOffset = 0;
@@ -36,7 +37,7 @@ export function show(param) {
     auth.currentUser() ? '' : html`<button class="btn btn-primary" data-action="login">${icon('log-in', 'sm')} Iniciar sesión</button>`)}</section>`);
   }
   render(body, html`<section class="card">${empty('refresh-cw', 'Cargando…')}</section>`);
-  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations })[tab]();
+  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body) })[tab]();
 }
 
 const fail = (err) => render($('#ad-body', root), html`<section class="card">${empty('triangle-alert', 'No se pudo cargar', err.message)}</section>`);
@@ -216,6 +217,7 @@ async function renderIntegrations() {
         ${text('trading_initial_balance_usd', 'Saldo inicial de las cuentas nuevas (USD)', '10000', 'number')}
         ${text('trading_fee_bps', 'Comisión por operación (puntos básicos; 10 = 0,10 %)', '10', 'number')}
         ${text('trading_slippage_bps', 'Deslizamiento en órdenes a mercado y stop (puntos básicos)', '5', 'number')}
+        ${text('community_min_trades', 'Operaciones mínimas para aparecer en la clasificación', '5', 'number')}
         <p class="hint">El saldo inicial solo se aplica a las cuentas que se crean a partir de ahora. Sin sesión, el modo local no cobra comisiones.</p>
         ${save()}
       </form></section>

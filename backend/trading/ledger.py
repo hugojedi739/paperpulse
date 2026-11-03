@@ -426,7 +426,8 @@ def portfolio(user_id: int) -> Dict:
         positions = [dict(r) for r in conn.execute("SELECT * FROM positions WHERE user_id = ? ORDER BY opened_at DESC", (user_id,))]
         open_orders = [dict(r) for r in conn.execute("SELECT * FROM orders WHERE user_id = ? AND status = 'open' ORDER BY id", (user_id,))]
         trades = [dict(r) for r in conn.execute(
-            "SELECT f.*, o.journal FROM fills f JOIN orders o ON o.id = f.order_id WHERE f.user_id = ? AND f.side = 'sell' "
+            "SELECT f.*, o.journal, (SELECT t.id FROM threads t WHERE t.fill_id = f.id) AS shared_thread_id "
+            "FROM fills f JOIN orders o ON o.id = f.order_id WHERE f.user_id = ? AND f.side = 'sell' "
             "ORDER BY f.executed_at DESC LIMIT 500", (user_id,))]
         n_fills = conn.execute("SELECT COUNT(*) FROM fills WHERE user_id = ?", (user_id,)).fetchone()[0]
     asset = lambda s: prices.ASSETS.get(s, {"name": s})
@@ -442,6 +443,7 @@ def portfolio(user_id: int) -> Dict:
                     "quantity": num(t["qty_e8"]), "entryPrice": num(t["entry_price_e8"]), "exitPrice": num(t["price_e8"]),
                     "costBasisCents": t["cost_basis_cents"], "feeCents": t["fee_cents"], "pnlCents": t["pnl_cents"],
                     "openedAt": t["opened_at"], "executedAt": t["executed_at"], "source": t["source"],
+                    "sharedThreadId": t["shared_thread_id"],  # hilo del foro si ya se compartió
                     "journal": json.loads(t["journal"]) if t["journal"] else None} for t in trades],
         "config": config(),
     }

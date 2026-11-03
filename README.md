@@ -74,7 +74,10 @@ frontend/
   js/main.js                 Arranque, enrutado por hash (#/vista/param), cabecera, atajos, errores de OAuth
   js/lib/                    Lógica sin UI: api (cliente HTTP), feed (en vivo), marketdata, store (localStorage),
                              trading (órdenes simuladas), auth, charts, catalog (activos), format, dom
-  js/views/                  dashboard, trade (Operar), markets, news, journal (Diario), admin
+  js/views/                  dashboard, trade (Operar), markets, news, journal (Diario), community (Comunidad),
+                             admin y moderation (sección Moderación del panel)
+  js/lib/el.js               Construcción de DOM con nodos de texto: TODO texto de usuarios de la comunidad pasa por aquí
+  js/lib/community.js        Cliente de /api/community y /api/forum con caché en memoria y mensajes de error
   js/ui/                     Diálogos, paleta de comandos (Ctrl+K), asistente, visita guiada
   vendor/                    Generado por `npm run vendor` (Lightweight Charts, fuentes). No editar a mano
   img/icons.svg              Sprite de iconos Lucide, generado por `npm run vendor`
@@ -116,6 +119,7 @@ Hay dos modos:
 - **Perfiles**: alias único (3-20 caracteres: letras, números y `_`; sin distinguir mayúsculas; hay alias reservados), bio de hasta 280 caracteres y perfil privado opcional. Sin perfil no se participa. Ninguna respuesta incluye emails. De un perfil privado solo se confirma que existe: no sale en la clasificación ni en las búsquedas y no se le puede seguir, aunque sus mensajes del foro siguen siendo públicos.
 - **Foro**: categorías generales (estrategias, novatos, análisis técnico, noticias), «Operaciones compartidas» y un hilo automático por cada activo del catálogo (`forum.ensure_asset_threads`). Votos +1/-1, uno por usuario y mensaje, que se pueden cambiar o quitar; no se votan los mensajes propios. Orden `top` o `recent` y páginas de 20.
 - **Compartir una operación**: `POST /api/forum/share {fillId, comment}`. El servidor comprueba que el fill es del usuario y toma de `fills` activo, lado, precio y resultado. Cada fill se comparte una sola vez.
+- **Interfaz** (`#/community/...`): pestañas Clasificación, Foro, Siguiendo y Mi perfil; rutas `ranking`, `forum`, `forum:<categoría>`, `thread:<id>`, `user:<alias>`, `feed` y `me`. Sin sesión se puede leer todo y, al publicar, votar o seguir, se invita a iniciar sesión. La primera visita con sesión y sin perfil pide el alias. «Compartir en el foro» aparece en las ventas del diario y del historial de Operar (solo con la cuenta del servidor; si ya se compartió, enlaza al hilo). La sección Moderación del panel muestra las denuncias con la copia del texto, permite ocultar o restaurar, suspender o reactivar, y enseña el registro.
 - **Seguir** y **feed** con los mensajes y operaciones compartidas de los perfiles seguidos.
 - **Moderación**: denuncias (una por usuario y mensaje), ocultar y restaurar (borrado lógico: el texto se conserva para los admins), suspensión temporal o indefinida (no impide entrar ni operar, solo participar) y registro en `moderation_log`. El autor puede borrar lo suyo; después nadie ve ese texto en el foro, pero cada denuncia guarda una copia del mensaje y del alias del autor en el momento de denunciar (`reports.post_body`), así que el moderador siempre ve lo denunciado.
 - **Texto de usuario**: se guarda tal cual (NFC, sin caracteres de control ni marcas de dirección) y se rechaza si supera el límite (`community/text.py`). No se escapa en el servidor: el frontend lo pinta siempre con `textContent`. No hay imágenes ni subida de ficheros, y los enlaces se muestran como texto.
@@ -211,6 +215,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 - **Idioma**: interfaz, comentarios y mensajes de error en español.
 - **CSP estricta** (`backend/app.py`): nada de `<script>` ni `style="..."` inline, ni `onclick=` en HTML. Para anchos dinámicos usa `data-w`/`data-l` (los aplica `render()` de `lib/dom.js`).
 - **Plantillas**: `html\`...\`` de `lib/dom.js` escapa todo lo interpolado; `raw()` solo para HTML propio de confianza. Eventos con delegación: `on(root, 'click', selector, fn)`.
+- **Texto de otros usuarios** (alias, bio, títulos, mensajes, motivos de moderación): nunca con `innerHTML` ni con `html\`\``. Se construye con `h()`/`userText()` de `lib/el.js` (nodos de texto; `h()` rechaza atributos `on*`, `style` y enlaces externos). Los enlaces escritos por usuarios se muestran como texto. Los toasts también usan `textContent`.
 - **Vistas**: cada módulo de `js/views/` exporta `title`, `mount(el)`, `show(param)` y opcionalmente `hide()` y `theme()`. Se registran en `VIEWS` de `main.js` y tienen su `<section class="view" data-view="...">` en `index.html`.
 - **Iconos**: `icon('nombre')` usa el sprite. Para un icono nuevo añádelo a `ICONS` en `scripts/vendor.mjs` y ejecuta `npm run vendor`.
 - **Backend**: cada endpoint es una función `async def (request)` registrada en `routes` de `backend/app.py` (o en `build_routes`/`routes` de `auth.py`/`admin.py`). Las llamadas bloqueantes (requests, libSQL, yfinance) van en hilo (`run_in_threadpool` o `run_in_executor`). Cachés en memoria con tamaño acotado.

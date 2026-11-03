@@ -77,6 +77,19 @@ def public(alias: str, viewer_id: Optional[int]) -> Dict:
         }
 
 
+def threads_of(alias: str, viewer_id: Optional[int], page: int) -> Dict:
+    """Hilos visibles abiertos por un perfil (incluidas sus operaciones compartidas). Nada si el perfil es privado."""
+    from backend.community import forum  # evita importación circular
+    with closing(db.connect()) as conn:
+        p = _profile_row(conn, alias)
+        if p["is_private"] and viewer_id != p["user_id"]:
+            return {"alias": p["alias"], "isPrivate": True, "threads": [], "hasMore": False}
+        rows = conn.execute("SELECT * FROM threads WHERE author_id = ? AND status = 'visible' ORDER BY created_at DESC, id DESC "
+                            "LIMIT ? OFFSET ?", (p["user_id"], forum.PAGE + 1, (page - 1) * forum.PAGE)).fetchall()
+        threads = [forum._thread_summary(conn, t, viewer_id) for t in rows[:forum.PAGE]]
+    return {"alias": p["alias"], "isPrivate": bool(p["is_private"]), "threads": threads, "hasMore": len(rows) > forum.PAGE, "page": page}
+
+
 def search(q: str, limit: int) -> Dict:
     """Busca perfiles PÚBLICOS por el principio del alias. Los privados y suspendidos no aparecen."""
     q = (q or "").strip()

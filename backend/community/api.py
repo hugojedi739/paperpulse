@@ -90,6 +90,17 @@ async def api_profile(request):
     return err or await _run(profiles.public, request.path_params["alias"], _uid(user))
 
 
+async def api_profile_threads(request):
+    user, err = await _guard(request, "read", False)
+    if err:
+        return err
+    try:
+        page = _int(request.query_params.get("page"), 1, 1, MAX_PAGE)
+    except CommunityError as exc:
+        return error(str(exc), 400)
+    return await _run(profiles.threads_of, request.path_params["alias"], _uid(user), page)
+
+
 async def api_follow(request):
     user, err = await _guard(request, "act", True)
     return err or await _run(profiles.follow, user["id"], request.path_params["alias"], request.method == "POST")
@@ -276,6 +287,7 @@ routes = [
     Route("/api/community/me", api_me, methods=["GET", "PUT"]),
     Route("/api/community/profiles", api_profiles, methods=["GET"]),
     Route("/api/community/profiles/{alias}", api_profile, methods=["GET"]),
+    Route("/api/community/profiles/{alias}/threads", api_profile_threads, methods=["GET"]),
     Route("/api/community/profiles/{alias}/follow", api_follow, methods=["POST", "DELETE"]),
     Route("/api/community/following", api_following, methods=["GET"]),
     Route("/api/community/feed", api_feed, methods=["GET"]),

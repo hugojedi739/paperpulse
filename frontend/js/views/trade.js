@@ -2,7 +2,7 @@
 import * as store from '../lib/store.js';
 import * as feed from '../lib/feed.js';
 import { findAsset, displayPair } from '../lib/catalog.js';
-import { html, icon, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.js';
+import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.js';
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
@@ -11,6 +11,7 @@ import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { closePositionDialog } from '../ui/dialogs.js';
+import { shareButton, shareDialog } from '../ui/share.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -156,6 +157,7 @@ export function mount(el) {
   on(root, 'click', '[data-t]', (e, b) => actions[b.dataset.t]?.(b, e));
   on(root, 'click', '[data-seg="otype"] button', (_, b) => { orderType = b.dataset.value; renderTicket(); });
   on(root, 'click', 'tr[data-href]', (e, tr) => { if (!e.target.closest('button')) go(tr.dataset.href); });
+  on(root, 'click', '[data-share]', (_, b) => shareDialog(store.trades().find((t) => t.id === `f${b.dataset.share}`)));
   on(root, 'input', '#t-ticket input', updateTicketSummary);
 
   store.on('account', () => { if (!root.hidden) { renderTicket(); renderDock(); decorate(); } });
@@ -615,11 +617,11 @@ function renderDock() {
   } else {
     const trades = store.trades().slice(0, 25);
     if (!trades.length) return render(box, empty('history', 'Sin operaciones todavía', 'Cuando vendas una posición aparecerá aquí con su resultado.'));
-    render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada</th><th class="r">Salida</th><th class="r">Resultado</th></tr></thead>
+    render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada</th><th class="r">Salida</th><th class="r">Resultado</th><th></th></tr></thead>
       <tbody>${trades.map((t) => html`<tr data-href="/trade/${t.symbol}">
         <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td><td><strong>${t.symbol}</strong></td>
         <td class="r">${units(t.amount)}</td><td class="r">${price(t.entryPrice, t.quote)}</td><td class="r">${price(t.exitPrice, t.quote)}</td>
-        <td class="r money delta ${trendClass(t.pnl)}">${money(t.pnl, { signed: true })} · ${pct(t.pnlPct)}</td></tr>`)}</tbody></table>`);
+        <td class="r money delta ${trendClass(t.pnl)}">${money(t.pnl, { signed: true })} · ${pct(t.pnlPct)}</td><td class="r">${raw(shareButton(t))}</td></tr>`)}</tbody></table>`);
   }
 }
 
