@@ -89,3 +89,37 @@ def candles(symbol: str, interval: str, limit: int, end: int) -> List[Dict[str, 
         remember(key, raw)
     return [{"time": int(c["time"]), "open": to_e8(c["open"]), "high": to_e8(c["high"]), "low": to_e8(c["low"])}
             for c in raw if c["time"] < end]
+
+
+def valuation_prices(symbols) -> Dict[str, Tuple[int, int]]:
+    """Precios para VALORAR posiciones (clasificación), no para ejecutar: {símbolo: (precio_e8, fx_e8)}.
+
+    Pocas llamadas para muchos activos: una a Binance con todos los pares, la consulta agrupada de bolsa
+    (caché de 15 s) y el tipo de cambio. Con la bolsa cerrada vale el último precio conocido.
+    Los activos sin precio no aparecen: quien llama los valora a su coste (y marca el resultado como aproximado).
+    """
+    wanted = {s: ASSETS[s] for s in symbols if s in ASSETS}
+    out: Dict[str, Tuple[int, int]] = {}
+    pairs = sorted(a["pair"] for a in wanted.values() if a["type"] == "crypto")
+    if pairs:
+        key = ("valuation-crypto", ",".join(pairs))
+        raw = cached(key, 30)
+        if raw is None:
+            try:
+                raw = remember(key, binance_get("/api/v3/ticker/price", {"symbols": "[" + ",".join(f'"{p}"' for p in pairs) + "]"}))
+            except Exception:
+                raw = []
+        by_pair = {t["symbol"]: t["price"] for t in raw}
+        for s, a in wanted.items():
+            if a["type"] == "crypto" and a["pair"] in by_pair:
+                out[s] = (to_e8(by_pair[a["pair"]]), E8)
+    if any(a["type"] == "stock" for a in wanted.values()):
+        quotes = stocks.fetch_live_stock_quotes()
+        for s, a in wanted.items():
+            price = (quotes.get(s) or {}).get("price") if a["type"] == "stock" else None
+            if price:
+                try:
+                    out[s] = (to_e8(price), fx_e8(a["quote"]))
+                except OrderError:
+                    pass  # sin tipo de cambio: se valora a coste
+    return out

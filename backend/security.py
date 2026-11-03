@@ -32,6 +32,9 @@ IP_DAILY_DATA: Dict[str, Dict[str, Any]] = {}
 # Cuenta del servidor (/api/orders, /api/portfolio): por IP y por usuario (clave "u<id>")
 IP_TRADING_CALLS: Dict[str, List[float]] = {}
 USER_TRADING_CALLS: Dict[str, List[float]] = {}
+# Comunidad (/api/community, /api/forum): claves "<nivel>:<ip>" y "u<id>:<nivel>"
+IP_COMMUNITY_CALLS: Dict[str, List[float]] = {}
+USER_COMMUNITY_CALLS: Dict[str, List[float]] = {}
 
 def get_client_ip(request) -> str:
     """Extrae la IP real del cliente respetando proxies de confianza."""
@@ -107,7 +110,8 @@ def check_ip_rate_limit(ip: str, store: Dict[str, List[float]], max_calls_per_mi
 def cleanup_stale_ip_data():
     """Evita fugas de memoria limpiando IPs inactivas."""
     now = time.time()
-    for store in (IP_CHAT_CALLS, IP_STOCK_CALLS, IP_CHALLENGE_CALLS, IP_TRADING_CALLS, USER_TRADING_CALLS):
+    for store in (IP_CHAT_CALLS, IP_STOCK_CALLS, IP_CHALLENGE_CALLS, IP_TRADING_CALLS, USER_TRADING_CALLS,
+                  IP_COMMUNITY_CALLS, USER_COMMUNITY_CALLS):
         stale_keys = [ip for ip, calls in store.items() if not calls or (now - calls[-1] > 600)]
         for k in stale_keys:
             store.pop(k, None)

@@ -35,6 +35,7 @@ from backend.market.stocks import api_stock_quotes, api_stock_sparks
 from backend.news import api_news
 from backend.security import USAGE_STATS, get_client_ip
 from backend.trading import api as trading_api
+from backend.community import api as community_api
 
 SERVE_FRONTEND = os.getenv("SERVE_FRONTEND", "true").lower() not in ("false", "0", "no")
 
@@ -87,6 +88,8 @@ routes = [
     *admin.routes,
     # Cuenta de práctica del servidor
     *trading_api.routes,
+    # Comunidad: perfiles, foro, clasificación y moderación
+    *community_api.routes,
     WebSocketRoute("/ws/market", stream.ws_market),
 ]
 if SERVE_FRONTEND:

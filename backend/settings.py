@@ -31,6 +31,8 @@ SCHEMA: Dict[str, tuple] = {
     "trading_initial_balance_usd": ("TRADING_INITIAL_BALANCE_USD", 10000, int, False),
     "trading_fee_bps": ("TRADING_FEE_BPS", 10, int, False),
     "trading_slippage_bps": ("TRADING_SLIPPAGE_BPS", 5, int, False),
+    # Comunidad: operaciones mínimas para aparecer en la clasificación
+    "community_min_trades": ("COMMUNITY_MIN_TRADES", 5, int, False),
 }
 CHOICES = {"stock_data_provider": ("yfinance", "finnhub")}
 # Rangos válidos de los ajustes enteros. bps = puntos básicos (10 bps = 0,10 %)
@@ -38,6 +40,7 @@ INT_RANGES = {
     "trading_initial_balance_usd": (100, 10_000_000),
     "trading_fee_bps": (0, 500),
     "trading_slippage_bps": (0, 500),
+    "community_min_trades": (0, 1000),
 }
 
 _cache: Dict[str, Any] = {"time": 0.0, "values": {}}

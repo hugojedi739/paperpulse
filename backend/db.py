@@ -430,20 +430,22 @@ def put_settings(values: Dict[str, Optional[str]], by: Optional[int]) -> None:
 def list_users(query: str = "", limit: int = 50, offset: int = 0) -> Dict:
     like = f"%{query.strip()}%"
     with closing(connect()) as conn:
-        where = "WHERE u.email LIKE ? OR u.name LIKE ?"
-        total = conn.execute(f"SELECT COUNT(*) FROM users u {where}", (like, like)).fetchone()[0]
+        where = "WHERE u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?"
+        total = conn.execute(f"SELECT COUNT(*) FROM users u LEFT JOIN profiles pr ON pr.user_id = u.id {where}", (like, like, like)).fetchone()[0]
         rows = conn.execute(
             f"""SELECT u.*, GROUP_CONCAT(DISTINCT i.provider) AS providers,
                        (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.expires_at > ?) AS sessions,
-                       (SELECT updated_at FROM practice_data p WHERE p.user_id = u.id) AS data_at
-                FROM users u LEFT JOIN identities i ON i.user_id = u.id {where}
+                       (SELECT updated_at FROM practice_data p WHERE p.user_id = u.id) AS data_at, pr.alias AS alias
+                FROM users u LEFT JOIN identities i ON i.user_id = u.id LEFT JOIN profiles pr ON pr.user_id = u.id {where}
                 GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?""",
-            (int(time.time()), like, like, limit, offset),
+            (int(time.time()), like, like, like, limit, offset),
         ).fetchall()
     users = [{
         **public_user(r), "disabled": bool(r["disabled"]), "lastLoginAt": r["last_login_at"],
         "providers": (["password"] if r["password_hash"] else []) + (r["providers"].split(",") if r["providers"] else []),
-        "sessions": r["sessions"], "dataUpdatedAt": r["data_at"],
+        "sessions": r["sessions"], "dataUpdatedAt": r["data_at"], "alias": r["alias"],
+        "suspendedUntil": r["suspended_until"] if (r["suspended_until"] or 0) > time.time() else None,
+        "suspensionReason": r["suspension_reason"] if (r["suspended_until"] or 0) > time.time() else None,
     } for r in rows]
     return {"total": total, "users": users}
 

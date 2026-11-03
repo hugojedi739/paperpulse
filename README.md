@@ -54,6 +54,8 @@ backend/
   auth.py                    /api/auth/*: email+contraseña, Google y Okta (OIDC + PKCE), copia de datos /api/data
   admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth
   security.py                IP real del cliente (proxies de confianza), límites por IP y por usuario, contadores de uso de IA
+  community/                 Comunidad: text (validación), common (errores, cuotas), profiles, forum, ranking,
+                             moderation y api (/api/community, /api/forum, moderación en /api/admin)
   trading/                   Cuenta de práctica del servidor: rules (cálculo en enteros), prices (precios del servidor),
                              ledger (transacciones, idempotencia, resolución de límite/stop), api (/api/portfolio, /api/orders)
   chat.py                    /api/chat: asistente con Claude (SSE), desafío anti-bot, límites de gasto
@@ -109,6 +111,25 @@ Hay dos modos:
   - El tipo de cambio de las ejecuciones por vela es el actual, no el del momento de la vela.
   - Yahoo puede dar las cotizaciones de algunas bolsas (p. ej. BME) con unos 15 minutos de retraso.
   - Solo se pueden operar los activos del catálogo (los encontrados con la búsqueda, solo en modo local). No hay ventas en corto.
+
+### Comunidad (`backend/community/`)
+- **Perfiles**: alias único (3-20 caracteres: letras, números y `_`; sin distinguir mayúsculas; hay alias reservados), bio de hasta 280 caracteres y perfil privado opcional. Sin perfil no se participa. Ninguna respuesta incluye emails. De un perfil privado solo se confirma que existe: no sale en la clasificación ni en las búsquedas y no se le puede seguir, aunque sus mensajes del foro siguen siendo públicos.
+- **Foro**: categorías generales (estrategias, novatos, análisis técnico, noticias), «Operaciones compartidas» y un hilo automático por cada activo del catálogo (`forum.ensure_asset_threads`). Votos +1/-1, uno por usuario y mensaje, que se pueden cambiar o quitar; no se votan los mensajes propios. Orden `top` o `recent` y páginas de 20.
+- **Compartir una operación**: `POST /api/forum/share {fillId, comment}`. El servidor comprueba que el fill es del usuario y toma de `fills` activo, lado, precio y resultado. Cada fill se comparte una sola vez.
+- **Seguir** y **feed** con los mensajes y operaciones compartidas de los perfiles seguidos.
+- **Moderación**: denuncias (una por usuario y mensaje), ocultar y restaurar (borrado lógico: el texto se conserva para los admins), suspensión temporal o indefinida (no impide entrar ni operar, solo participar) y registro en `moderation_log`. El autor puede borrar lo suyo; ni los admins ven después ese texto.
+- **Texto de usuario**: se guarda tal cual (NFC, sin caracteres de control ni marcas de dirección) y se rechaza si supera el límite (`community/text.py`). No se escapa en el servidor: el frontend lo pinta siempre con `textContent`. No hay imágenes ni subida de ficheros, y los enlaces se muestran como texto.
+- **Límites**: por minuto, por IP y por usuario, en tres niveles: leer (180/120), actuar (60/30) y publicar (20/5). Además hay cuotas diarias guardadas en la base de datos: 10 mensajes y 3 hilos en las primeras 24 h de una cuenta; después, 100 y 20. Borrar no devuelve cupo, y un mensaje idéntico en 10 minutos se rechaza.
+
+### Clasificación
+- **Patrimonio** = efectivo (incluido el reservado en órdenes) + posiciones abiertas valoradas al último precio (una sola consulta de precios para todos los activos: `prices.valuation_prices`). Un activo sin precio se valora a su coste y el resultado se marca como «aproximado».
+- **Rentabilidad total** = patrimonio / saldo inicial − 1. Como no hay ingresos ni retiradas, es la rentabilidad real. **7 y 30 días** = patrimonio / patrimonio al inicio del periodo − 1, con las instantáneas diarias de `equity_snapshots`; si la cuenta se abrió dentro del periodo, la base es el saldo inicial.
+- **Coste en serverless**: el cálculo se hace como mucho cada 5 minutos, al consultar la clasificación o un perfil. Rellena la tabla `leaderboard` y guarda la instantánea del día, y las lecturas solo consultan esa tabla. Privacidad, suspensión y mínimo de operaciones (`community_min_trades`, en el panel) se aplican al leer, así que tienen efecto inmediato. Para tener instantáneas aunque nadie consulte, un cron puede llamar a `POST /api/community/leaderboard/refresh` con la cabecera `X-Admin-Key`.
+- **Limitaciones**:
+  - Las instantáneas solo existen los días en que alguien recalcula; si falta la del inicio del periodo, se usa la más cercana y se marca como aproximada.
+  - Se valora a último precio, sin descontar la comisión de una venta futura.
+  - Los activos en euros usan el tipo de cambio actual.
+  - El cálculo recorre todas las cuentas con operaciones; para miles de usuarios habría que repartirlo en lotes.
 
 ### Datos de mercado en vivo
 - El navegador abre **un único WebSocket** con el backend (`/ws/market`) usando el protocolo de Binance: `{"method":"SUBSCRIBE","params":["btcusdt@ticker","btcusdt@kline_1h","btcusdt@depth20@100ms","stocks"]}`. Recibe `{"stream": ..., "data": ...}`.
@@ -167,6 +188,18 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET | `/api/portfolio` | Cuenta del servidor: saldo, posiciones, órdenes pendientes, operaciones cerradas y eventos (resuelve antes las pendientes) |
 | GET/POST | `/api/orders?status=&limit=&before=` | Historial paginado · `{clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?}` |
 | DELETE/PATCH | `/api/orders/{id}` | Cancelar una orden pendiente · `{journal}` notas del diario |
+| GET/PUT | `/api/community/me` | Mi perfil `{alias, bio, isPrivate}` y si estoy suspendido |
+| GET | `/api/community/profiles?q=` · `/api/community/profiles/{alias}` | Buscar perfiles públicos · perfil público |
+| POST/DELETE | `/api/community/profiles/{alias}/follow` | Seguir · dejar de seguir |
+| GET | `/api/community/following` · `/api/community/feed?before=` | A quién sigo · feed |
+| GET | `/api/community/leaderboard?period=7d\|30d\|total&page=` | Clasificación |
+| POST | `/api/community/leaderboard/refresh` | Recalcular (admin o `X-Admin-Key`, para un cron) |
+| GET | `/api/forum/categories` · `/api/forum/categories/{slug}?sort=top\|recent&page=` | Categorías · hilos |
+| GET | `/api/forum/assets/{symbol}` · `/api/forum/threads/{id}?sort=&page=` | Hilo de un activo · hilo con respuestas |
+| POST | `/api/forum/threads` · `/api/forum/threads/{id}/posts` · `/api/forum/share` | Abrir hilo · responder · compartir operación |
+| DELETE · PUT · POST | `/api/forum/posts/{id}` · `/vote {value}` · `/report {reason, details}` | Borrar lo mío · votar (1, -1, 0) · denunciar |
+| GET · POST | `/api/admin/reports?status=` · `/api/admin/posts/{id}/hide\|restore\|dismiss` | Moderación de mensajes |
+| POST · GET | `/api/admin/users/{id}/suspend\|unsuspend` · `/api/admin/moderation-log` | Suspensiones · registro |
 | GET | `/api/admin/overview` · `/api/admin/users?q=&limit=&offset=` | Panel: métricas · usuarios |
 | PATCH/DELETE | `/api/admin/users/{id}` | `{role, disabled}` · eliminar |
 | GET/PUT | `/api/admin/settings` | Ajustes `{values: {clave: valor\|null}}` (`null` = volver a `.env`) |
