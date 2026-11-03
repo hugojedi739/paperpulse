@@ -313,7 +313,7 @@ class ApiTest(Base):
         app = Starlette(routes=auth.build_routes(lambda r: "1.2.3.4") + trading_api.routes)
         self.client = TestClient(app, base_url="http://testserver")
         db.delete_user(self.uid)
-        r = self.client.post("/api/auth/register", json={"email": "ana@example.com", "password": "secreto123", "name": "Ana"})
+        r = self.client.post("/api/auth/register", json={"email": "ana@example.com", "password": "secreto123", "name": "Ana", "acceptTerms": True, "ageConfirmed": True})
         self.assertEqual(r.status_code, 201, r.text)
         self.uid = self.client.get("/api/auth/me").json()["user"]["id"]
 

@@ -42,7 +42,7 @@ def now() -> int:
 def actor(conn, user_id: int) -> Optional[Dict]:
     """Datos del usuario que actúa. Nunca incluye el email."""
     row = conn.execute(
-        "SELECT u.id, u.role, u.created_at, u.disabled, u.email_verified, u.suspended_until, u.suspension_reason, p.alias, p.is_private "
+        "SELECT u.id, u.role, u.created_at, u.disabled, u.email_verified, u.terms_version, u.suspended_until, u.suspension_reason, p.alias, p.is_private "
         "FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ?", (user_id,)).fetchone()
     return dict(row) if row else None
 
@@ -60,6 +60,8 @@ def require_member(conn, user_id: int) -> Dict:
         until = time.strftime("%d/%m/%Y %H:%M UTC", time.gmtime(a["suspended_until"]))
         reason = f" Motivo: {a['suspension_reason']}" if a["suspension_reason"] else ""
         raise Forbidden(f"Tu cuenta está suspendida en la comunidad hasta el {until}.{reason}")
+    if a["terms_version"] is None:
+        raise Forbidden("Acepta los términos y la política de privacidad para participar en la comunidad.")
     if not a["alias"]:
         raise Forbidden("Crea tu perfil público (alias) antes de participar en la comunidad.")
     return a

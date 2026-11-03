@@ -1,7 +1,7 @@
 // Sesión de usuario y sincronización de la cuenta de práctica con la base de datos del servidor.
 // La cookie de sesión es HttpOnly: este módulo nunca ve el token.
 import * as store from './store.js';
-import { debounce } from './dom.js';
+import { debounce, download } from './dom.js';
 import { api, apiUrl } from './api.js';
 
 let user = null;
@@ -79,10 +79,23 @@ export function loginWith(provider) {
   location.assign(apiUrl(`/api/auth/oauth/${encodeURIComponent(provider)}/start`));
 }
 
-export async function register(name, email, password) {
-  ({ user } = await api('/api/auth/register', { method: 'POST', body: { name, email, password } }));
+export async function register(name, email, password, consent = {}) {
+  ({ user } = await api('/api/auth/register', { method: 'POST', body: { name, email, password, acceptTerms: consent.acceptTerms === true, ageConfirmed: consent.ageConfirmed === true } }));
   await push();
   changed();
+}
+
+/** Vuelve a pedir el usuario al servidor (p. ej. tras aceptar los términos). */
+export async function refreshUser() {
+  ({ user } = await api('/api/auth/me'));
+  changed();
+  return user;
+}
+
+/** «Descargar mis datos» (RGPD, portabilidad): JSON con todo lo que el servidor guarda de la cuenta. */
+export async function downloadMyData() {
+  const data = await api('/api/account/export');
+  download('paperpulse-mis-datos.json', JSON.stringify(data, null, 2), 'application/json');
 }
 
 /** Sube los últimos cambios, cierra la sesión y borra los datos de este navegador (ya están en la nube). */

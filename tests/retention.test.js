@@ -77,3 +77,53 @@ test('la CSP sigue sin scripts ni estilos inline y solo permite el worker propio
   assert.match(app, /"connect-src 'self'"/);
   assert.doesNotMatch(read('frontend/index.html'), /<script(?![^>]*\bsrc=)[^>]*>[^<]/);
 });
+
+/* ---------- Textos legales ---------- */
+const legal = await import('../frontend/js/lib/legal-content.js');
+const flat = (page) => page.sections.flatMap((s) => [s.h, ...s.p.flatMap((x) => (typeof x === 'string' ? [x] : x.list))]).join('\n');
+
+test('hay cinco páginas legales marcadas como borrador, con versión y sin HTML', () => {
+  assert.deepEqual(legal.PAGES.map((p) => p.id), ['aviso-legal', 'privacidad', 'terminos', 'cookies', 'normas']);
+  assert.match(legal.DRAFT_NOTICE, /Borrador pendiente de revisión legal/);
+  assert.match(legal.LEGAL_VERSION, /borrador/);
+  for (const p of legal.PAGES) assert.doesNotMatch(flat(p), /<[a-z/][^>]*>/i, p.id);
+});
+
+test('la política de privacidad nombra a Vercel y Turso, las transferencias y los derechos RGPD', () => {
+  const t = flat(legal.pageById('privacidad'));
+  for (const word of ['Vercel', 'Turso', 'Estados Unidos', 'cláusulas contractuales', 'Marco de Privacidad', 'AEPD', 'RGPD', 'LOPDGDD', 'portabilidad', '14 años', 'Anthropic', 'Google']) assert.ok(t.includes(word), word);
+  assert.match(t, /\[PENDIENTE:/);
+});
+
+test('los datos que faltan están marcados como [PENDIENTE: …] (titular, contacto, dominio)', () => {
+  const t = flat(legal.pageById('aviso-legal'));
+  for (const word of ['titular', 'NIF', 'domicilio', 'contacto', 'dominio']) assert.match(t, new RegExp(`\\[PENDIENTE: [^\\]]*${word}`, 'i'), word);
+});
+
+test('la política de cookies describe el almacenamiento real y justifica que no haya banner', () => {
+  const t = flat(legal.pageById('cookies'));
+  for (const word of ['pp_session', 'pp_oauth', 'localStorage', 'sessionStorage', 'service worker', '22.2', 'sin analítica'.replace('sin ', 'No usamos ')]) assert.ok(t.includes(word), word);
+  assert.doesNotMatch(read('frontend/index.html'), /cookie-banner|aceptar cookies/i);
+});
+
+test('las normas prohíben promocionar servicios de pago, señales y afiliados, y avisan de que no es asesoramiento', () => {
+  const t = flat(legal.pageById('normas')) + legal.RULES.flat().join(' ');
+  for (const word of ['señales de pago', 'afiliado', 'servicio', 'asesoramiento financiero', 'ocultar', 'suspender']) assert.ok(t.includes(word), word);
+  assert.match(legal.DISCLAIMER, /simulador educativo con dinero virtual/);
+});
+
+test('el pie, el registro y el menú enlazan a los textos legales y a las descargas de datos', () => {
+  const html = read('frontend/index.html');
+  for (const id of ['aviso-legal', 'privacidad', 'terminos', 'cookies', 'normas']) assert.ok(html.includes(`#/legal/${id}`), id);
+  const dialogs = read('frontend/js/ui/dialogs.js');
+  assert.match(dialogs, /name="acceptTerms" required/);
+  assert.match(dialogs, /name="ageConfirmed" required/);
+  assert.match(dialogs, /#\/legal\/terminos/);
+  assert.match(read('frontend/js/main.js'), /export-data/);
+});
+
+test('el diálogo de términos bloquea a las cuentas nuevas sin aceptar y solo avisa a las anteriores', () => {
+  const src = read('frontend/js/ui/terms.js');
+  assert.match(src, /blocking = user\.termsVersion == null/);
+  assert.match(src, /addEventListener\('cancel', \(e\) => e\.preventDefault\(\)/); // Escape no cierra el bloqueante
+});

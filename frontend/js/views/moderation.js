@@ -172,7 +172,7 @@ const actions = {
   page(b) { page = Math.max(1, page + Number(b.dataset.dir)); draw(); },
   thread(b) { go(`/community/thread:${b.dataset.id}`); },
   'log-more'() { const content = box.querySelector('.stack > .stack'); drawLog(content, renderId, true).catch((err) => toast(errorMessage(err), 'error')); },
-  hide: (b) => reasonDialog({ title: 'Ocultar mensaje', subtitle: 'Dejará de verse en el foro (los admins lo seguirán viendo). Se resolverán sus denuncias.', confirm: 'Ocultar', danger: true,
+  hide: (b) => reasonDialog({ title: 'Ocultar mensaje', subtitle: 'Dejará de verse en el foro (los admins lo seguirán viendo) y se resolverán sus denuncias. Oculta también lo que promocione servicios de pago, señales, afiliados o enlaces comerciales (normas de la comunidad).', confirm: 'Ocultar', danger: true,
     onSubmit: async (reason) => { await post(b.dataset.post, 'hide', { reason }); toast('Mensaje oculto.', 'success'); } }),
   restore: (b) => reasonDialog({ title: 'Restaurar mensaje', subtitle: 'Volverá a verse en el foro.', confirm: 'Restaurar',
     onSubmit: async (reason) => { await post(b.dataset.post, 'restore', { reason }); toast('Mensaje restaurado.', 'success'); } }),

@@ -21,11 +21,13 @@ import * as account from './lib/account.js';
 import * as notifs from './lib/notifications.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.js';
 import * as learn from './views/learn.js';
+import * as legal from './views/legal.js';
+import { maybeAskTerms } from './ui/terms.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, admin };
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, legal, admin };
 const mounted = new Set();
 let active = null;
 
@@ -97,6 +99,7 @@ function renderAccountChip() {
 function renderAuth(user) {
   render($('#user-auth'), user
     ? html`<div class="menu-head"><strong>${user.name}</strong><small>${user.email}${auth.lastSyncAt() ? ` · guardado ${timeAgo(auth.lastSyncAt())}` : ''}</small></div>
+      <button type="button" data-action="export-data">${icon('download')}Descargar mis datos</button>
       <button type="button" data-action="logout">${icon('log-out')}Cerrar sesión</button><hr>`
     : html`<button type="button" data-action="login">${icon('log-in')}Iniciar sesión</button>
       <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
@@ -120,7 +123,7 @@ auth.onAuth((user) => {
   if ((user?.id ?? null) === accountUserId) return;
   accountUserId = user?.id ?? null;
   account.setUser(user);
-  if (user) notifs.refresh().catch(() => {}); else notifs.reset();
+  if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else notifs.reset();
 });
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 
@@ -183,7 +186,8 @@ const ACTIONS = {
   settings: () => dialogs.settingsDialog(),
   alerts: () => dialogs.alertsDialog(trade.currentAsset()),
   guide: () => dialogs.guideDialog(),
-  legal: () => dialogs.legalDialog(),
+  legal: () => go('/legal'),
+  'export-data': () => auth.downloadMyData().then(() => toast('Datos descargados.', 'success', 2500)).catch((e) => toast(e.message, 'error')),
   shortcuts: () => dialogs.shortcutsDialog(),
   tour: () => startTour(),
   chat: () => toggleChat(),

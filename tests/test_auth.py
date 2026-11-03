@@ -44,8 +44,9 @@ class Base(unittest.TestCase):
         self.client.close()
         self.tmp.cleanup()
 
-    def register(self, email="ana@example.com", password="secreto123", client=None):
-        return (client or self.client).post("/api/auth/register", json={"email": email, "password": password, "name": "Ana"})
+    def register(self, email="ana@example.com", password="secreto123", client=None, terms=True):
+        return (client or self.client).post("/api/auth/register", json={
+            "email": email, "password": password, "name": "Ana", "acceptTerms": terms, "ageConfirmed": terms})
 
     def make_admin(self, email="ana@example.com"):
         with closing(db.connect()) as conn:

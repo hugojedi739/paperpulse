@@ -13,20 +13,11 @@ import { on, toast, confirmDialog, openDialog, $ } from '../lib/dom.js';
 import { pct, price, num, timeAgo, money } from '../lib/format.js';
 import { go } from '../lib/router.js';
 import { viewChallenge } from './challenge.js';
+import { RULES, DISCLAIMER } from '../lib/legal-content.js';
 
 export const title = 'Comunidad';
 
 const TABS = [['ranking', 'Clasificación', 'trophy'], ['challenge', 'Reto del mes', 'flame'], ['forum', 'Foro', 'message-square'], ['feed', 'Siguiendo', 'rss'], ['me', 'Mi perfil', 'user']];
-const DISCLAIMER = 'PaperPulse es un simulador educativo. Nada de lo publicado es asesoramiento financiero.';
-const RULES = [
-  ['Respeto', 'Critica ideas, no a personas. Nada de insultos, acoso ni discriminación.'],
-  ['Sin spam', 'No repitas mensajes ni inundes hilos. Publica en la categoría adecuada.'],
-  ['Sin promoción', 'Prohibido anunciar señales de pago, cursos, grupos privados, brókeres o cualquier servicio de pago. Los enlaces se muestran como texto y no se pueden pulsar.'],
-  ['Sin promesas', 'Nadie puede prometer beneficios. Quien lo haga será denunciado y retirado.'],
-  ['Es una simulación', 'Las operaciones son de práctica con saldo virtual. Nada de lo publicado es asesoramiento financiero.'],
-  ['Datos personales', 'No compartas datos tuyos ni de otras personas (teléfonos, emails, cuentas).'],
-];
-
 let root, body, tabsBox, noticeBox;
 let state = { tab: 'ranking', param: '' };
 let period = 'total', rankPage = 1;
@@ -411,7 +402,7 @@ function dialog(titleText, subtitle, content, size = 'dlg-sm') {
 function rulesDialog() {
   dialog('Normas de la comunidad', DISCLAIMER, h('div', { class: 'dlg-body' },
     h('ol', { class: 'cm-rules' }, RULES.map(([t, d]) => h('li', {}, h('strong', {}, t), h('span', {}, d)))),
-    h('p', { class: 'hint' }, 'Si ves algo que las incumple, usa «Denunciar». Los moderadores pueden ocultar mensajes y suspender cuentas. Los textos legales completos llegarán más adelante.')),
+    h('p', { class: 'hint' }, 'Si ves algo que las incumple, usa «Denunciar». Los moderadores pueden ocultar mensajes y suspender cuentas. ', h('a', { href: '#/legal/normas' }, 'Ver las normas completas'), '.')),
   );
 }
 

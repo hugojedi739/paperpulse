@@ -283,12 +283,16 @@ export async function authDialog(mode = 'login') {
       <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="username" required maxlength="254"></div>
       <div class="field"><label for="a-pass">Contraseña</label><input id="a-pass" name="password" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" required minlength="${reg ? 8 : 1}" maxlength="128">
         ${reg ? html`<small class="hint">Mínimo 8 caracteres.</small>` : ''}</div>
+      ${reg ? html`<label class="cm-radio"><input type="checkbox" name="acceptTerms" required> <span>He leído y acepto los <a href="#/legal/terminos" target="_blank" rel="noopener">Términos de uso</a> y la <a href="#/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.</span></label>
+        <label class="cm-radio"><input type="checkbox" name="ageConfirmed" required> <span>Declaro tener al menos 14 años.</span></label>` : ''}
       <p class="hint down" id="a-error" role="alert" hidden></p>
       <button class="btn btn-primary" type="submit">${icon(reg ? 'user' : 'log-in', 'sm')} ${reg ? 'Crear cuenta' : 'Entrar'}</button>
       ${opts.registration ? html`<p class="hint">${reg ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'} <button type="button" class="link" data-act="switch">${reg ? 'Inicia sesión' : 'Crea una gratis'}</button></p>` : ''}`
     : opts.providers.length ? '' : html`<p class="hint">El inicio de sesión no está disponible ahora mismo.</p>`;
   const d = show(html`${head(reg ? 'Crear cuenta' : 'Iniciar sesión', 'Guarda tu cuenta de práctica y tu diario en el servidor y recupéralos en cualquier dispositivo.')}
-    <form class="dlg-body" id="auth-form" novalidate>${sso}${form}</form>`, 'dlg-sm');
+    <form class="dlg-body" id="auth-form" novalidate>${sso}${form}
+      <p class="hint">PaperPulse es un simulador educativo con dinero virtual. ${reg ? 'Si entras con Google, te pediremos aceptar los términos al terminar.' : ''}
+        <a href="#/legal/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="#/legal/terminos" target="_blank" rel="noopener">Términos</a></p></form>`, 'dlg-sm');
   d.querySelectorAll('[data-provider]').forEach((b) => { b.onclick = () => auth.loginWith(b.dataset.provider); });
   const sw = d.querySelector('[data-act="switch"]');
   if (sw) sw.onclick = () => authDialog(reg ? 'login' : 'register');
@@ -302,7 +306,8 @@ export async function authDialog(mode = 'login') {
     btn.disabled = true;
     err.hidden = true;
     try {
-      if (reg) await auth.register(f.name, f.email, f.password);
+      if (reg && (f.acceptTerms !== 'on' || f.ageConfirmed !== 'on')) throw new Error('Para crear la cuenta acepta los términos y la política de privacidad y confirma que tienes al menos 14 años.');
+      if (reg) await auth.register(f.name, f.email, f.password, { acceptTerms: true, ageConfirmed: true });
       else await auth.login(f.email, f.password, chooseCloudData);
       d.close();
       toast(reg ? 'Cuenta creada. Tus datos se guardan en el servidor.' : `Hola de nuevo, ${auth.currentUser().name}.`, 'success');
@@ -328,20 +333,22 @@ export function chooseCloudData(remote) {
 
 function deleteAccountDialog() {
   const withPassword = auth.currentUser()?.hasPassword;
-  const d = show(html`${head('Eliminar cuenta', 'Se borrarán del servidor tu usuario y todos tus datos guardados. No se puede deshacer.')}
+  const d = show(html`${head('Eliminar cuenta', 'Se borrarán o anonimizarán tus datos personales, tu cuenta de práctica y tu perfil. Tus mensajes del foro se vacían. No se puede deshacer.')}
     <form class="dlg-body" id="del-form">
       ${withPassword
         ? html`<div class="field"><label for="del-pass">Confirma con tu contraseña</label><input id="del-pass" type="password" autocomplete="current-password" required maxlength="128"></div>`
         : html`<div class="field"><label for="del-pass">Escribe ELIMINAR para confirmar</label><input id="del-pass" autocomplete="off" required maxlength="20"></div>`}
       <p class="hint down" id="del-error" role="alert" hidden></p>
+      <p class="hint"><button type="button" class="link" data-act="export">Descargar mis datos (JSON)</button> antes de eliminar.</p>
     </form>
     <footer class="dlg-foot"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-danger" type="submit" form="del-form">Eliminar definitivamente</button></footer>`, 'dlg-sm');
+  d.querySelector('[data-act="export"]').onclick = () => auth.downloadMyData().then(() => toast('Datos descargados.', 'success', 2500)).catch((ex) => toast(ex.message, 'error'));
   d.querySelector('#del-form').onsubmit = async (e) => {
     e.preventDefault();
     try {
       await auth.deleteAccount(d.querySelector('#del-pass').value);
       d.close();
-      toast('Cuenta eliminada. Tus datos siguen en este navegador.', 'info');
+      toast('Cuenta eliminada. Tus datos personales se han borrado del servidor; los de este navegador siguen aquí.', 'info');
     } catch (ex) {
       const el = d.querySelector('#del-error');
       el.textContent = ex.message;

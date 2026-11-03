@@ -122,7 +122,7 @@ export async function follow(alias, on) {
 
 /* ---------- Utilidades de presentación ---------- */
 export const ALIAS_RE = /^[A-Za-z0-9_]{3,20}$/;
-export const REPORT_REASONS = [['spam', 'Spam o publicidad'], ['abuso', 'Insultos o acoso'], ['estafa', 'Estafa o promesas de beneficios'], ['otro', 'Otro motivo']];
+export const REPORT_REASONS = [['spam', 'Spam o promoción de servicios de pago, señales o afiliados'], ['abuso', 'Insultos o acoso'], ['estafa', 'Estafa o promesas de beneficios'], ['otro', 'Otro motivo']];
 export const PERIODS = [['7d', '7 días'], ['30d', '30 días'], ['total', 'Total']];
 export const SORTS = [['top', 'Más votados'], ['recent', 'Recientes']];
 

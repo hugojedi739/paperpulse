@@ -127,7 +127,9 @@ def build_routes(client_ip: Callable) -> List[Route]:
             return error("Introduce un email válido.", 400)
         if not 8 <= len(password) <= 128:
             return error("La contraseña debe tener entre 8 y 128 caracteres.", 400)
-        user = await run_in_threadpool(db.create_user, email, password, name)
+        if body.get("acceptTerms") is not True or body.get("ageConfirmed") is not True:
+            return error("Debes aceptar los términos y la política de privacidad y confirmar que tienes al menos 14 años.", 400)
+        user = await run_in_threadpool(db.create_user, email, password, name, True)
         if not user:
             return error("Ya existe una cuenta con ese email.", 409)
         token = await run_in_threadpool(db.create_session, user["id"])

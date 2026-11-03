@@ -276,6 +276,7 @@ def public_user(row) -> Dict:
     return {
         "id": row["id"], "email": row["email"], "name": row["name"], "createdAt": row["created_at"],
         "role": row["role"], "hasPassword": bool(row["password_hash"]), "emailVerified": bool(row["email_verified"]),
+        "termsVersion": row["terms_version"],
     }
 
 
@@ -285,19 +286,29 @@ def _initial_role(email: str, verified: bool) -> str:
     return "admin" if verified and email.lower() in ADMIN_EMAILS else "user"
 
 
-def create_user(email: str, password: Optional[str], name: str) -> Optional[Dict]:
-    """Crea un usuario. Sin contraseña (cuentas de Google/Okta) el hash queda vacío y no se puede entrar con email."""
+def create_user(email: str, password: Optional[str], name: str, accepted: bool = True) -> Optional[Dict]:
+    """Crea un usuario. Sin contraseña (cuentas de Google/Okta) el hash queda vacío y no se puede entrar con email.
+
+    `accepted`: ya aceptó términos y privacidad y confirmó la edad mínima. El registro HTTP exige las casillas y pasa True;
+    por defecto True para los usos internos (pruebas, `demo`)."""
     with closing(connect()) as conn:
         try:
             cur = conn.execute(
-                "INSERT INTO users (email, name, password_hash, created_at, role, email_verified) VALUES (?, ?, ?, ?, 'user', 0)",
-                (email, name, hash_password(password) if password else "", int(time.time())),
+                "INSERT INTO users (email, name, password_hash, created_at, role, email_verified, terms_version, terms_accepted_at, age_confirmed_at) "
+                "VALUES (?, ?, ?, ?, 'user', 0, ?, ?, ?)",
+                (email, name, hash_password(password) if password else "", int(time.time()), *(_legal_stamp() if accepted else (None, None, None))),
             )
         except (ValueError, libsql.Error) as exc:
             if not is_integrity_error(exc):
                 raise
             return None
         return public_user(conn.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def _legal_stamp():
+    from backend.account import LEGAL_VERSION  # importación tardía: account depende de db
+    now = int(time.time())
+    return LEGAL_VERSION, now, now
 
 
 def _touch_login(conn, row) -> Row:
@@ -364,8 +375,9 @@ def oauth_user(provider: str, subject: str, email: str, name: str, allow_create:
 
 
 def delete_user(user_id: int) -> None:
-    with closing(connect()) as conn:
-        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))  # sesiones, identidades y datos caen en cascada
+    """Borra la cuenta anonimizándola (conserva la integridad del foro). Ver backend/account.py."""
+    from backend.account import delete_account
+    delete_account(user_id)
 
 
 # ---------------------------------------------------------------- sesiones
@@ -457,7 +469,7 @@ def put_settings(values: Dict[str, Optional[str]], by: Optional[int]) -> None:
 def list_users(query: str = "", limit: int = 50, offset: int = 0) -> Dict:
     like = f"%{query.strip()}%"
     with closing(connect()) as conn:
-        where = "WHERE u.owner_id IS NULL AND (u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?)"
+        where = "WHERE u.owner_id IS NULL AND u.deleted_at IS NULL AND (u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?)"
         total = conn.execute(f"SELECT COUNT(*) FROM users u LEFT JOIN profiles pr ON pr.user_id = u.id {where}", (like, like, like)).fetchone()[0]
         rows = conn.execute(
             f"""SELECT u.*, GROUP_CONCAT(DISTINCT i.provider) AS providers,
@@ -499,16 +511,16 @@ def stats() -> Dict:
     with closing(connect()) as conn:
         one = lambda sql, *a: conn.execute(sql, a).fetchone()[0]
         signups = conn.execute(
-            "SELECT date(created_at, 'unixepoch') AS d, COUNT(*) AS n FROM users WHERE owner_id IS NULL AND created_at > ? GROUP BY d ORDER BY d",
+            "SELECT date(created_at, 'unixepoch') AS d, COUNT(*) AS n FROM users WHERE owner_id IS NULL AND deleted_at IS NULL AND created_at > ? GROUP BY d ORDER BY d",
             (now - 30 * 86400,),
         ).fetchall()
         return {
-            "users": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL"),
-            "admins": one("SELECT COUNT(*) FROM users WHERE role = 'admin' AND owner_id IS NULL"),
-            "disabled": one("SELECT COUNT(*) FROM users WHERE disabled = 1 AND owner_id IS NULL"),
+            "users": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND deleted_at IS NULL"),
+            "admins": one("SELECT COUNT(*) FROM users WHERE role = 'admin' AND owner_id IS NULL AND deleted_at IS NULL"),
+            "disabled": one("SELECT COUNT(*) FROM users WHERE disabled = 1 AND owner_id IS NULL AND deleted_at IS NULL"),
             "activeSessions": one("SELECT COUNT(*) FROM sessions WHERE expires_at > ?", now),
-            "activeUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND last_login_at > ?", now - 7 * 86400),
-            "newUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND created_at > ?", now - 7 * 86400),
+            "activeUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND deleted_at IS NULL AND last_login_at > ?", now - 7 * 86400),
+            "newUsers7d": one("SELECT COUNT(*) FROM users WHERE owner_id IS NULL AND deleted_at IS NULL AND created_at > ?", now - 7 * 86400),
             "withData": one("SELECT COUNT(*) FROM practice_data"),
             "byProvider": {r[0]: r[1] for r in conn.execute("SELECT provider, COUNT(*) FROM identities GROUP BY provider")},
             "signups30d": [{"date": r["d"], "count": r["n"]} for r in signups],

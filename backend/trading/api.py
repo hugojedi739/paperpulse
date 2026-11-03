@@ -32,6 +32,8 @@ async def _guard(request, kind: str):
     # Clave distinta para lecturas y escrituras: consultar la cartera no agota el cupo de órdenes
     if not check_ip_rate_limit(f"u{user['id']}:{kind}", USER_TRADING_CALLS, LIMITS[kind]["user"]):
         return None, error("Demasiadas peticiones. Espera un minuto.", 429)
+    if kind == "write" and user.get("termsVersion") is None:
+        return None, error("Acepta los términos y la política de privacidad para operar.", 403)
     return user, None
 
 

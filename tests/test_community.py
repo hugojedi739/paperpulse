@@ -450,9 +450,13 @@ class ModerationTest(Base):
         forum.vote(self.otro, self.pid, 1)
         profiles.follow(self.otro, "Autor", True)
         db.delete_user(self.autor)
-        for table, col in (("profiles", "user_id"), ("threads", "author_id"), ("posts", "author_id"), ("follows", "followee_id")):
+        # Se anonimiza (no se borra en cascada): perfil, seguidores y votos fuera; mensajes vaciados; hilos «eliminados»
+        for table, col in (("profiles", "user_id"), ("follows", "followee_id")):
             self.assertEqual(self.scalar(f"SELECT COUNT(*) FROM {table} WHERE {col} = ?", self.autor), 0, table)
-        self.assertEqual(self.scalar("SELECT COUNT(*) FROM votes"), 0)
+        self.assertEqual(self.scalar("SELECT COUNT(*) FROM posts WHERE author_id = ? AND (status <> 'deleted' OR body <> '')", self.autor), 0)
+        self.assertEqual(self.scalar("SELECT COUNT(*) FROM threads WHERE author_id = ? AND status <> 'deleted'", self.autor), 0)
+        self.assertEqual(self.scalar("SELECT COUNT(*) FROM votes WHERE user_id = ?", self.otro), 1)  # el voto de Otro a su mensaje no se toca...
+        self.assertEqual(self.scalar("SELECT score FROM posts WHERE id = ?", self.pid), 1)
 
 
 class LimitsTest(Base):
