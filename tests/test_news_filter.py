@@ -13,7 +13,9 @@ Verifica:
 """
 
 import unittest
-from server import is_financial_headline
+
+import _local_db  # noqa: F401  (antes que backend)
+from backend.news import is_financial_headline
 
 class TestNewsFilter(unittest.TestCase):
 

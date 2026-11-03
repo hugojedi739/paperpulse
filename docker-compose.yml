@@ -1,0 +1,13 @@
+services:
+  paperpulse:
+    build: .
+    image: paperpulse:latest
+    env_file: .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - paperpulse-data:/app/data   # base de datos SQLite persistente
+
+volumes:
+  paperpulse-data:

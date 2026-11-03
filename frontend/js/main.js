@@ -1,0 +1,249 @@
+// Arranque de PaperPulse: estado, datos en vivo, enrutado, cabecera y atajos globales.
+import * as store from './lib/store.js';
+import * as feed from './lib/feed.js';
+import { ASSETS, findAsset, toAsset, register } from './lib/catalog.js';
+import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.js';
+import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.js';
+import { portfolio, checkTriggers } from './lib/trading.js';
+import { marketsStatus, fxRates } from './lib/marketdata.js';
+import { updateLive, assetIcon } from './lib/ui.js';
+import { current, go } from './lib/router.js';
+import * as dashboard from './views/dashboard.js';
+import * as trade from './views/trade.js';
+import * as markets from './views/markets.js';
+import * as newsView from './views/news.js';
+import * as journal from './views/journal.js';
+import * as admin from './views/admin.js';
+import * as dialogs from './ui/dialogs.js';
+import * as auth from './lib/auth.js';
+import { initPalette, openPalette } from './ui/palette.js';
+import { initChat, toggleChat } from './ui/chat.js';
+import { startTour } from './ui/tour.js';
+
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, admin };
+const mounted = new Set();
+let active = null;
+
+/* ---------- Estado inicial ---------- */
+store.load();
+setCurrencyPreference(store.settings().currency);
+store.positions().forEach((p) => register({ id: p.assetId, symbol: p.symbol, name: p.name, type: p.type, ticker: p.ticker, quote: p.quote, market: p.quote === 'EUR' ? 'es' : 'us', ...(p.type === 'crypto' && { pair: `${p.symbol}USDT` }) }));
+store.recentSearches().forEach((r) => { const a = toAsset(r); if (a) register(a); });
+applyTheme(document.documentElement.dataset.theme);
+applyPrivacy();
+
+/* ---------- Enrutado ---------- */
+function route() {
+  const { route: name, param } = current();
+  const view = VIEWS[name] ? name : 'dashboard';
+  const swap = () => {
+    if (active && active !== view) VIEWS[active].hide?.();
+    for (const section of $$('.view')) section.hidden = section.dataset.view !== view;
+    const section = $(`.view[data-view="${view}"]`);
+    if (!mounted.has(view)) { VIEWS[view].mount(section); mounted.add(view); }
+    VIEWS[view].show(param);
+    active = view;
+    $$('[data-route]').forEach((a) => (a.dataset.route === view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+    $('#page-title').textContent = VIEWS[view].title;
+    document.title = `${view === 'trade' && trade.currentAsset() ? `${trade.currentAsset().symbol} · ` : ''}${VIEWS[view].title} — PaperPulse`;
+    announce(`${VIEWS[view].title}`);
+  };
+  const changing = active !== view;
+  if (changing && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(swap);
+  else swap();
+  if (changing) scrollTo({ top: 0 });
+}
+addEventListener('hashchange', route);
+
+/* ---------- Tema y privacidad ---------- */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $('[data-action="theme"] use')?.setAttribute('href', `/img/icons.svg#${theme === 'dark' ? 'sun' : 'moon'}`);
+  for (const v of mounted) VIEWS[v].theme?.();
+}
+function applyPrivacy() {
+  document.body.classList.toggle('privacy', store.settings().privacyMode);
+}
+store.on('settings', (detail) => {
+  // Sin detalle = importación o borrado: se reaplican todos los ajustes
+  const { key, value } = detail ?? {};
+  const s = store.settings();
+  if (!key || key === 'theme') applyTheme(value ?? s.theme ?? document.documentElement.dataset.theme);
+  if (!key || key === 'privacyMode') applyPrivacy();
+  if (!key) setCurrencyPreference(s.currency);
+  if (!key || key === 'currency') { renderAccountChip(); if (active) VIEWS[active].show(current().param); }
+});
+
+/* ---------- Cabecera: cuenta, estado del feed, notificaciones, cinta ---------- */
+function renderAccountChip() {
+  const chip = $('#account-chip');
+  if (!store.hasPractice()) {
+    chip.classList.add('is-cta');
+    return render(chip, html`${icon('play', 'sm')}<span>Practicar</span>`);
+  }
+  const p = portfolio();
+  chip.classList.remove('is-cta');
+  render(chip, html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
+  render($('#user-pop-head'), html`<strong>Cuenta de práctica</strong><small>Efectivo: <span class="money">${money(p.cashUsd)}</span></small>`);
+}
+
+function renderAuth(user) {
+  render($('#user-auth'), user
+    ? html`<div class="menu-head"><strong>${user.name}</strong><small>${user.email}${auth.lastSyncAt() ? ` · guardado ${timeAgo(auth.lastSyncAt())}` : ''}</small></div>
+      <button type="button" data-action="logout">${icon('log-out')}Cerrar sesión</button><hr>`
+    : html`<button type="button" data-action="login">${icon('log-in')}Iniciar sesión</button>
+      <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
+}
+auth.onAuth(renderAuth);
+auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
+
+function renderFeedStatus(state) {
+  const el = $('#feed-status');
+  el.dataset.state = state;
+  el.querySelector('span').textContent = { live: 'En vivo', polling: 'Actualizando', connecting: 'Conectando', offline: 'Sin conexión' }[state];
+  $('#offline-banner').hidden = state !== 'offline';
+}
+
+const NOTIF_ICON = { alert: 'bell-ring', order: 'circle-check', error: 'triangle-alert', info: 'info' };
+function renderNotifications() {
+  const list = store.notifications();
+  $('#notif-badge').hidden = !list.some((n) => !n.read);
+  render($('#notif-list'), list.length ? list.map((n) => html`<div class="notif ${n.read ? '' : 'unread'}">${icon(NOTIF_ICON[n.type] ?? 'info')}
+    <div><strong>${n.title}</strong><small>${n.body}</small><small>${timeAgo(n.time)}</small></div></div>`)
+    : html`<p class="hint menu-head">Sin notificaciones. Crea alertas de precio para que te avisemos.</p>`);
+}
+
+const TAPE = ['BTC', 'ETH', 'SOL', 'IBEX', 'SAN', 'NVDA', 'AAPL', 'BBVA', 'BNB', 'TSLA', 'XRP', 'MSFT'].map(findAsset);
+function renderTape() {
+  const items = TAPE.map((a) => {
+    const t = feed.tick(a.symbol);
+    return html`<a class="tape-item" href="#/trade/${a.symbol}">${assetIcon(a, 'sm')}<strong>${a.symbol}</strong>
+      <span class="num" data-px="${a.symbol}" data-q="${a.quote}">${price(t?.price, a.quote)}</span>
+      <span class="num ${trendClass(t?.change24h)}" data-chg="${a.symbol}">${pct(t?.change24h)}</span></a>`;
+  });
+  render($('#ticker-track'), html`${items}<span aria-hidden="true" class="gap-8">${items}</span>`);
+}
+
+/* ---------- Acciones globales ---------- */
+const ACTIONS = {
+  palette: () => openPalette(),
+  theme: () => store.setSetting('theme', document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
+  account: () => dialogs.accountDialog(),
+  login: () => dialogs.authDialog('login'),
+  register: () => dialogs.authDialog('register'),
+  logout: async () => {
+    if (!(await confirmDialog({ title: '¿Cerrar sesión?', body: 'Tus datos ya están guardados en tu cuenta. Se borrarán de este navegador y podrás recuperarlos al volver a entrar.', confirm: 'Cerrar sesión' }))) return;
+    await auth.logout();
+    toast('Sesión cerrada.', 'info');
+  },
+  settings: () => dialogs.settingsDialog(),
+  alerts: () => dialogs.alertsDialog(trade.currentAsset()),
+  guide: () => dialogs.guideDialog(),
+  legal: () => dialogs.legalDialog(),
+  shortcuts: () => dialogs.shortcutsDialog(),
+  tour: () => startTour(),
+  chat: () => toggleChat(),
+  privacy: () => store.setSetting('privacyMode', !store.settings().privacyMode),
+  'read-all': () => store.markNotificationsRead(),
+  'collapse-nav': () => {
+    const collapsed = document.documentElement.classList.toggle('nav-collapsed');
+    store.setSetting('sidebarCollapsed', collapsed);
+  },
+};
+on(document, 'click', '[data-action]', (e, el) => {
+  const fn = ACTIONS[el.dataset.action];
+  if (!fn) return;
+  e.preventDefault();
+  el.closest('[popover]')?.hidePopover();
+  fn();
+});
+
+initPalette([
+  { label: 'Ir a Resumen', icon: 'layout-dashboard', keywords: 'inicio dashboard', run: () => go('/dashboard') },
+  { label: 'Ir a Operar', icon: 'chart-candlestick', keywords: 'trading grafico', run: () => go('/trade') },
+  { label: 'Ir a Mercados', icon: 'coins', keywords: 'tabla', run: () => go('/markets') },
+  { label: 'Ir a Noticias', icon: 'newspaper', run: () => go('/news') },
+  { label: 'Ir al Diario', icon: 'book-open', keywords: 'journal historial', run: () => go('/journal') },
+  { label: 'Cuenta de práctica', icon: 'wallet', keywords: 'saldo capital reiniciar', run: ACTIONS.account },
+  { label: 'Alertas de precio', icon: 'bell-ring', run: ACTIONS.alerts },
+  { label: 'Cambiar tema claro/oscuro', icon: 'sun', keywords: 'theme modo', run: ACTIONS.theme },
+  { label: 'Ajustes y copia de seguridad', icon: 'settings', keywords: 'exportar importar divisa', run: ACTIONS.settings },
+  { label: 'Panel de administración', icon: 'shield-check', keywords: 'admin usuarios google okta claves', run: () => go('/admin') },
+  { label: 'Abrir asistente', icon: 'sparkles', keywords: 'chat ia ayuda', run: () => toggleChat(true) },
+  { label: 'Manual de operativa', icon: 'graduation-cap', keywords: 'guia ayuda', run: ACTIONS.guide },
+]);
+initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
+
+/* ---------- Atajos de teclado ---------- */
+addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
+  if (e.key === 'Escape' && !$('#chat').hidden) { toggleChat(false); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable], dialog')) return;
+  const key = e.key.toLowerCase();
+  const routes = { 1: '/dashboard', 2: '/trade', 3: '/markets', 4: '/news', 5: '/journal' };
+  if (routes[key]) go(routes[key]);
+  else if (key === '/') { e.preventDefault(); openPalette(); }
+  else if (key === '?') dialogs.shortcutsDialog();
+  else if (key === 't') ACTIONS.theme();
+  else if (key === 'b' || key === 's') {
+    go(`/trade/${trade.currentAsset()?.symbol ?? 'BTC'}`);
+    setTimeout(() => $(`#t-ticket [data-side="${key === 'b' ? 'buy' : 'sell'}"]`)?.click(), 50);
+  }
+});
+
+/* ---------- Datos en vivo ---------- */
+let chipTimer = null;
+store.on('prices', (symbols) => {
+  updateLive(symbols);
+  checkTriggers(symbols, (type, message) => {
+    const title = { alert: 'Alerta de precio', order: 'Orden ejecutada', error: 'Orden no ejecutada' }[type];
+    store.notify(title, message, type);
+    toast(message, type === 'error' ? 'error' : type === 'alert' ? 'warning' : 'success', 6000);
+  });
+  chipTimer ??= setTimeout(() => { chipTimer = null; renderAccountChip(); }, 1000);
+});
+store.on('account', renderAccountChip);
+store.on('notifications', renderNotifications);
+store.on('feed', renderFeedStatus);
+
+async function refreshMarkets() {
+  try { store.setMarkets(await marketsStatus()); } catch { /* sin servidor: el estado de bolsa queda desconocido */ }
+}
+async function refreshRates() {
+  try { setRates(await fxRates()); renderAccountChip(); } catch { /* se usan tipos por defecto */ }
+}
+
+// Curva de patrimonio: un punto por minuto mientras la app está abierta
+setInterval(() => {
+  if (!store.hasPractice()) return;
+  const p = portfolio();
+  if (p.rows.every((r) => r.live)) store.snapshotEquity(p.equityUsd);
+}, 60_000);
+
+renderAccountChip();
+renderNotifications();
+renderTape();
+renderAuth(null);
+auth.init(dialogs.chooseCloudData).then(({ user, fromOAuth }) => {
+  if (fromOAuth && user) toast(`Hola, ${user.name}.`, 'success');
+});
+// Errores al volver de Google/Okta: ?auth_error=código
+{
+  const code = new URLSearchParams(location.search).get('auth_error');
+  if (code) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    setTimeout(() => toast(auth.OAUTH_ERRORS[code] ?? 'No se pudo iniciar sesión.', 'error', 8000), 300);
+  }
+}
+renderFeedStatus(feed.getStatus());
+feed.start();
+refreshMarkets();
+refreshRates();
+setInterval(refreshMarkets, 60_000);
+setInterval(refreshRates, 3_600_000);
+route();
+
+if (ASSETS.length && !store.settings().tourDone && !store.hasPractice() && !store.trades().length) {
+  const hint = matchMedia('(pointer: coarse)').matches ? 'Toca la lupa para buscar' : 'Pulsa Ctrl + K para buscar';
+  setTimeout(() => toast(`Bienvenido. ${hint} cualquier activo, o abre la visita guiada desde tu menú.`, 'info', 7000), 1500);
+}

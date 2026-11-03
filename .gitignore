@@ -1,36 +1,72 @@
-# Secrets & Environment variables
-.env
-.env.local
-.env.*.local
+# ==============================================================================
+# PaperPulse — ficheros que NUNCA deben subirse al repositorio
+# ==============================================================================
 
-# Python
+# --- Secretos y variables de entorno -------------------------------------------
+# Cualquier .env (.env, .env.local, .env.production, .env.development.local...)
+.env
+.env.*
+*.env
+# ...salvo la plantilla sin valores, que sí se versiona
+!.env.example
+
+# Claves, certificados y tokens sueltos
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.token
+*secret*.json
+*credentials*.json
+service-account*.json
+.turso/
+.npmrc
+.pypirc
+
+# Vercel CLI (enlace del proyecto; `vercel env pull` escribe en .env.local)
+.vercel/
+
+# --- Bases de datos locales (pueden contener usuarios y ajustes con secretos) ---
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# --- Python --------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 venv/
+.venv/
+env/
 ENV/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Logs
+# --- Node ----------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+
+# --- Generados -----------------------------------------------------------------
+# Capturas de npm run screenshots
+screenshots/
 *.log
 
-# OS generated
+# --- Sistema operativo / editores ----------------------------------------------
 .DS_Store
 Thumbs.db
+*.swp
+.idea/

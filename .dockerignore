@@ -1,0 +1,16 @@
+.git
+.devcontainer
+.vscode
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+venv/
+env/
+screenshots/
+tests/
+*.log
+*.zip
+*.json
+!frontend/manifest.json

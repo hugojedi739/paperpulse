@@ -1,0 +1,52 @@
+{
+  // Pulsa F5 y elige una configuración. "App completa" arranca el servidor y abre Chrome con depuración del frontend.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "App completa (servidor + Chrome)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "env": { "DEBUG": "True" },
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "serverReadyAction": {
+        "pattern": "Application startup complete",
+        "uriFormat": "http://localhost:8000",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/frontend",
+        "killOnServerStop": true
+      }
+    },
+    {
+      "name": "Solo frontend (Chrome, servidor ya en marcha)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8000",
+      "webRoot": "${workspaceFolder}/frontend",
+      "pathMapping": { "/": "${workspaceFolder}/frontend/" },
+      "skipFiles": ["**/vendor/**"]
+    },
+    {
+      "name": "Tests frontend (node --test)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--test", "tests/frontend.test.js"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Tests servidor (unittest)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "unittest",
+      "args": ["discover", "-s", "tests", "-p", "test_*.py", "-v"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
