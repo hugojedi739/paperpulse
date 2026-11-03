@@ -1,11 +1,11 @@
 // Textos legales base de PaperPulse (España / UE). BORRADOR pendiente de revisión por un profesional del Derecho.
-// Los datos que faltan están marcados como [PENDIENTE: …] y deben completarse antes de publicar.
+// Si falta algún dato, se marca como [PENDIENTE: …] y debe completarse antes de publicar (ahora no queda ninguno).
 // No contiene ninguna dirección de correo: la vía de contacto es el formulario de la aplicación (#/contact).
 // Cada párrafo es texto plano (se pinta con textContent). {list: [...]} = lista con viñetas; {link: [texto, '#/ruta']} = enlace interno.
 
 /** Versión de los textos. Debe coincidir con LEGAL_VERSION de backend/account.py (lo comprueba un test). */
 export const LEGAL_VERSION = '2026-11-borrador-1';
-export const DRAFT_NOTICE = 'Borrador pendiente de revisión legal. Los campos [PENDIENTE: …] deben completarse antes de publicar la aplicación.';
+export const DRAFT_NOTICE = 'Borrador pendiente de revisión legal.';
 export const DISCLAIMER = 'PaperPulse es un simulador educativo con dinero virtual. Nada de lo publicado es asesoramiento financiero.';
 
 export const RULES = [
@@ -32,7 +32,7 @@ const PENDING = {
   domain: 'https://paperpulse-delta.vercel.app',
   registry: 'No aplica (no es una sociedad)',
   dpo: 'No procede',
-  region: '[PENDIENTE: región de la base de datos Turso]',
+  region: 'Dublín (Irlanda), dentro de la UE/EEE',
 };
 
 export const PAGES = [
@@ -89,8 +89,8 @@ export const PAGES = [
       { h: '4. Destinatarios y encargados del tratamiento', p: [
         'No vendemos tus datos. Para prestar el servicio utilizamos estos proveedores, que actúan como encargados del tratamiento:',
         { list: [
-          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación.',
-          `Turso (ChiselStrike, Inc., EE. UU.): base de datos donde se guardan los datos de tu cuenta. Región elegida: ${PENDING.region}.`,
+          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan por defecto en la región de Washington D. C. (EE. UU.), de modo que los datos de cada petición (por ejemplo, tu sesión y lo que envías) se procesan allí de forma transitoria; lo que se guarda se almacena en Dublín.',
+          `Turso (ChiselStrike, Inc., EE. UU.): base de datos donde se guardan los datos de tu cuenta. Región: ${PENDING.region}.`,
           'Google LLC (EE. UU.): solo si eliges iniciar sesión con Google; recibe los datos propios de ese inicio de sesión.',
           'Anthropic PBC (EE. UU.): solo si usas el asistente con IA; recibe los mensajes que le envías.',
           'Proveedores de datos de mercado (Binance, CoinGecko, Yahoo Finance, Finnhub y Frankfurter/BCE): se consultan desde nuestro servidor; no reciben tus datos personales.',
@@ -98,7 +98,8 @@ export const PAGES = [
         ] },
       ] },
       { h: '5. Transferencias internacionales', p: [
-        'Algunos de estos proveedores están en Estados Unidos. Esas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. (cuando el proveedor está adherido) o en cláusulas contractuales tipo aprobadas por la Comisión Europea. [PENDIENTE: comprobar la adhesión de cada proveedor y archivar los acuerdos de encargo del tratamiento.]',
+        `Almacenamiento: tus datos se guardan en una base de datos de Turso alojada en ${PENDING.region}. El almacenamiento no supone una transferencia internacional de datos por parte de Turso.`,
+        'Tratamiento en Estados Unidos: Vercel (ejecución de la aplicación, por defecto en Washington D. C.), Google (solo si inicias sesión con Google) y Anthropic (solo si usas el asistente con IA) son proveedores estadounidenses. Esas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. (cuando el proveedor está adherido) o en cláusulas contractuales tipo aprobadas por la Comisión Europea.',
       ] },
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',

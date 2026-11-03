@@ -98,19 +98,21 @@ test('hay cinco páginas legales marcadas como borrador, con versión y sin HTML
 test('la política de privacidad nombra a Vercel y Turso, las transferencias y los derechos RGPD', () => {
   const t = flat(legal.pageById('privacidad'));
   for (const word of ['Vercel', 'Turso', 'Estados Unidos', 'cláusulas contractuales', 'Marco de Privacidad', 'AEPD', 'RGPD', 'LOPDGDD', 'portabilidad', '14 años', 'Anthropic', 'Google']) assert.ok(t.includes(word), word);
-  assert.match(t, /\[PENDIENTE:/); // la región de Turso sigue sin confirmar
+  assert.match(t, /Dublín \(Irlanda\), dentro de la UE\/EEE/); // región de Turso
+  assert.match(t, /no supone una transferencia internacional/);
+  assert.match(t, /Washington D\. C\./); // las funciones de Vercel usan la región por defecto
   assert.match(t, /formulario de contacto/);
 });
 
-test('los datos del titular están completos y solo quedan pendientes la región de Turso y las transferencias', () => {
+test('los datos del titular están completos y no queda ningún [PENDIENTE] en los textos', () => {
   const t = flat(legal.pageById('aviso-legal'));
   assert.match(t, /Titular: PaperPulse \(proyecto personal sin ánimo de lucro\)/);
   assert.match(t, /NIF\/CIF: No aplica/);
   assert.match(t, /Dominio: https:\/\/paperpulse-delta\.vercel\.app/);
-  assert.doesNotMatch(t, /\[PENDIENTE/);
-  const pending = legal.PAGES.flatMap((p) => flat(p).match(/\[PENDIENTE: [^\]]*\]/g) ?? []);
-  assert.equal(pending.length, 2, pending.join(' | '));
-  assert.ok(pending.every((x) => /región de la base de datos|transferencias|adhesión/i.test(x)), pending.join(' | '));
+  const pending = legal.PAGES.flatMap((p) => flat(p).match(/\[PENDIENTE[^\]]*\]/g) ?? []);
+  assert.deepEqual(pending, []);
+  assert.doesNotMatch(legal.DRAFT_NOTICE, /PENDIENTE/);
+  assert.match(legal.DRAFT_NOTICE, /revisión legal/);
 });
 
 test('el aviso legal, la privacidad y los términos enlazan al formulario de contacto y no publican ningún correo', () => {
