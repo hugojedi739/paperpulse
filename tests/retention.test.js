@@ -88,11 +88,27 @@ test('la CSP sigue sin scripts ni estilos inline y solo permite el worker propio
 const legal = await import('../frontend/js/lib/legal-content.js');
 const flat = (page) => page.sections.flatMap((s) => [s.h, ...s.p.flatMap((x) => (typeof x === 'string' ? [x] : x.link ? [x.link[0]] : x.list))]).join('\n');
 
-test('hay cinco páginas legales marcadas como borrador, con versión y sin HTML', () => {
+test('hay cinco páginas legales con versión, fecha de actualización, sin HTML y sin aviso de borrador visible', () => {
   assert.deepEqual(legal.PAGES.map((p) => p.id), ['aviso-legal', 'privacidad', 'terminos', 'cookies', 'normas']);
-  assert.match(legal.DRAFT_NOTICE, /Borrador pendiente de revisión legal/);
-  assert.match(legal.LEGAL_VERSION, /borrador/);
-  for (const p of legal.PAGES) assert.doesNotMatch(flat(p), /<[a-z/][^>]*>/i, p.id);
+  assert.ok(legal.LEGAL_VERSION);
+  assert.match(legal.LAST_UPDATED, /^[a-z]+ de \d{4}$/);
+  assert.equal(legal.DRAFT_NOTICE, undefined);
+  for (const p of legal.PAGES) {
+    assert.doesNotMatch(flat(p), /<[a-z/][^>]*>/i, p.id);
+    assert.doesNotMatch(flat(p), /borrador/i, p.id);
+  }
+});
+
+test('la privacidad explica la copia guardada con las denuncias y que Vercel no almacena los datos', () => {
+  const t = flat(legal.pageById('privacidad'));
+  assert.match(t, /copia del texto del mensaje y del alias de su autor/);
+  assert.match(t, /se conserva aunque el mensaje original se borre/);
+  assert.match(t, /se borra también la copia de su texto y de tu alias/); // coincide con account.delete (post_body = NULL)
+  assert.match(t, /Los datos de tu cuenta no se guardan en Vercel, sino en la base de datos de Turso/);
+});
+
+test('la política de cookies solo menciona Google como inicio de sesión externo', () => {
+  assert.doesNotMatch(flat(legal.pageById('cookies')), /Okta/);
 });
 
 test('la política de privacidad nombra a Vercel y Turso, las transferencias y los derechos RGPD', () => {
@@ -112,8 +128,6 @@ test('los datos del titular están completos y no queda ningún [PENDIENTE] en l
   assert.match(t, /Dominio: https:\/\/paperpulse-delta\.vercel\.app/);
   const pending = legal.PAGES.flatMap((p) => flat(p).match(/\[PENDIENTE[^\]]*\]/g) ?? []);
   assert.deepEqual(pending, []);
-  assert.doesNotMatch(legal.DRAFT_NOTICE, /PENDIENTE/);
-  assert.match(legal.DRAFT_NOTICE, /revisión legal/);
 });
 
 test('el aviso legal, la privacidad y los términos enlazan al formulario de contacto y no publican ningún correo', () => {

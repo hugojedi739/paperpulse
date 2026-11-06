@@ -1074,7 +1074,7 @@
   .legal-sec { margin-top: 18px; }
   .legal-sec h3 { font-size: var(--fs-lg); margin-bottom: 6px; }
   .legal-list { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.55; }
-  .cm-draft { background: var(--warn-fill); }
+  .legal-updated { margin-top: 24px; font-size: var(--fs-sm); color: var(--text-3); }
   .footer a { color: var(--accent-text); }
   .ch-form { margin-top: 12px; }
   .ch-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }

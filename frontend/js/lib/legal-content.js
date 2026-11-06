@@ -5,7 +5,8 @@
 
 /** Versión de los textos. Debe coincidir con LEGAL_VERSION de backend/account.py (lo comprueba un test). */
 export const LEGAL_VERSION = '2026-11-borrador-1';
-export const DRAFT_NOTICE = 'Borrador pendiente de revisión legal.';
+/** Fecha visible al pie de cada página legal. Actualízala al cambiar los textos. */
+export const LAST_UPDATED = 'noviembre de 2026';
 export const DISCLAIMER = 'PaperPulse es un simulador educativo con dinero virtual. Nada de lo publicado es asesoramiento financiero.';
 
 export const RULES = [
@@ -73,7 +74,7 @@ export const PAGES = [
         'Cuenta: email, nombre, contraseña (solo su huella cifrada con scrypt; nunca la contraseña), método de acceso (email o Google), fecha de alta, último acceso, versión y fecha de aceptación de los términos y confirmación de la edad mínima.',
         'Perfil público (solo si lo creas): alias, biografía y si tu perfil es privado. Tu email nunca se muestra a otras personas.',
         'Actividad de simulación: tu cuenta de práctica en el servidor (saldo virtual, órdenes, operaciones, posiciones), retos mensuales, logros, racha de días y notificaciones.',
-        'Comunidad: hilos, mensajes, votos, seguidos y seguidores, denuncias que hagas y acciones de moderación que te afecten.',
+        'Comunidad: hilos, mensajes, votos, seguidos y seguidores, denuncias que hagas, acciones de moderación que te afecten y, si alguien denuncia un mensaje tuyo, la copia de ese mensaje que se guarda con la denuncia (ver el apartado 6).',
         'Copia de tus datos locales (alertas, favoritos, ajustes) si inicias sesión.',
         'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
         'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
@@ -89,7 +90,7 @@ export const PAGES = [
       { h: '4. Destinatarios y encargados del tratamiento', p: [
         'No vendemos tus datos. Para prestar el servicio utilizamos estos proveedores, que actúan como encargados del tratamiento:',
         { list: [
-          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan en la región de París (Francia, UE), y lo que se guarda se almacena en Dublín (Irlanda, UE/EEE).',
+          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan en la región de París (Francia, UE). Los datos de tu cuenta no se guardan en Vercel, sino en la base de datos de Turso.',
           `Turso (ChiselStrike, Inc., EE. UU.): base de datos donde se guardan los datos de tu cuenta. Región: ${PENDING.region}.`,
           'Google LLC (EE. UU.): solo si eliges iniciar sesión con Google; recibe los datos propios de ese inicio de sesión.',
           'Anthropic PBC (EE. UU.): solo si usas el asistente con IA; recibe los mensajes que le envías.',
@@ -105,7 +106,8 @@ export const PAGES = [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',
         'Sesiones: 30 días. Notificaciones: 60 días. Estados de inicio de sesión: 10 minutos.',
         'Mensajes del formulario de contacto: hasta que la administración los borre. Si los enviaste con la sesión iniciada, se eliminan al borrar tu cuenta.',
-        'Registro de moderación: se conserva para poder justificar las decisiones y evitar abusos; no contiene el texto de tus mensajes.',
+        'Denuncias: cuando alguien denuncia un mensaje, junto a la denuncia se guarda una copia del texto del mensaje y del alias de su autor en ese momento, para que la moderación pueda revisar exactamente lo denunciado. Solo la ven los administradores. Esa copia se conserva aunque el mensaje original se borre después, y se elimina si la persona autora borra su cuenta (ver el apartado 8).',
+        'Registro de moderación: se conserva para poder justificar las decisiones y evitar abusos; no contiene el texto de tus mensajes (la copia de un mensaje denunciado se guarda con la denuncia, como se explica en el punto anterior).',
         'Datos que debamos conservar por obligación legal: durante los plazos que establezca la ley.',
       ] }] },
       { h: '7. Tus derechos', p: [
@@ -115,11 +117,11 @@ export const PAGES = [
         'Si consideras que no tratamos tus datos conforme a la normativa, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD, www.aepd.es).',
       ] },
       { h: '8. Qué ocurre cuando eliminas tu cuenta', p: [
-        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, copias de datos, mensajes de contacto enviados con la sesión iniciada, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
+        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, copias de datos, mensajes de contacto enviados con la sesión iniciada, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Si algún mensaje tuyo había sido denunciado, se borra también la copia de su texto y de tu alias que se guardó con la denuncia, y las denuncias que hayas hecho tú se eliminan. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
       ] },
       { h: '9. Menores', p: ['PaperPulse no está dirigido a menores de 14 años. Al registrarte declaras tener al menos 14 años (art. 7 LOPDGDD). Si detectamos una cuenta de una persona menor de esa edad, la eliminaremos.'] },
       { h: '10. Seguridad', p: ['Aplicamos medidas técnicas y organizativas razonables: contraseñas con scrypt, cookie de sesión HttpOnly, política de seguridad de contenidos (CSP) estricta, límites de peticiones y control de permisos en el servidor. Ningún sistema es infalible.'] },
-      { h: '11. Cambios', p: [`Podemos actualizar esta política. Si el cambio es relevante, te pediremos que la aceptes de nuevo. Versión de los textos: ${LEGAL_VERSION}.`] },
+      { h: '11. Cambios', p: [`Podemos actualizar esta política. Si el cambio es relevante, te pediremos que la aceptes de nuevo. La fecha de la última actualización figura al final de esta página.`] },
     ],
   },
   {
@@ -155,7 +157,7 @@ export const PAGES = [
       { h: '1. Resumen', p: ['PaperPulse solo usa cookies y almacenamiento estrictamente necesarios para funcionar. No usamos analítica, publicidad, seguimiento ni cookies de terceros. Por eso no mostramos un banner de cookies: según el artículo 22.2 de la LSSI-CE, el almacenamiento técnico imprescindible para prestar el servicio solicitado está exento de consentimiento.'] },
       { h: '2. Qué se guarda en tu navegador', p: [{ list: [
         'Cookie de sesión (pp_session; en producción __Host-pp_session): identifica tu sesión si inicias sesión. HttpOnly, SameSite=Strict, caduca a los 30 días o al cerrar sesión. Propia y técnica.',
-        'Cookie pp_oauth: protege el inicio de sesión con Google (o Okta). Dura 10 minutos como máximo. Propia y técnica.',
+        'Cookie pp_oauth: protege el inicio de sesión con Google. Dura 10 minutos como máximo. Propia y técnica.',
         'localStorage (claves «paperpulse_…»): tu cuenta de práctica local, favoritos, alertas, ajustes (tema, divisa), lecciones leídas y la marca de última modificación. Se queda en tu dispositivo y no se envía a terceros; si inicias sesión se guarda una copia en nuestro servidor.',
         'sessionStorage (paperpulse_oauth_pending): recuerda durante la pestaña que vienes de un inicio de sesión externo.',
         'Caché del navegador del service worker (paperpulse-shell-v1): copia de los ficheros de la aplicación para que abra más rápido y sin conexión. Nunca guarda datos de tu cuenta ni de mercado.',

@@ -1,5 +1,5 @@
 // Páginas legales (aviso legal, privacidad, términos, cookies y normas). Texto en lib/legal-content.js.
-import { PAGES, pageById, DRAFT_NOTICE, LEGAL_VERSION } from '../lib/legal-content.js';
+import { PAGES, pageById, LAST_UPDATED } from '../lib/legal-content.js';
 import { h, svgIcon, mount as put } from '../lib/el.js';
 import { on } from '../lib/dom.js';
 import { go } from '../lib/router.js';
@@ -27,8 +27,8 @@ export function show(param = '') {
   document.title = `${page.title} — PaperPulse`;
   put(root, h('div', { class: 'stack' }, tabs(page.id),
     h('section', { class: 'card legal-page' },
-      h('div', { class: 'cm-notice cm-draft', role: 'note' }, svgIcon('triangle-alert', 'sm'), h('span', {}, `${DRAFT_NOTICE} Versión ${LEGAL_VERSION}.`)),
       h('h2', { class: 'cm-thread-h' }, page.title),
-      page.sections.map((s) => h('section', { class: 'legal-sec' }, h('h3', {}, s.h), s.p.map(block))))));
+      page.sections.map((s) => h('section', { class: 'legal-sec' }, h('h3', {}, s.h), s.p.map(block))),
+      h('p', { class: 'legal-updated' }, `Última actualización: ${LAST_UPDATED}.`))));
   scrollTo({ top: 0 });
 }
