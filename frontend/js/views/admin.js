@@ -80,7 +80,8 @@ async function renderOverview() {
           <div><span>Okta</span>${ok(int.oauth.okta)}</div>
           <div><span>Wall Street</span>${ok(o.markets.us.open, 'Abierto', 'Cerrado')}</div>
           <div><span>Bolsa de Madrid</span>${ok(o.markets.es.open, 'Abierta', 'Cerrada')}</div>
-          <div><span>Peticiones de chat · errores</span><strong>${use.chatRequests} · ${use.errors}</strong></div>
+          <div><span>Chat hoy: con IA · respuestas fijas · errores</span><strong>${use.aiRequests} · ${use.fixedAnswers} · ${use.errors}</strong></div>
+          <div><span>Media por pregunta con IA</span><strong>${num(use.avgTokensPerAiRequest, 0)} tokens</strong></div>
           <div><span>Mensajes de contacto sin leer</span><strong>${o.unreadMessages}</strong></div>
         </div>
       </section>

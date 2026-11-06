@@ -4,24 +4,24 @@ import time
 from starlette.concurrency import run_in_threadpool
 from starlette.routing import Route
 
-from backend import auth, contact, db, settings
+from backend import ai_usage, auth, contact, db, settings
 from backend.config import DAILY_GLOBAL_TOKEN_LIMIT
 from backend.http import error, ok, read_json, require_admin
 from backend.market import stream
 from backend.market.hours import is_market_open
-from backend.security import USAGE_STATS, check_date_rollover
+from backend.security import USAGE_STATS
 
 
 def usage() -> dict:
-    check_date_rollover()
-    used = USAGE_STATS["daily_total_tokens"]
+    """Consumo de IA del día (de la base de datos, común a todas las instancias) y diagnóstico de esta instancia.
+    Bloqueante: llámala con run_in_threadpool."""
+    ai = ai_usage.summary()
+    used = ai["tokensToday"]
     return {
+        **ai,
         "uptimeSeconds": int(time.time() - USAGE_STATS["start_time"]),
-        "chatRequests": USAGE_STATS["chat_requests"],
-        "tokensToday": used,
         "tokenLimit": DAILY_GLOBAL_TOKEN_LIMIT,
         "percentUsed": round(used / DAILY_GLOBAL_TOKEN_LIMIT * 100, 2) if DAILY_GLOBAL_TOKEN_LIMIT else 0,
-        "costTodayUsd": USAGE_STATS["estimated_cost_usd"],
         "stockRequests": USAGE_STATS["stock_requests"],
         "errors": USAGE_STATS["errors"],
     }
@@ -35,7 +35,7 @@ async def overview(request):
     es_open, es_msg = is_market_open("ES")
     return ok({
         "users": await run_in_threadpool(db.stats),
-        "usage": usage(),
+        "usage": await run_in_threadpool(usage),
         "unreadMessages": await run_in_threadpool(contact.unread_count),
         "stream": stream.status(),
         "integrations": {

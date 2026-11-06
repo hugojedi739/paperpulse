@@ -13,6 +13,7 @@ import time
 from contextlib import asynccontextmanager
 
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse, JSONResponse, Response
@@ -48,7 +49,7 @@ async def api_health(request):
     user = None if by_key else await current_user(request)
     if not by_key and not (user and user["role"] == "admin"):
         return JSONResponse({"status": "healthy"})
-    return JSONResponse({"status": "healthy", **admin.usage(), "stream": stream.status(),
+    return JSONResponse({"status": "healthy", **(await run_in_threadpool(admin.usage)), "stream": stream.status(),
                          "anthropicConfigured": bool(settings.get("anthropic_api_key"))})
 
 

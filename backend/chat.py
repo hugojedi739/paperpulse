@@ -1,5 +1,4 @@
 """Asistente con Claude: streaming SSE, desafío anti-bot y control de gasto."""
-import os
 import sys
 import json
 import time
@@ -7,16 +6,13 @@ import asyncio
 import hmac
 import hashlib
 import secrets
-from typing import Dict
 
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from backend import settings
-from backend.config import ANTHROPIC_MAX_TOKENS, DAILY_GLOBAL_TOKEN_LIMIT, DAILY_USER_CHAT_REQUESTS, DAILY_USER_TOKEN_LIMIT, DEBUG
-from backend.security import (
-    IP_CHALLENGE_CALLS, IP_CHAT_CALLS, IP_DAILY_DATA, USAGE_STATS,
-    check_date_rollover, check_ip_rate_limit, get_client_ip, record_token_usage,
-)
+from backend import ai_usage, settings
+from backend.config import ANTHROPIC_MAX_TOKENS, DEBUG
+from backend.security import IP_CHALLENGE_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
 try:
     import anthropic
@@ -65,16 +61,15 @@ NORMAS ESTRICTAS DE RESPUESTA (OBLIGATORIAS):
 8. Jamás des recomendaciones de inversión formal garantizadas; enfatiza la gestión matemática del riesgo, el ratio R:R y el Stop Loss."""
 
 # ==============================================================================
-# 8. Desafío Criptográfico Anti-Bot para Chat
+# Desafío anti-bot. Firmado con el secreto del servidor (igual en todas las instancias) y de un solo uso
+# (ai_challenges_used en la base de datos), así que funciona aunque el desafío y la pregunta lleguen a instancias distintas.
 # ==============================================================================
-CHAT_CHALLENGE_SECRET = os.getenv("CHAT_CHALLENGE_SECRET", secrets.token_hex(32))
-ACTIVE_CHALLENGES: Dict[str, float] = {}
+CHALLENGE_TTL = 300
 
-def cleanup_expired_challenges():
-    now = time.time()
-    expired = [sig for sig, ts in ACTIVE_CHALLENGES.items() if now - ts > 300]
-    for sig in expired:
-        ACTIVE_CHALLENGES.pop(sig, None)
+
+def _sign(message: bytes) -> str:
+    return hmac.new(ai_usage.secret(), message, hashlib.sha256).hexdigest()
+
 
 async def api_chat_challenge(request):
     """Genera un desafío criptográfico efímero anti-bots para peticiones de chat."""
@@ -83,57 +78,22 @@ async def api_chat_challenge(request):
         return JSONResponse({"error": "Demasiadas solicitudes."}, status_code=429, headers={"Retry-After": "60"})
     now = int(time.time())
     nonce = secrets.token_hex(8)
-    message = f"{client_ip}:{now}:{nonce}".encode("utf-8")
-    signature = hmac.new(CHAT_CHALLENGE_SECRET.encode("utf-8"), message, hashlib.sha256).hexdigest()
+    signature = await run_in_threadpool(_sign, f"{client_ip}:{now}:{nonce}".encode("utf-8"))
+    return JSONResponse({"status": "ok", "challenge": f"{now}:{nonce}:{signature}"})
 
-    cleanup_expired_challenges()
-    if len(ACTIVE_CHALLENGES) >= 10000:
-        ACTIVE_CHALLENGES.pop(next(iter(ACTIVE_CHALLENGES)))
-    ACTIVE_CHALLENGES[signature] = now
 
-    token = f"{now}:{nonce}:{signature}"
-    return JSONResponse({"status": "ok", "challenge": token})
+def _too_many(message: str) -> JSONResponse:
+    return JSONResponse({"error": message}, status_code=429, headers={"Retry-After": "60"})
+
 
 async def api_chat_stream(request):
-    """Endpoint SSE para chat con Claude Haiku 5.5 con streaming y límites estrictos."""
+    """Endpoint SSE del asistente: streaming, límites globales (en la base de datos) y registro del consumo."""
     client_ip = get_client_ip(request)
-    check_date_rollover()
 
-    # 1. Validación de tamaño de cuerpo (anti-DDoS: máx 32KB)
+    # Tamaño del cuerpo (máx. 32 KB)
     content_length = request.headers.get("content-length")
     if content_length and (not content_length.isdigit() or int(content_length) > 32768):
         return JSONResponse({"error": "Petición demasiado grande."}, status_code=413)
-
-    # 2. Rate limit por minuto
-    if not check_ip_rate_limit(client_ip, IP_CHAT_CALLS, max_calls_per_minute=20):
-        return JSONResponse({
-            "error": "Has alcanzado el límite de preguntas por minuto. Por favor, espera unos segundos."
-        }, status_code=429, headers={"Retry-After": "60"})
-
-    # 3. Límite diario de peticiones por usuario/IP
-    today = USAGE_STATS["today"]
-    ip_rec = IP_DAILY_DATA.setdefault(client_ip, {"date": today, "chat_count": 0, "tokens": 0})
-    if ip_rec["date"] != today:
-        ip_rec["date"] = today
-        ip_rec["chat_count"] = 0
-        ip_rec["tokens"] = 0
-
-    if ip_rec["chat_count"] >= DAILY_USER_CHAT_REQUESTS:
-        return JSONResponse({
-            "error": "Has alcanzado el límite diario de mensajes para tu sesión. Se restablecerá a las 00:00 UTC."
-        }, status_code=429, headers={"Retry-After": "60"})
-
-    # 4. Límite diario global de tokens
-    if USAGE_STATS["daily_total_tokens"] >= DAILY_GLOBAL_TOKEN_LIMIT:
-        return JSONResponse({
-            "error": "Se ha alcanzado el límite diario de consultas de IA. El servicio se restablecerá a las 00:00 UTC."
-        }, status_code=429, headers={"Retry-After": "60"})
-
-    # 5. Límite diario de tokens por usuario
-    if ip_rec["tokens"] >= DAILY_USER_TOKEN_LIMIT:
-        return JSONResponse({
-            "error": "Has alcanzado tu límite diario de consumo de IA. Se restablecerá a las 00:00 UTC."
-        }, status_code=429, headers={"Retry-After": "60"})
 
     # Leer JSON del cuerpo con control de errores
     try:
@@ -162,17 +122,16 @@ async def api_chat_stream(request):
         ts_str, nonce, signature = parts
         token_ts = int(ts_str)
         now = int(time.time())
-        if abs(now - token_ts) > 300:
+        if abs(now - token_ts) > CHALLENGE_TTL:
             return JSONResponse({"error": "El desafío anti-bot ha caducado. Por favor, reenvía tu mensaje."}, status_code=403)
-        expected_msg = f"{client_ip}:{ts_str}:{nonce}".encode("utf-8")
-        expected_sig = hmac.new(CHAT_CHALLENGE_SECRET.encode("utf-8"), expected_msg, hashlib.sha256).hexdigest()
+        expected_sig = await run_in_threadpool(_sign, f"{client_ip}:{ts_str}:{nonce}".encode("utf-8"))
         if not hmac.compare_digest(signature, expected_sig):
             return JSONResponse({"error": "Firma del desafío anti-bot incorrecta."}, status_code=403)
-        if signature not in ACTIVE_CHALLENGES:
+        # Consumir desafío (uso único, también entre instancias)
+        if not await run_in_threadpool(ai_usage.consume_challenge, signature, token_ts + CHALLENGE_TTL):
             return JSONResponse({"error": "El desafío anti-bot ya fue utilizado o ha expirado."}, status_code=403)
-        # Consumir desafío (uso único)
-        ACTIVE_CHALLENGES.pop(signature, None)
-    except Exception:
+    except Exception as exc:
+        print(f"[Chat] Error verificando el desafío: {type(exc).__name__}: {exc}", file=sys.stderr)
         return JSONResponse({"error": "Error durante la verificación anti-bot."}, status_code=403)
 
     # Validación y sanitización rigurosa del contexto de cuenta
@@ -302,8 +261,12 @@ async def api_chat_stream(request):
     else:
         anthropic_messages.append({"role": "user", "content": user_message})
 
-    USAGE_STATS["chat_requests"] += 1
-    ip_rec["chat_count"] += 1
+    # Límites globales (por minuto, diarios por cliente y tope diario de tokens), guardados en la base de datos
+    api_key = settings.get("anthropic_api_key")
+    uses_ai = bool(api_key and anthropic)
+    refused = await run_in_threadpool(ai_usage.admit, client_ip, uses_ai)
+    if refused:
+        return _too_many(refused)
 
     # Cabeceras anti-buffering
     sse_headers = {
@@ -314,8 +277,9 @@ async def api_chat_stream(request):
     }
 
     # Si no hay clave real de Anthropic, usar flujo local seguro (sin exponer secretos en producción)
-    api_key = settings.get("anthropic_api_key")
-    if not api_key or not anthropic:
+    if not uses_ai:
+        await run_in_threadpool(ai_usage.record, client_ip, "fixed")
+
         async def mock_stream():
             yield f"data: {json.dumps({'text': '👋 **PaperPulse AI (Modo Servidor Local)**:\n\n'})}\n\n"
             await asyncio.sleep(0.04)
@@ -380,36 +344,31 @@ async def api_chat_stream(request):
 
         return StreamingResponse(mock_stream(), media_type="text/event-stream", headers=sse_headers)
 
-    # Llamada real con Streaming a Anthropic con claude-haiku-5-5
+    model = settings.get("anthropic_model")
+    request_params = {"model": model, "max_tokens": ANTHROPIC_MAX_TOKENS, "system": system_prompt, "messages": anthropic_messages}
+
+    # Llamada real con streaming a Anthropic
     async def anthropic_stream():
         try:
             # Timeout de 45 segundos
             client = anthropic.AsyncAnthropic(api_key=api_key, timeout=45.0)
-            async with client.messages.stream(
-                model=settings.get("anthropic_model"),
-                max_tokens=ANTHROPIC_MAX_TOKENS,
-                system=system_prompt,
-                messages=anthropic_messages
-            ) as stream:
+            async with client.messages.stream(**request_params) as stream:
                 async for text in stream.text_stream:
                     if await request.is_disconnected():
                         print(f"[Chat] Cliente {client_ip} cerró la conexión. Abortando streaming para proteger tokens.", file=sys.stderr)
                         break
                     yield f"data: {json.dumps({'text': text})}\n\n"
 
-                # Obtener mensaje final y registrar consumo exacto de tokens
+                # Mensaje final: registrar el consumo exacto en la base de datos
                 try:
                     final_msg = await stream.get_final_message()
-                    if final_msg and final_msg.usage:
-                        in_tok = final_msg.usage.input_tokens
-                        out_tok = final_msg.usage.output_tokens
-                        record_token_usage(client_ip, in_tok, out_tok)
-
-                        # Detectar si se cortó por max_tokens
-                        if getattr(final_msg, 'stop_reason', None) == "max_tokens":
-                            yield f"data: {json.dumps({'truncated': True, 'text': ''})}\n\n"
+                    truncated = getattr(final_msg, "stop_reason", None) == "max_tokens"
+                    effort = (request_params.get("output_config") or {}).get("effort", "")
+                    await run_in_threadpool(ai_usage.record, client_ip, "ai", model, effort, final_msg.usage, truncated)
+                    if truncated:
+                        yield f"data: {json.dumps({'truncated': True, 'text': ''})}\n\n"
                 except Exception as usage_err:
-                    print(f"[Chat] Error extrayendo usage: {usage_err}", file=sys.stderr)
+                    print(f"[Chat] Error registrando el consumo: {usage_err}", file=sys.stderr)
 
             yield "data: [DONE]\n\n"
 

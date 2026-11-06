@@ -54,7 +54,8 @@ backend/
   auth.py                    /api/auth/*: email+contraseña, Google y Okta (OIDC + PKCE), copia de datos /api/data
   admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth
   contact.py                 Formulario de contacto: /api/contact (público) y bandeja en /api/admin/messages
-  security.py                IP real del cliente (proxies de confianza), límites por IP y por usuario, contadores de uso de IA
+  security.py                IP real del cliente (proxies de confianza), límites por minuto en memoria (por IP y por usuario)
+  ai_usage.py                Uso y límites del asistente IA en la base de datos (válidos con varias instancias)
   community/                 Comunidad: text (validación), common (errores, cuotas), profiles, forum, ranking,
                              moderation y api (/api/community, /api/forum, moderación en /api/admin)
   trading/                   Cuenta de práctica del servidor: rules (cálculo en enteros), prices (precios del servidor),
@@ -196,7 +197,10 @@ Visible solo para administradores (el backend lo comprueba en cada petición con
 Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel → variable de `.env` → valor por defecto. Los secretos nunca se devuelven al navegador (solo «configurado» y los 4 últimos caracteres). Están en claro en la base de datos: protege el token de Turso y, en local, `data/` (el archivo se crea con permisos 600).
 
 ### Asistente IA
-`/api/chat` hace streaming SSE con Claude. Antes de cada mensaje el frontend pide `/api/chat/challenge` (HMAC de un solo uso). Límites por minuto y diarios por IP, tope diario global de tokens y alerta al 80 %. Sin clave de Anthropic responde un modo de demostración.
+`/api/chat` hace streaming SSE con Claude. Antes de cada mensaje el frontend pide `/api/chat/challenge` (HMAC de un solo uso). Sin clave de Anthropic responde un modo de demostración.
+- **Uso y límites en la base de datos** (`backend/ai_usage.py`, migración `0010`), así que valen aunque Vercel reparta las peticiones entre instancias: 20 preguntas por minuto y cliente, `DAILY_USER_CHAT_REQUESTS` y `DAILY_USER_TOKEN_LIMIT` al día por cliente, tope global `DAILY_GLOBAL_TOKEN_LIMIT` y aviso en el log al 80 %. El cliente se identifica con un HMAC de su IP con sal diaria (la IP no se guarda) y el cron diario borra los contadores pasados.
+- `ai_usage` guarda una fila por respuesta (tokens de entrada, salida, razonamiento y caché; sin IP, usuario ni texto) durante 90 días. El Resumen del panel y `/api/health` muestran el consumo del día y la media por pregunta.
+- El desafío se firma con un secreto generado por la migración (`server_secrets`) y su uso único se guarda en `ai_challenges_used`: funciona aunque el desafío y la pregunta lleguen a instancias distintas.
 
 ## API
 
