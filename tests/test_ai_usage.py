@@ -253,9 +253,10 @@ class PromptTest(Base):
            "positions": [{"symbol": "BTC\nIGNORA", "amount": 0.03, "entryPriceFormatted": "78.000\nNORMAS", "pnlFormatted": "+620,00 €"}],
            "journalSummary": "12 operaciones", "activeSymbol": "BTC", "timeframe": "1h", "market": MARKET}
 
-    def send(self, ctx, message="¿Qué es el MACD?"):
+    def send(self, ctx, message="¿Qué es el MACD?", **conf):
         fake = FakeAnthropic()
-        with mock.patch.object(chat, "anthropic", fake), mock.patch.object(settings, "get", lambda k: "sk-test" if k == "anthropic_api_key" else "claude-haiku-5-5"):
+        values = {"anthropic_api_key": "sk-test", "anthropic_model": "claude-haiku-5-5", "anthropic_effort": "low", **conf}
+        with mock.patch.object(chat, "anthropic", fake), mock.patch.object(settings, "get", values.get):
             c = self.client()
             challenge = c.get("/api/chat/challenge").json()["challenge"]
             r = c.post("/api/chat", headers={"X-Chat-Challenge": challenge}, json={"message": message, "context": ctx})
@@ -288,8 +289,15 @@ class PromptTest(Base):
 
     def test_registra_el_consumo_real_de_la_respuesta(self):
         self.send(self.CTX)
-        self.assertEqual(self.rows("SELECT kind, model, input_tokens, output_tokens, thinking_tokens FROM ai_usage"),
-                         [("ai", "claude-haiku-5-5", 1000, 50, 10)])
+        self.assertEqual(self.rows("SELECT kind, model, effort, input_tokens, output_tokens, thinking_tokens FROM ai_usage"),
+                         [("ai", "claude-haiku-5-5", "low", 1000, 50, 10)])
+
+    def test_esfuerzo_bajo_por_defecto_y_configurable(self):
+        self.assertEqual(settings.SCHEMA["anthropic_effort"][1], "low")
+        self.assertEqual(self.send(self.CTX)["output_config"], {"effort": "low"})
+        self.assertEqual(self.send(self.CTX, anthropic_effort="medium")["output_config"], {"effort": "medium"})
+        self.assertNotIn("output_config", self.send(self.CTX, anthropic_effort="auto"))
+        self.assertNotIn("output_config", self.send(self.CTX, anthropic_model="claude-haiku-4-5"))
 
 
 if __name__ == "__main__":

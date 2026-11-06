@@ -25,6 +25,8 @@ SCHEMA: Dict[str, tuple] = {
     # Servicios de terceros (siempre se usan desde el backend)
     "anthropic_api_key": ("ANTHROPIC_API_KEY", "", str, True),
     "anthropic_model": ("ANTHROPIC_MODEL", "claude-haiku-5-5", str, False),
+    # Esfuerzo (output_config.effort): cuánto razona el modelo antes de responder. «auto» = el del modelo
+    "anthropic_effort": ("ANTHROPIC_EFFORT", "low", str, False),
     "stock_data_provider": ("STOCK_DATA_PROVIDER", "yfinance", str, False),
     "finnhub_api_key": ("FINNHUB_API_KEY", "", str, True),
     # Simulación de la cuenta del servidor (usuarios con sesión)
@@ -36,7 +38,7 @@ SCHEMA: Dict[str, tuple] = {
     # Retos mensuales: saldo inicial igual para todos los participantes
     "challenge_initial_balance_usd": ("CHALLENGE_INITIAL_BALANCE_USD", 10000, int, False),
 }
-CHOICES = {"stock_data_provider": ("yfinance", "finnhub")}
+CHOICES = {"stock_data_provider": ("yfinance", "finnhub"), "anthropic_effort": ("low", "medium", "high", "auto")}
 # Rangos válidos de los ajustes enteros. bps = puntos básicos (10 bps = 0,10 %)
 INT_RANGES = {
     "trading_initial_balance_usd": (100, 10_000_000),

@@ -193,7 +193,7 @@ Visible solo para administradores (el backend lo comprueba en cada petición con
 - **Resumen**: usuarios, activos, sesiones, altas de 30 días, consumo de IA, estado del relay de Binance, integraciones y mercados.
 - **Usuarios**: búsqueda, dar/quitar admin, desactivar/activar, eliminar. Siempre debe quedar al menos un admin activo y nadie puede degradarse a sí mismo.
 - **Inicio de sesión**: activar email+contraseña y el registro; configurar Google y Okta, con botón «Probar conexión».
-- **Integraciones**: clave y modelo de Anthropic; proveedor de bolsa y clave de Finnhub.
+- **Integraciones**: clave, modelo y esfuerzo de Anthropic (`anthropic_effort`, por defecto `low`: razona menos y gasta menos salida; «El del modelo» no envía el parámetro); proveedor de bolsa y clave de Finnhub.
 
 Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel → variable de `.env` → valor por defecto. Los secretos nunca se devuelven al navegador (solo «configurado» y los 4 últimos caracteres). Están en claro en la base de datos: protege el token de Turso y, en local, `data/` (el archivo se crea con permisos 600).
 

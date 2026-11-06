@@ -206,6 +206,7 @@ async function renderIntegrations() {
         <div class="card-head"><h2 class="card-title">${icon('sparkles')} Asistente (Anthropic)</h2></div>
         ${secret('anthropic_api_key', 'Clave de API')}
         ${text('anthropic_model', 'Modelo', 'claude-haiku-5-5')}
+        ${select('anthropic_effort', 'Esfuerzo (cuánto razona antes de responder)', { low: 'Bajo (recomendado: más barato y rápido)', medium: 'Medio', high: 'Alto', auto: 'El del modelo' })}
         ${save()}
       </form></section>
       <section class="card"><form class="admin-form" data-form>
