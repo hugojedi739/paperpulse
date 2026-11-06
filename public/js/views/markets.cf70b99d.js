@@ -4,7 +4,7 @@ import { tick } from '../lib/feed.6d0c0c04.js';
 import { ASSETS } from '../lib/catalog.760e22b2.js';
 import { html, icon, render, on, $, debounce } from '../lib/dom.b3064165.js';
 import { money, price, pct, trendClass, toUsd } from '../lib/format.bcd91d41.js';
-import { sparkline } from '../lib/charts.f9853352.js';
+import { sparkline } from '../lib/charts.07106ac4.js';
 import { cryptoMarkets, stockSpark } from '../lib/marketdata.d86555d2.js';
 import { assetCell, empty, seg, pressSeg, liveChange } from '../lib/ui.ced569f0.js';
 import { go } from '../lib/router.de30a562.js';

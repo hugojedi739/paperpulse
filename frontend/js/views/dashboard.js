@@ -5,7 +5,8 @@ import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, render, on, $ } from '../lib/dom.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.js';
 import { portfolio } from '../lib/trading.js';
-import { createEquityChart, sparkline } from '../lib/charts.js';
+import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.js';
+import { currentUser } from '../lib/auth.js';
 import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.js';
 import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.js';
 import { go } from '../lib/router.js';
@@ -22,6 +23,7 @@ const SESSIONS = {
 };
 
 let root, equity, range = '1M', movers = 'gainers', timer;
+let minis = []; // minigráficos de las tarjetas de cotización
 
 /** Precio en vivo que parpadea al cambiar (data-flash); vacío = esqueleto hasta la primera cotización. */
 const livePrice = (a) => html`<span class="num" data-px="${a.symbol}" data-q="${a.quote}" data-flash>${tick(a.symbol)?.price ? price(tick(a.symbol).price, a.quote) : ''}</span>`;
@@ -46,12 +48,14 @@ export function show() {
   timer = setInterval(() => { renderSummary(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
 }
 export function hide() { clearInterval(timer); }
-export function theme() { equity?.theme(); drawEquity(); }
+export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); }
 
 function renderAll() {
   const practice = store.hasPractice();
   equity?.destroy();
   equity = null;
+  minis.forEach((m) => m.destroy());
+  minis = [];
   render(root, html`
     <div id="d-retention" class="stack"></div>
     <div class="dash">
@@ -70,19 +74,37 @@ function renderAll() {
           </section>
           <div class="kpis" id="d-kpis"></div>` : html`
           <section class="card cta" aria-labelledby="d-cta-title">
-            <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador de trading</span>
-            <h2 id="d-cta-title">Practica trading con cotizaciones reales y dinero virtual</h2>
-            <p>Compra y vende criptomonedas y acciones de Wall Street e IBEX 35 a precio de mercado, con un saldo ficticio que eliges tú. Sin registro: todo se guarda en tu navegador.</p>
+            <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
+            <h2 id="d-cta-title">Compite con otros traders, sin arriesgar un euro.</h2>
+            <p class="hero-sub">Cotizaciones reales, ranking mensual y retos. Practica con saldo virtual.</p>
+            <div class="hero-actions">
+              ${currentUser()
+                ? html`<button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Empezar a practicar</button>`
+                : html`<button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
+                  <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>`}
+              <button class="btn btn-lg btn-link" data-action="tour">Ver cómo funciona</button>
+            </div>
             <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador con dinero virtual. No es asesoramiento financiero.</p>
-            <div class="cta-points">
-              <span>${icon('circle-check')} Cotizaciones en vivo</span>
-              <span>${icon('circle-check')} Órdenes límite y stop</span>
-              <span>${icon('circle-check')} Diario con estadísticas</span>
-            </div>
-            <div class="gap-8">
-              <button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Probar demo</button>
-              <button class="btn btn-ghost btn-lg" data-action="tour">Ver cómo funciona</button>
-            </div>
+          </section>
+          <section class="features" aria-label="Qué hace diferente a PaperPulse">
+            <a class="card feature" href="#/community/forum">
+              <span class="feature-icon">${icon('users')}</span>
+              <h3>Comunidad de traders</h3>
+              <p>Foro, perfiles y operaciones compartidas para aprender de otros.</p>
+              <span class="feature-link">Ir al foro ${icon('arrow-right', 'sm')}</span>
+            </a>
+            <a class="card feature" href="#/community/ranking">
+              <span class="feature-icon">${icon('trophy')}</span>
+              <h3>Ranking y retos mensuales</h3>
+              <p>Compite cada mes con el mismo saldo y sube en la clasificación.</p>
+              <span class="feature-link">Ver clasificación ${icon('arrow-right', 'sm')}</span>
+            </a>
+            <a class="card feature" href="#/markets">
+              <span class="feature-icon">${icon('chart-candlestick')}</span>
+              <h3>Mercado real, saldo virtual</h3>
+              <p>Cripto, Wall Street e IBEX 35 en vivo. Nunca dinero real.</p>
+              <span class="feature-link">Ver mercados ${icon('arrow-right', 'sm')}</span>
+            </a>
           </section>
           <div class="kpis" id="d-tiles"></div>`}
         <section class="card">
@@ -122,6 +144,7 @@ function renderAll() {
     drawEquity();
   }
   mountCard($('#d-retention', root));
+  if (!practice) renderTiles();
   renderSummary();
   renderWatchlist();
   renderMovers();
@@ -160,12 +183,28 @@ function renderSummary() {
       ${kpi('Invertido', moneyHtml(p.holdingsUsd), `${p.rows.length} ${p.rows.length === 1 ? 'posición' : 'posiciones'}`)}
       ${kpi('P&L no realizado', html`<span class="money delta ${trendClass(p.unrealizedUsd)}">${money(p.unrealizedUsd, { signed: true })}</span>`, p.investedUsd ? pct((p.unrealizedUsd / p.investedUsd) * 100) : '—')}
       ${kpi('Tasa de acierto', t.length ? pct((wins / t.length) * 100, { signed: false, decimals: 0 }) : '—', `${t.length} operaciones cerradas`)}`);
-  } else {
-    render($('#d-tiles', root), ['BTC', 'ETH', 'IBEX', 'NVDA'].map((s) => {
-      const a = findAsset(s);
-      return html`<button class="card kpi" data-asset="${a.symbol}"><span>${a.name}</span><strong>${livePrice(a)}</strong>${liveChange(a)}</button>`;
-    }));
   }
+}
+
+/* ---------- Tarjetas de cotización con minigráfico (series que ya se cargan: 7 días cripto, 1 mes bolsa; sin peticiones nuevas) ---------- */
+const TILES = ['BTC', 'ETH', 'IBEX', 'NVDA'];
+async function renderTiles() {
+  const box = $('#d-tiles', root);
+  if (!box) return;
+  const assets = TILES.map(findAsset).filter(Boolean);
+  render(box, assets.map((a) => html`<button class="card kpi kpi-spark" data-asset="${a.symbol}">
+    <span>${a.name}</span><strong>${livePrice(a)}</strong>${liveChange(a)}
+    <div class="kpi-chart" data-spark="${a.symbol}" aria-hidden="true"></div>
+    <small class="kpi-range">${a.type === 'crypto' ? '7 días' : '1 mes'}</small></button>`));
+  const cg = await cryptoMarkets();
+  const series = await Promise.all(assets.map((a) => (a.type === 'crypto' ? cg.get(a.symbol)?.spark : stockSpark(a))));
+  if (!box.isConnected || !box.querySelector('.kpi-spark')) return; // la vista se repintó mientras llegaban los datos
+  assets.forEach((a, i) => {
+    const holder = box.querySelector(`[data-spark="${a.symbol}"]`);
+    if (!holder || !series[i]?.length) return;
+    const mini = createMiniChart(holder);
+    if (mini.setData(series[i])) minis.push(mini); else mini.destroy();
+  });
 }
 
 const kpi = (label, value, sub) => html`<div class="card kpi"><span>${label}</span><strong>${value}</strong><small>${sub}</small></div>`;

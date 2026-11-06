@@ -689,6 +689,30 @@
   .cta-points { display: flex; gap: 16px; flex-wrap: wrap; color: var(--text-2); font-size: var(--fs-md); margin-bottom: 20px; }
   .cta-points span { display: inline-flex; align-items: center; gap: 4px; }
   .cta-points .icon { color: var(--text-3); width: 16px; height: 16px; }
+  /* Hero del Resumen (sin sesión): un CTA principal, el demo y el recorrido como secundarios */
+  .cta {
+    background: radial-gradient(120% 150% at 0% 0%, var(--accent-fill), transparent 60%), var(--surface-1);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+  :root[data-theme='light'] .cta { box-shadow: none; }
+  .cta .hero-sub { font-size: var(--fs-lg); color: var(--text-2); max-width: 46ch; margin: 8px 0 20px; }
+  .hero-actions { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; margin-bottom: var(--s-5); }
+  .btn-link { border-color: transparent; background: transparent; color: var(--accent-text); }
+  .btn-link:hover { background: var(--accent-fill); }
+  .cta .disclaimer { margin: 0; max-width: 520px; }
+  /* Tres rasgos diferenciales debajo del hero */
+  .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .feature { display: grid; gap: 6px; align-content: start; padding: var(--s-4); color: inherit; text-decoration: none; transition: border-color 0.15s, box-shadow 0.15s; }
+  .feature:hover { border-color: var(--accent); box-shadow: 0 8px 24px -14px var(--accent); }
+  .feature h3 { font-size: var(--fs-base); font-weight: 650; }
+  .feature p { color: var(--text-2); font-size: var(--fs-md); }
+  .feature-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--accent-fill); color: var(--accent-text); margin-bottom: 4px; }
+  .feature-link { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-size: var(--fs-md); font-weight: 600; margin-top: 4px; }
+  /* Tarjetas de cotización con minigráfico */
+  .kpi-spark strong { font-size: var(--fs-lg); white-space: nowrap; }
+  .kpi-spark { position: relative; }
+  .kpi-chart { height: 48px; margin: 6px -2px 0; }
+  .kpi-range { color: var(--text-3); font-size: var(--fs-xs); text-align: right; }
 
   .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
   .kpi { padding: 16px; display: grid; gap: 4px; text-align: left; }
@@ -1115,6 +1139,7 @@
   .news-card.feature { grid-column: auto; }
 }
 @media (max-width: 767px) {
+  .features { grid-template-columns: 1fr; }
   .app { grid-template-columns: minmax(0, 1fr); }
   .sidebar, .page-title, .feed-status span, .account-chip small { display: none; }
   .topbar { padding: 0 12px; padding-top: env(safe-area-inset-top); height: calc(var(--top-h) + env(safe-area-inset-top)); gap: 8px; }
@@ -1186,7 +1211,7 @@
   .kpi { padding: 12px; } .kpi strong { font-size: var(--fs-lg); }
   .cta { padding: var(--s-4); }
   .cta h2 { font-size: var(--fs-2xl); }
-  .cta .gap-8 { display: grid; }
+  .cta .gap-8, .hero-actions { display: grid; }
   .sym-price strong { font-size: var(--fs-2xl); }
   .account-chip { padding: 0 8px; }
   .toolbar { padding: 8px 12px; }

@@ -8,11 +8,11 @@ import { portfolio, checkTriggers } from './lib/trading.82934341.js';
 import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
 import { updateLive, assetIcon } from './lib/ui.ced569f0.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.8f271da3.js';
-import * as trade from './views/trade.726b7a4f.js';
-import * as markets from './views/markets.e4c7d114.js';
+import * as dashboard from './views/dashboard.5dfc3d7e.js';
+import * as trade from './views/trade.11c60535.js';
+import * as markets from './views/markets.cf70b99d.js';
 import * as newsView from './views/news.a24b3da0.js';
-import * as journal from './views/journal.10d4c96c.js';
+import * as journal from './views/journal.0f67f961.js';
 import * as community from './views/community.736ad3b9.js';
 import * as dialogs from './ui/dialogs.2f6b0a92.js';
 import * as auth from './lib/auth.c90f6d5b.js';
@@ -95,13 +95,17 @@ store.on('settings', (detail) => {
 /* ---------- Cabecera: cuenta, estado del feed, notificaciones, cinta ---------- */
 function renderAccountChip() {
   const chip = $('#account-chip');
+  // Sin sesión y sin cuenta de práctica el botón no aparece: el CTA principal ("Empezar gratis") está en el Resumen
+  chip.hidden = !store.hasPractice() && !auth.currentUser();
   if (!store.hasPractice()) {
-    chip.classList.add('is-cta');
-    return render(chip, html`${icon('play', 'sm')}<span>Practicar</span>`);
+    chip.classList.remove('is-cta');
+    return render(chip, html`${icon('user', 'sm')}<span>Ir a mi cuenta</span>`);
   }
   const p = portfolio();
   chip.classList.remove('is-cta');
-  render(chip, html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
+  render(chip, auth.currentUser()
+    ? html`${icon('user', 'sm')}<span>Ir a mi cuenta</span>`
+    : html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
   render($('#user-pop-head'), html`<strong>Cuenta de práctica</strong><small>Efectivo: <span class="money">${money(p.cashUsd)}</span></small>`);
 }
 
@@ -114,6 +118,7 @@ function renderAuth(user) {
       <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
 }
 auth.onAuth(renderAuth);
+auth.onAuth(renderAccountChip);
 notifs.onChange(renderNotifications);
 // Notificaciones del servidor: se consultan al abrir la app y al abrir la campana (sin sondeo)
 $('#notif-pop')?.addEventListener('toggle', (e) => { if (e.newState === 'open' && notifs.active()) notifs.refresh().catch(() => {}); });

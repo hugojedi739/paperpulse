@@ -342,6 +342,38 @@ export function createEquityChart(container, { formatter }) {
   };
 }
 
+/* ---------- Minigráfico de línea (tarjetas del Resumen): sin ejes, rejilla ni etiquetas; verde si sube y rojo si baja ---------- */
+export function createMiniChart(container) {
+  let c = palette();
+  let up = true;
+  const chart = createChart(container, {
+    autoSize: true,
+    layout: { background: { color: 'transparent' }, textColor: c.muted, attributionLogo: false },
+    grid: { vertLines: { visible: false }, horzLines: { visible: false } },
+    crosshair: { mode: CrosshairMode.Hidden },
+    rightPriceScale: { visible: false, scaleMargins: { top: 0.12, bottom: 0.12 } },
+    leftPriceScale: { visible: false },
+    timeScale: { visible: false, fixLeftEdge: true, fixRightEdge: true },
+    handleScroll: false, handleScale: false,
+  });
+  const series = chart.addSeries(LineSeries, { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  const paint = () => series.applyOptions({ color: up ? c.up : c.down });
+  return {
+    /** `values`: serie de precios en orden cronológico (sin fechas: se reparten de forma uniforme). */
+    setData(values) {
+      const v = values.filter(Number.isFinite);
+      if (v.length < 2) return false;
+      up = v.at(-1) >= v[0];
+      series.setData(v.map((value, i) => ({ time: i * 3600, value })));
+      paint();
+      chart.timeScale().fitContent();
+      return true;
+    },
+    theme() { c = palette(); paint(); },
+    destroy: () => chart.remove(),
+  };
+}
+
 /* ---------- Sparkline SVG (sin canvas, compatible con CSP estricta) ---------- */
 export function sparkline(values, { width = 96, height = 32 } = {}) {
   const v = (values || []).filter(Number.isFinite);
