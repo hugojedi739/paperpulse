@@ -94,5 +94,14 @@ class RelayTest(unittest.TestCase):
         self.assertIsNone(stream.stream_of('{"result":null,"id":1}'))
 
 
+class LazyImportsTest(unittest.TestCase):
+    def test_app_import_does_not_load_anthropic_or_yfinance(self):
+        import subprocess
+        code = "import sys; import backend.app; sys.exit(int('anthropic' in sys.modules or 'yfinance' in sys.modules))"
+        root = os.path.join(os.path.dirname(__file__), "..")
+        env = {**os.environ, "TURSO_DATABASE_URL": "", "TURSO_AUTH_TOKEN": ""}
+        self.assertEqual(subprocess.run([sys.executable, "-c", code], cwd=root, env=env).returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

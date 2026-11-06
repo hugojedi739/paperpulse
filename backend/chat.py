@@ -14,10 +14,19 @@ from backend import ai_usage, chat_fixed, settings
 from backend.config import ANTHROPIC_MAX_TOKENS, DEBUG
 from backend.security import IP_CHALLENGE_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
-try:
-    import anthropic
-except ImportError:
-    anthropic = None
+_UNSET = object()
+anthropic = _UNSET  # el SDK se importa al primer uso con clave configurada (cuesta ~1,5 s en un arranque en frío)
+
+
+def _sdk():
+    global anthropic
+    if anthropic is _UNSET:
+        try:
+            import anthropic as sdk
+        except ImportError:
+            sdk = None
+        anthropic = sdk
+    return anthropic
 
 # ==============================================================================
 # 8. Chat con Claude AI (Streaming SSE, Historial, Seguridad y Control de Gasto)
@@ -205,7 +214,7 @@ async def api_chat_stream(request):
 
     # Límites globales (por minuto, diarios por cliente y tope diario de tokens), guardados en la base de datos
     api_key = settings.get("anthropic_api_key")
-    uses_ai = fixed is None and bool(api_key and anthropic)
+    uses_ai = fixed is None and bool(api_key and _sdk())
     refused = await run_in_threadpool(ai_usage.admit, client_ip, uses_ai)
     if refused:
         return _too_many(refused)
@@ -304,10 +313,12 @@ async def api_chat_stream(request):
         request_params["output_config"] = {"effort": effort}
 
     # Llamada real con streaming a Anthropic
+    sdk = _sdk()
+
     async def anthropic_stream():
         try:
             # Timeout de 45 segundos
-            client = anthropic.AsyncAnthropic(api_key=api_key, timeout=45.0)
+            client = sdk.AsyncAnthropic(api_key=api_key, timeout=45.0)
             async with client.messages.stream(**request_params) as stream:
                 async for text in stream.text_stream:
                     if await request.is_disconnected():
@@ -328,10 +339,10 @@ async def api_chat_stream(request):
 
             yield "data: [DONE]\n\n"
 
-        except anthropic.RateLimitError:
+        except sdk.RateLimitError:
             yield f"data: {json.dumps({'error': 'Límite de cuota temporal de Anthropic alcanzado. Por favor, reintenta en unos instantes.'})}\n\n"
             yield "data: [DONE]\n\n"
-        except anthropic.AuthenticationError as auth_err:
+        except sdk.AuthenticationError as auth_err:
             print(f"[Seguridad] Error de autenticación en Anthropic API: {auth_err}", file=sys.stderr)
             yield f"data: {json.dumps({'error': 'El asistente no está disponible ahora mismo.'})}\n\n"
             yield "data: [DONE]\n\n"

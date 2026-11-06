@@ -9,7 +9,7 @@ from starlette.responses import JSONResponse
 
 from backend.market import stocks
 from backend.market.crypto import binance_get
-from backend.market.stocks import STOCK_SYMBOLS, yf
+from backend.market.stocks import STOCK_SYMBOLS, get_yfinance
 from backend.security import IP_STOCK_CALLS, check_ip_rate_limit, get_client_ip
 
 # ==============================================================================
@@ -167,8 +167,9 @@ async def api_search(request):
             seen_tickers.add(ym.get("ticker"))
 
     # Intentar obtener precios reales para las acciones que no los tengan
+    stocks_needing_price = [s for s in (curated_matches + additional_stocks) if s.get("price") is None][:3]
+    yf = get_yfinance() if stocks_needing_price else None  # solo se carga yfinance si hace falta
     if yf:
-        stocks_needing_price = [s for s in (curated_matches + additional_stocks) if s.get("price") is None][:3]
         if stocks_needing_price:
             loop = asyncio.get_event_loop()
             def fetch_missing_prices():

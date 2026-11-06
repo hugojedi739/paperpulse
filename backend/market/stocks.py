@@ -15,10 +15,19 @@ from backend import db, settings
 from backend.market.hours import is_market_open
 from backend.security import IP_STOCK_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
-try:
-    import yfinance as yf
-except ImportError:
-    yf = None
+_YF = {"loaded": False, "module": None}
+
+
+def get_yfinance():
+    """yfinance se importa al primer uso: cargarlo cuesta ~0,7 s y retrasaba cada arranque en frío de la función."""
+    if not _YF["loaded"]:
+        try:
+            import yfinance
+            _YF["module"] = yfinance
+        except ImportError:
+            pass
+        _YF["loaded"] = True
+    return _YF["module"]
 
 # ==============================================================================
 # 5. Proveedor de Datos de Bolsa: Arquitectura Desacoplada y Política Cero Mock
@@ -56,6 +65,7 @@ class BaseStockProvider:
 
 class YFinanceStockProvider(BaseStockProvider):
     def fetch_quotes(self, symbols: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        yf = get_yfinance()
         if not yf:
             return {}
         tickers_to_query = [info["ticker"] for info in symbols.values()]
@@ -113,6 +123,7 @@ class YFinanceStockProvider(BaseStockProvider):
 
     def fetch_history(self, ticker: str, interval: str, start: int, end: int) -> List[Dict[str, Any]]:
         """Velas entre `start` y `end` (epoch en segundos) con un intervalo nativo de Yahoo (1m, 5m, 60m, 1d, 1wk, 1mo...)."""
+        yf = get_yfinance()
         if not yf:
             return []
         try:
@@ -352,6 +363,7 @@ SPARKS_LOCK = asyncio.Lock()
 
 def fetch_stock_sparks_sync() -> Dict[str, List[float]]:
     """Cierres diarios del último mes de todo el catálogo en una sola descarga (evita saturar al proveedor)."""
+    yf = get_yfinance()
     if not yf:
         return {}
     tickers = {info["ticker"]: sym for sym, info in STOCK_SYMBOLS.items()}
