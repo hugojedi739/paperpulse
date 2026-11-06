@@ -59,7 +59,7 @@ def last_price_e8(symbol: str) -> int:
             except Exception:
                 raise OrderError(f"Sin cotización de {a['symbol']} ahora mismo. Inténtalo en unos segundos.") from None
         return to_e8(price)
-    quote = stocks.fetch_live_stock_quotes().get(a["symbol"]) or {}
+    quote = stocks.fetch_live_stock_quotes(stocks.TRADING_MAX_AGE).get(a["symbol"]) or {}
     if not quote.get("price") or not quote.get("live") or time.time() - quote.get("timestamp", 0) > MAX_QUOTE_AGE:
         raise OrderError(f"Sin cotización en vivo de {a['symbol']}. Inténtalo en unos segundos.")
     return to_e8(quote["price"])
@@ -114,7 +114,7 @@ def valuation_prices(symbols) -> Dict[str, Tuple[int, int]]:
             if a["type"] == "crypto" and a["pair"] in by_pair:
                 out[s] = (to_e8(by_pair[a["pair"]]), E8)
     if any(a["type"] == "stock" for a in wanted.values()):
-        quotes = stocks.fetch_live_stock_quotes()
+        quotes = stocks.fetch_live_stock_quotes(stocks.TRADING_MAX_AGE)
         for s, a in wanted.items():
             price = (quotes.get(s) or {}).get("price") if a["type"] == "stock" else None
             if price:

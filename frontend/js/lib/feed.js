@@ -134,7 +134,31 @@ function stopPolling() {
 }
 
 /* ---------- Bolsa ---------- */
+// Stale-while-revalidate: la última respuesta se guarda y se pinta al arrancar, mientras la petición real la renueva.
+// Se siembra como «no en vivo» y sin avisar de cambios (no cuenta como actualización reciente).
+const STOCKS_KEY = 'paperpulse_stocks_cache';
+const STOCKS_MAX_AGE = 6 * 3600 * 1000;
+
+function seedStocks() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STOCKS_KEY));
+    if (!saved || Date.now() - saved.at > STOCKS_MAX_AGE) return;
+    for (const [sym, q] of Object.entries(saved.data || {})) {
+      if (!(q?.price > 0) || ticks.has(sym)) continue;
+      ticks.set(sym, {
+        price: q.price, change24h: q.change24h, high24h: q.high24h, low24h: q.low24h,
+        volume24h: q.volume, live: false, marketOpen: q.marketOpen !== false, marketStatus: q.marketStatus, symbol: sym, time: saved.at,
+      });
+    }
+  } catch { /* sin almacenamiento o dato corrupto */ }
+}
+
+function saveStocks(data) {
+  try { localStorage.setItem(STOCKS_KEY, JSON.stringify({ at: Date.now(), data })); } catch { /* sin almacenamiento */ }
+}
+
 function applyStocks(data) {
+  if (data && Object.keys(data).length) saveStocks(data);
   for (const [sym, q] of Object.entries(data || {})) {
     if (!(q?.price > 0)) continue;
     setTick(sym, {
@@ -173,6 +197,7 @@ let started = false;
 export function start() {
   if (started) return;
   started = true;
+  seedStocks();
   connect();
   pollStocks();
   setInterval(() => {

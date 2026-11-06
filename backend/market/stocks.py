@@ -1,6 +1,8 @@
 """Cotizaciones e históricos de bolsa (Wall Street e IBEX 35) con proveedor intercambiable (yfinance / Finnhub)."""
+import json
 import sys
 import time
+from contextlib import closing
 import asyncio
 import datetime
 import math
@@ -9,7 +11,7 @@ from typing import Dict, Any, List
 import requests
 from starlette.responses import JSONResponse
 
-from backend import settings
+from backend import db, settings
 from backend.market.hours import is_market_open
 from backend.security import IP_STOCK_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
@@ -210,12 +212,60 @@ def provider() -> BaseStockProvider:
         _PROVIDER["key"] = (name, key)
     return _PROVIDER["instance"]
 
-def fetch_live_stock_quotes() -> Dict[str, Dict[str, Any]]:
-    """Obtiene cotizaciones reales. Si el proveedor falla, NUNCA inventa precios fijos ni porcentajes."""
+# El endpoint público acepta una cotización compartida de hasta 60 s (y el CDN la sirve en caché mientras revalida).
+# El relay y las órdenes del servidor siguen aceptando como máximo 15 s: no ejecutan con un precio más viejo que antes.
+SHARED_TTL = 60
+TRADING_MAX_AGE = 15
+
+
+def _load_shared() -> Dict[str, Dict[str, Any]]:
+    """Filas de `quote_cache` -> {símbolo: cotización}, con `_cachedAt` (no sale al cliente) en cada una."""
+    try:
+        with closing(db.connect()) as conn:
+            rows = conn.execute("SELECT symbol, data, updated_at FROM quote_cache").fetchall()
+    except Exception as e:  # la caché compartida es una optimización: si falla se consulta al proveedor
+        print(f"[StockCache] No se pudo leer la caché compartida: {e}", file=sys.stderr)
+        return {}
+    out = {}
+    for row in rows:
+        try:
+            q = json.loads(row["data"])
+        except ValueError:
+            continue
+        q["_cachedAt"] = row["updated_at"]
+        out[row["symbol"]] = q
+    return out
+
+
+def _store_shared(quotes: Dict[str, Dict[str, Any]], now: float) -> None:
+    try:
+        with closing(db.connect()) as conn:
+            conn.executemany(
+                "INSERT INTO quote_cache (symbol, data, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(symbol) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
+                [(sym, json.dumps(q), int(now)) for sym, q in quotes.items()],
+            )
+    except Exception as e:
+        print(f"[StockCache] No se pudo guardar la caché compartida: {e}", file=sys.stderr)
+
+
+def _public(quotes: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    return {sym: {k: v for k, v in q.items() if k != "_cachedAt"} for sym, q in quotes.items()}
+
+
+def fetch_live_stock_quotes(max_age: float = TRADING_MAX_AGE) -> Dict[str, Dict[str, Any]]:
+    """Cotizaciones reales con caché en memoria y compartida (Turso). Si el proveedor falla, NUNCA inventa precios."""
     global STOCKS_CACHE, STOCKS_CACHE_TIME
     now = time.time()
-    if now - STOCKS_CACHE_TIME < 15 and STOCKS_CACHE:
+    if now - STOCKS_CACHE_TIME < max_age and STOCKS_CACHE:
         return STOCKS_CACHE
+
+    shared = _load_shared()
+    if shared:
+        newest = min(q["_cachedAt"] for q in shared.values())  # el dato más viejo manda: no mezclar épocas
+        if now - newest < max_age:
+            STOCKS_CACHE, STOCKS_CACHE_TIME = _public(shared), float(newest)
+            return STOCKS_CACHE
 
     try:
         fresh_data = provider().fetch_quotes(STOCK_SYMBOLS)
@@ -226,7 +276,12 @@ def fetch_live_stock_quotes() -> Dict[str, Dict[str, Any]]:
     if fresh_data:
         STOCKS_CACHE = fresh_data
         STOCKS_CACHE_TIME = now
+        _store_shared(fresh_data, now)
         return fresh_data
+
+    # El proveedor falló: otra instancia puede haber guardado datos más recientes que los de esta
+    if shared and not STOCKS_CACHE:
+        STOCKS_CACHE = _public(shared)
 
     # Si falla la red o el proveedor externo, retornar estado honesto (sin datos inventados)
     if STOCKS_CACHE:
@@ -268,12 +323,12 @@ async def api_stock_quotes(request):
         return JSONResponse({"error": "Límite de peticiones de bolsa excedido por minuto."}, status_code=429, headers={"Retry-After": "60"})
 
     loop = asyncio.get_event_loop()
-    quotes = await loop.run_in_executor(None, fetch_live_stock_quotes)
+    quotes = await loop.run_in_executor(None, fetch_live_stock_quotes, SHARED_TTL)
     return JSONResponse({
         "status": "success",
         "timestamp": int(time.time()),
         "data": quotes
-    })
+    }, headers={"Cache-Control": f"public, s-maxage={SHARED_TTL}, stale-while-revalidate=300"})
 
 STOCK_SYMBOL_ALIASES = {
     "NVIDIA": "NVDA", "NVDA": "NVDA",
