@@ -15,7 +15,7 @@
   ],
   "headers": [
     {
-      "source": "/(.*)\\.[0-9a-f]{8}\\.(js|mjs|css)",
+      "source": "/(.*)\\.([0-9a-f]{8})\\.(js|mjs|css)",
       "headers": [
         {
           "key": "Cache-Control",
