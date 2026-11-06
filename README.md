@@ -61,6 +61,7 @@ backend/
   trading/                   Cuenta de práctica del servidor: rules (cálculo en enteros), prices (precios del servidor),
                              ledger (transacciones, idempotencia, resolución de límite/stop), api (/api/portfolio, /api/orders)
   chat.py                    /api/chat: asistente con Claude (SSE), desafío anti-bot, límites de gasto
+  chat_fixed.py              Respuestas fijas (sin IA) para el texto exacto de los botones de sugerencia del chat
   news.py                    /api/news: RSS financieros con filtro positivo de temas
   market/
     candles.py               /api/candles: histórico de velas paginado (cripto y bolsa), agregación 3m/2h/4h
@@ -198,6 +199,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 
 ### Asistente IA
 `/api/chat` hace streaming SSE con Claude. Antes de cada mensaje el frontend pide `/api/chat/challenge` (HMAC de un solo uso). Sin clave de Anthropic responde un modo de demostración.
+- **Respuestas fijas**: el texto exacto de los botones de sugerencia (`SUGGESTIONS`, igual en `ui/chat.js` y `backend/chat_fixed.py`; un test lo comprueba) se responde sin llamar a la IA: el resumen del mercado con las cotizaciones que envía el navegador y las educativas con texto propio y enlaces a Aprender. Cualquier otra pregunta, aunque se parezca, va a la IA. El chat solo convierte en enlace las rutas internas `[texto](#/ruta)` (`lib/markdown.js`).
 - **Uso y límites en la base de datos** (`backend/ai_usage.py`, migración `0010`), así que valen aunque Vercel reparta las peticiones entre instancias: 20 preguntas por minuto y cliente, `DAILY_USER_CHAT_REQUESTS` y `DAILY_USER_TOKEN_LIMIT` al día por cliente, tope global `DAILY_GLOBAL_TOKEN_LIMIT` y aviso en el log al 80 %. El cliente se identifica con un HMAC de su IP con sal diaria (la IP no se guarda) y el cron diario borra los contadores pasados.
 - `ai_usage` guarda una fila por respuesta (tokens de entrada, salida, razonamiento y caché; sin IP, usuario ni texto) durante 90 días. El Resumen del panel y `/api/health` muestran el consumo del día y la media por pregunta.
 - El desafío se firma con un secreto generado por la migración (`server_secrets`) y su uso único se guarda en `ai_challenges_used`: funciona aunque el desafío y la pregunta lleguen a instancias distintas.

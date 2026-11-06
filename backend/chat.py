@@ -10,7 +10,7 @@ import secrets
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from backend import ai_usage, settings
+from backend import ai_usage, chat_fixed, settings
 from backend.config import ANTHROPIC_MAX_TOKENS, DEBUG
 from backend.security import IP_CHALLENGE_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
@@ -192,25 +192,15 @@ async def api_chat_stream(request):
 
     # Sanitizar contexto de mercado (DATOS DE MERCADO ÚNICAS CIFRAS QUE PUEDES CITAR)
     raw_market = account_ctx.get("market", [])
+    market = chat_fixed.market_items(raw_market)
     safe_market_lines = []
-    if isinstance(raw_market, list):
-        for item in raw_market[:6]:  # longitud limitada (máximo 6 activos)
-            if isinstance(item, dict):
-                m_sym = "".join(c for c in str(item.get("symbol", ""))[:10] if c.isalnum() or c in "/-").upper()
-                m_pair = "".join(c for c in str(item.get("pair", ""))[:15] if c.isalnum() or c in "/-").upper() or f"{m_sym}/USDT"
-                
-                raw_p_native = str(item.get("priceNativeFormatted", item.get("price", "No disponible")))[:30].replace("\n", "").strip()
-                raw_p_disp = str(item.get("priceDisplayFormatted", ""))[:35].replace("\n", "").strip()
-                raw_chg = str(item.get("change24h", "No disponible"))[:15].replace("\n", "").strip()
-                raw_upd = str(item.get("lastUpdate", "No disponible"))[:15].replace("\n", "").strip()
-                raw_st = str(item.get("status", "No disponible"))[:30].replace("\n", "").strip()
-
-                if raw_p_native in ("No disponible", "0", "0.00", ""):
-                    line = f"- {m_sym} ({m_pair}): Cotización No disponible (Estado: {raw_st})"
-                else:
-                    disp_part = f" ({raw_p_disp})" if raw_p_disp and raw_p_disp != raw_p_native and "No disponible" not in raw_p_disp else ""
-                    line = f"- {m_sym} ({m_pair}): {raw_p_native}{disp_part} | Var 24h: {raw_chg} | Estado: {raw_st} | Última actualización: {raw_upd}"
-                safe_market_lines.append(line)
+    for m in market:
+        if not m["available"]:
+            line = f"- {m['symbol']} ({m['pair']}): Cotización No disponible (Estado: {m['status']})"
+        else:
+            disp_part = f" ({m['display']})" if m["display"] else ""
+            line = f"- {m['symbol']} ({m['pair']}): {m['native']}{disp_part} | Var 24h: {m['change']} | Estado: {m['status']} | Última actualización: {m['updated']}"
+        safe_market_lines.append(line)
 
     if not safe_market_lines:
         safe_market_lines = [
@@ -261,9 +251,12 @@ async def api_chat_stream(request):
     else:
         anthropic_messages.append({"role": "user", "content": user_message})
 
+    # Las sugerencias del chat (texto exacto de los botones) se responden con texto fijo, sin llamar a la IA
+    fixed = chat_fixed.answer(user_message, raw_market)
+
     # Límites globales (por minuto, diarios por cliente y tope diario de tokens), guardados en la base de datos
     api_key = settings.get("anthropic_api_key")
-    uses_ai = bool(api_key and anthropic)
+    uses_ai = fixed is None and bool(api_key and anthropic)
     refused = await run_in_threadpool(ai_usage.admit, client_ip, uses_ai)
     if refused:
         return _too_many(refused)
@@ -275,6 +268,15 @@ async def api_chat_stream(request):
         "X-Accel-Buffering": "no",
         "Content-Type": "text/event-stream; charset=utf-8"
     }
+
+    if fixed is not None:
+        await run_in_threadpool(ai_usage.record, client_ip, "fixed")
+
+        async def fixed_stream():
+            yield f"data: {json.dumps({'text': fixed})}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(fixed_stream(), media_type="text/event-stream", headers=sse_headers)
 
     # Si no hay clave real de Anthropic, usar flujo local seguro (sin exponer secretos en producción)
     if not uses_ai:

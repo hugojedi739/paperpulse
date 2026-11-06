@@ -6,8 +6,10 @@ import { html, escape, render, $ } from '../lib/dom.js';
 import { money, price, pct, currency, locale, approx } from '../lib/format.js';
 import { portfolio } from '../lib/trading.js';
 import { INTERVALS, normalizeInterval } from '../lib/marketdata.js';
+import { markdown } from '../lib/markdown.js';
 
-const SUGGESTIONS = ['¿Cómo está el mercado hoy?', '¿Cómo leo las velas?', 'Explícame el RSI', '¿Cómo gestiono el riesgo?', '¿Qué es una orden límite?'];
+// Deben coincidir con SUGGESTIONS de backend/chat_fixed.py (se responden sin IA; lo comprueba un test)
+export const SUGGESTIONS = ['¿Cómo está el mercado hoy?', '¿Cómo leo las velas?', 'Explícame el RSI', '¿Cómo gestiono el riesgo?', '¿Qué es una orden límite?'];
 const history = [];
 let busy = false;
 let currentAsset = () => findAsset('BTC');
@@ -32,28 +34,6 @@ export function toggleChat(force) {
   document.querySelector('.fab').setAttribute('aria-expanded', String(open));
   document.querySelector('.fab').hidden = open;
   if (open) $('#chat-input').focus();
-}
-
-/** Markdown mínimo y seguro: se escapa todo y luego se aplican negritas, cursivas, código y listas. */
-export function markdown(text) {
-  const inline = (s) => escape(s)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|\s)\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
-  let out = '', list = null;
-  for (const line of text.split('\n')) {
-    const t = line.trim();
-    const m = t.match(/^([-*•]|\d+\.)\s+(.*)/);
-    if (m) {
-      const tag = /\d/.test(m[1]) ? 'ol' : 'ul';
-      if (list !== tag) { if (list) out += `</${list}>`; out += `<${tag}>`; list = tag; }
-      out += `<li>${inline(m[2])}</li>`;
-      continue;
-    }
-    if (list) { out += `</${list}>`; list = null; }
-    if (t) out += `<p>${inline(t)}</p>`;
-  }
-  return list ? `${out}</${list}>` : out;
 }
 
 function addMessage(role, text) {

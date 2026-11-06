@@ -133,3 +133,15 @@ test('en modo servidor el store no se sube a /api/data y vuelve a local al salir
   assert.equal(store.isServerMode(), false);
   off();
 });
+
+/* ---------- Markdown del asistente ---------- */
+const { markdown } = await import('../frontend/js/lib/markdown.js');
+
+test('el markdown del asistente solo enlaza rutas internas y escapa todo lo demás', () => {
+  assert.equal(markdown('Lee [la lección](#/learn/leer-velas).'), '<p>Lee <a href="#/learn/leer-velas">la lección</a>.</p>');
+  assert.equal(markdown('[web](https://example.com)'), '<p>[web](https://example.com)</p>');
+  assert.equal(markdown('[x](javascript:alert(1))'), '<p>[x](javascript:alert(1))</p>');
+  assert.equal(markdown('[x](#/a" onclick="y)'), '<p>[x](#/a&quot; onclick=&quot;y)</p>');
+  assert.equal(markdown('<img src=x> **ok**'), '<p>&lt;img src=x&gt; <strong>ok</strong></p>');
+  assert.equal(markdown('- uno\n- [dos](#/learn)'), '<ul><li>uno</li><li><a href="#/learn">dos</a></li></ul>');
+});
