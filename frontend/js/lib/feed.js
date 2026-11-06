@@ -5,7 +5,9 @@ import { CRYPTO, findAsset } from './catalog.js';
 import { emit } from './store.js';
 import { getJson, wsUrl } from './api.js';
 
-const POLL_MS = 5000;
+const POLL_FAST_MS = 5000; // Operar: el gráfico y el libro necesitan datos frescos
+const POLL_SLOW_MS = 10000; // resto de vistas
+let pollMs = POLL_SLOW_MS;
 const ticks = new Map();
 const changed = new Set();
 const handlers = new Map();
@@ -19,6 +21,8 @@ let reqId = 1;
 let lastCryptoTick = 0;
 let lastPoll = 0;
 let status = 'connecting';
+let polling = false; // una ronda a la vez: si la anterior sigue en curso no se lanza otra
+let noRealtime = false; // el servidor (p. ej. Vercel) no admite WebSocket: se queda en REST sin reconectar
 
 const backoff = (d) => Math.min(30000, Math.round(d * 2 * (0.85 + Math.random() * 0.3)));
 const allStreams = () => [...tickerStreams, ...handlers.keys(), 'stocks'];
@@ -40,11 +44,26 @@ function connect() {
   ws.onclose = () => {
     ws = null;
     startPolling();
-    timer = setTimeout(connect, delay);
-    delay = backoff(delay);
+    if (!received) confirmNoRealtime();
+    if (!noRealtime) {
+      timer = setTimeout(connect, delay);
+      delay = backoff(delay);
+    }
     updateStatus();
   };
   updateStatus();
+}
+
+/** Tras un fallo sin haber recibido nada, el servidor dice si admite WebSocket; si no, no se vuelve a intentar. */
+let checking = false;
+async function confirmNoRealtime() {
+  if (checking || noRealtime) return;
+  checking = true;
+  try {
+    const j = await getJson('/api/health');
+    if (j.realtime === false) { noRealtime = true; clearTimeout(timer); }
+  } catch { /* sin confirmación: sigue el reintento con backoff */ }
+  checking = false;
 }
 
 function send(method, params) {
@@ -108,25 +127,42 @@ async function pollStream(stream) {
 }
 
 async function poll() {
+  if (polling || document.hidden) return;
+  polling = true;
   const pairs = [...tickerStreams].map((s) => s.split('@')[0].toUpperCase());
   const jobs = [
     getJson(`/api/crypto/tickers?symbols=${pairs.join(',')}`).then((j) => j.data?.forEach((t) => route(`${t.s.toLowerCase()}@ticker`, t))),
     pollStocks(),
     ...[...handlers.keys()].map(pollStream),
   ];
-  await Promise.allSettled(jobs);
+  try { await Promise.allSettled(jobs); } finally { polling = false; }
   lastPoll = Date.now();
   updateStatus();
 }
 
-async function pollStocks() {
-  try { applyStocks((await getJson('/api/stocks/quotes')).data); } catch { /* servidor no disponible */ }
+/** Ritmo del respaldo REST según la vista (main.js): 5 s en Operar, 10 s en el resto. */
+export function setPollRate(fast) {
+  const next = fast ? POLL_FAST_MS : POLL_SLOW_MS;
+  if (next === pollMs) return;
+  pollMs = next;
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = setInterval(poll, pollMs); }
+}
+
+let stocksRequest = null; // la petición de arranque y la primera ronda del sondeo comparten la misma
+let stocksAt = -Infinity;
+function pollStocks() {
+  if (!stocksRequest && Date.now() - stocksAt < 2000) return Promise.resolve();
+  stocksRequest ??= getJson('/api/stocks/quotes')
+    .then((j) => applyStocks(j.data))
+    .catch(() => { /* servidor no disponible */ })
+    .then(() => { stocksRequest = null; stocksAt = Date.now(); });
+  return stocksRequest;
 }
 
 function startPolling() {
   if (pollTimer) return;
   poll();
-  pollTimer = setInterval(poll, POLL_MS);
+  pollTimer = setInterval(poll, pollMs);
 }
 function stopPolling() {
   clearInterval(pollTimer);
@@ -188,7 +224,7 @@ export const getStatus = () => status;
 function updateStatus() {
   const next = !navigator.onLine ? 'offline'
     : ws?.readyState === WebSocket.OPEN && Date.now() - lastCryptoTick < 10000 ? 'live'
-      : pollTimer && Date.now() - lastPoll < POLL_MS * 3 ? 'polling'
+      : pollTimer && Date.now() - lastPoll < pollMs * 3 ? 'polling'
         : 'connecting';
   if (next !== status) { status = next; emit('feed', status); }
 }
@@ -210,7 +246,8 @@ export function start() {
   setInterval(updateStatus, 2000);
   const revive = () => {
     delay = 1000;
-    if (!ws) connect();
+    if (!ws && !noRealtime) connect();
+    if (pollTimer && !document.hidden) poll(); // al volver a la pestaña se refresca de inmediato
     updateStatus();
   };
   addEventListener('online', revive);

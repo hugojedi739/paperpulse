@@ -51,6 +51,7 @@ function route() {
     if (!mounted.has(view)) { VIEWS[view].mount(section); mounted.add(view); }
     VIEWS[view].show(param);
     active = view;
+    feed.setPollRate(view === 'trade'); // 5 s en Operar, 10 s en el resto (solo afecta al respaldo REST)
     $$('[data-route]').forEach((a) => (a.dataset.route === view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     $('#page-title').textContent = VIEWS[view].title;
     document.title = `${view === 'trade' && trade.currentAsset() ? `${trade.currentAsset().symbol} · ` : ''}${VIEWS[view].title} — PaperPulse`;
@@ -256,10 +257,16 @@ store.on('account', renderAccountChip);
 store.on('notifications', renderNotifications);
 store.on('feed', renderFeedStatus);
 
+let marketsAt = 0;
+let ratesAt = 0;
 async function refreshMarkets() {
+  if (document.hidden) return; // sin pestaña visible no se pide nada; al volver se actualiza si hace falta
+  marketsAt = Date.now();
   try { store.setMarkets(await marketsStatus()); } catch { /* sin servidor: el estado de bolsa queda desconocido */ }
 }
 async function refreshRates() {
+  if (document.hidden) return;
+  ratesAt = Date.now();
   try { setRates(await fxRates()); renderAccountChip(); } catch { /* se usan tipos por defecto */ }
 }
 
@@ -291,6 +298,11 @@ refreshMarkets();
 refreshRates();
 setInterval(refreshMarkets, 60_000);
 setInterval(refreshRates, 3_600_000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (Date.now() - marketsAt > 60_000) refreshMarkets();
+  if (Date.now() - ratesAt > 3_600_000) refreshRates();
+});
 route();
 
 if (ASSETS.length && !store.settings().tourDone && !store.hasPractice() && !store.trades().length) {

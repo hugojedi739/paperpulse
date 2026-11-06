@@ -91,5 +91,19 @@ class SharedCacheTest(unittest.TestCase):
         self.assertFalse(out["AAPL"]["live"])
 
 
+class HealthRealtimeTest(unittest.TestCase):
+    def test_health_tells_client_whether_websocket_is_available(self):
+        from starlette.applications import Starlette
+        from starlette.routing import Route
+        from starlette.testclient import TestClient
+        from backend import app as backend_app
+
+        client = TestClient(Starlette(routes=[Route("/api/health", backend_app.api_health)]))
+        with mock.patch.object(backend_app, "IS_VERCEL", True):
+            self.assertIs(client.get("/api/health").json()["realtime"], False)
+        with mock.patch.object(backend_app, "IS_VERCEL", False):
+            self.assertIs(client.get("/api/health").json()["realtime"], True)
+
+
 if __name__ == "__main__":
     unittest.main()
