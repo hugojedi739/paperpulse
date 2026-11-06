@@ -78,7 +78,7 @@ export const PAGES = [
         'Copia de tus datos locales (alertas, favoritos, ajustes) si inicias sesión.',
         'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
         'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
-        'Datos técnicos: tu dirección IP se usa en memoria para limitar el abuso y no se guarda en la base de datos. Las cookies y el almacenamiento local se describen en la Política de cookies.',
+        'Datos técnicos: tu dirección IP se usa para limitar el abuso. Para aplicar los límites del asistente se guarda, como mucho hasta el día siguiente, un identificador seudonimizado derivado de tu IP que cambia cada día; la IP en sí no se guarda. Las cookies y el almacenamiento local se describen en la Política de cookies.',
       ] }] },
       { h: '3. Finalidades y bases jurídicas', p: [{ list: [
         'Crear y gestionar tu cuenta y prestarte el servicio: ejecución del contrato (art. 6.1.b RGPD).',

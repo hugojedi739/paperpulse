@@ -13,7 +13,7 @@ import { on, toast, confirmDialog, openDialog, $ } from '../lib/dom.b3064165.js'
 import { pct, price, num, timeAgo, money } from '../lib/format.bcd91d41.js';
 import { go } from '../lib/router.de30a562.js';
 import { viewChallenge } from './challenge.3467e3c1.js';
-import { RULES, DISCLAIMER } from '../lib/legal-content.9eaa2350.js';
+import { RULES, DISCLAIMER } from '../lib/legal-content.dde43b20.js';
 
 export const title = 'Comunidad';
 
