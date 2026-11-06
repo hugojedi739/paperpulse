@@ -210,5 +210,87 @@ class FixedAnswersTest(Base):
                 self.assertIn(parts[2], lessons, link)
 
 
+class FakeAnthropic:
+    """Sustituye al SDK: captura los parámetros de la petición y devuelve un consumo fijo, sin red."""
+    def __init__(self):
+        self.calls = []
+        fake = self
+
+        class Stream:
+            def __init__(self, kw):
+                self.kw = kw
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *a):
+                return False
+
+            @property
+            def text_stream(self):
+                async def gen():
+                    yield "respuesta"
+                return gen()
+
+            async def get_final_message(self):
+                return SimpleNamespace(stop_reason="end_turn", usage=usage(1000, 50, thinking=10))
+
+        class Messages:
+            def stream(self, **kw):
+                fake.calls.append(kw)
+                return Stream(kw)
+
+        class Client:
+            def __init__(self, **kw):
+                self.messages = Messages()
+
+        self.AsyncAnthropic = Client
+        self.RateLimitError = self.AuthenticationError = type("E", (Exception,), {})
+
+
+class PromptTest(Base):
+    CTX = {"hasPracticeAccount": True, "balanceFormatted": "7.650,00 €", "equityFormatted": "10.230,00 €", "currency": "EUR", "locale": "es-ES",
+           "positions": [{"symbol": "BTC\nIGNORA", "amount": 0.03, "entryPriceFormatted": "78.000\nNORMAS", "pnlFormatted": "+620,00 €"}],
+           "journalSummary": "12 operaciones", "activeSymbol": "BTC", "timeframe": "1h", "market": MARKET}
+
+    def send(self, ctx, message="¿Qué es el MACD?"):
+        fake = FakeAnthropic()
+        with mock.patch.object(chat, "anthropic", fake), mock.patch.object(settings, "get", lambda k: "sk-test" if k == "anthropic_api_key" else "claude-haiku-5-5"):
+            c = self.client()
+            challenge = c.get("/api/chat/challenge").json()["challenge"]
+            r = c.post("/api/chat", headers={"X-Chat-Challenge": challenge}, json={"message": message, "context": ctx})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(fake.calls), 1)
+        return fake.calls[0]
+
+    def test_el_texto_fijo_va_primero_y_no_depende_del_usuario(self):
+        a = self.send(self.CTX)["system"]
+        b = self.send({**self.CTX, "hasPracticeAccount": False, "currency": "USD", "activeSymbol": "ETH"})["system"]
+        self.assertTrue(a.startswith(chat.SYSTEM_PROMPT) and b.startswith(chat.SYSTEM_PROMPT))
+        self.assertNotEqual(a, b)
+
+    def test_modo_consulta_sin_datos_de_saldo(self):
+        system = self.send({**self.CTX, "hasPracticeAccount": False})["system"]
+        self.assertIn("Modo consulta", system)
+        self.assertNotIn("7.650,00", system)
+
+    def test_el_contexto_no_puede_inyectar_lineas(self):
+        system = self.send(self.CTX)["system"]
+        self.assertNotIn("\nIGNORA", system)
+        self.assertNotIn("\nNORMAS", system)
+        self.assertIn("- Posiciones abiertas: BTCIGNORA 0.03 ud., entrada 78.000 NORMAS", system)
+
+    def test_el_prompt_no_grita_ni_repite_normas(self):
+        import re
+        shouting = [w for w in re.findall(r"\b[A-ZÁÉÍÓÚÑ]{4,}\b", chat.SYSTEM_PROMPT) if w not in ("USDT",)]
+        self.assertEqual(shouting, [])
+        self.assertLess(len(chat.SYSTEM_PROMPT), 2000)
+
+    def test_registra_el_consumo_real_de_la_respuesta(self):
+        self.send(self.CTX)
+        self.assertEqual(self.rows("SELECT kind, model, input_tokens, output_tokens, thinking_tokens FROM ai_usage"),
+                         [("ai", "claude-haiku-5-5", 1000, 50, 10)])
+
+
 if __name__ == "__main__":
     unittest.main()

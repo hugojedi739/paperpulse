@@ -22,43 +22,40 @@ except ImportError:
 # ==============================================================================
 # 8. Chat con Claude AI (Streaming SSE, Historial, Seguridad y Control de Gasto)
 # ==============================================================================
-SYSTEM_PROMPT_TEMPLATE = """Eres PaperPulse AI, el analista cuantitativo y asistente de mercado en PaperPulse Terminal.
-Tu función es informar al usuario con precisión sobre las cotizaciones y educarle en mercados financieros, análisis técnico, lectura de Order Flow y gestión matemática del riesgo (regla del 1-2%).
-Hablas siempre en español claro, profesional, riguroso y estructurado.
+# Texto fijo del prompt: idéntico en todas las peticiones (los datos de cada conversación van detrás, en context_block).
+SYSTEM_PROMPT = """Eres el asistente de PaperPulse, un simulador educativo de trading con dinero virtual y cotizaciones reales. Ayudas a entender el mercado, el análisis técnico, los tipos de orden y la gestión del riesgo. Respondes en español claro.
 
-SISTEMA DE PRECIOS EN TIEMPO REAL:
-Dispones de conexión directa al feed de datos del terminal. Los datos reales y actualizados de mercado se te proporcionan a continuación en la sección "DATOS DE MERCADO (ÚNICAS CIFRAS QUE PUEDES CITAR)".
-Por tanto, NUNCA digas que no tienes acceso a datos en tiempo real ni que desconoces las cotizaciones cuando aparezcan en dicha sección.
+Normas:
+- Cifras: cita solo los precios y variaciones de «Datos de mercado», al final de este mensaje; son datos reales del terminal. No inventes otros precios, soportes, resistencias ni objetivos. En los ejemplos didácticos usa números redondos y di que son ejemplos.
+- Si preguntan por una cotización, dala en la primera línea: par, precio en su moneda, equivalencia en la moneda del usuario si es distinta, variación en 24 h y estado. Ejemplo: «BTC/USDT cotiza a 67.234,50 USDT (≈ 61.855,30 €), +2,45 % en 24 h (dato en vivo).»
+- Si el activo no está en los datos o no tiene cotización, responde solo: «No tengo cotización de <activo> ahora mismo.»
+- Si el estado es «cierre de ayer», dilo así; no lo presentes como precio actual ni en vivo.
+- No recomiendes comprar, vender ni mantener ningún activo, ni prometas resultados. Si te lo piden, explica cómo decidir con método: stop-loss, arriesgar un 1-2 % del capital por operación y relación riesgo/beneficio.
+- Usa los datos de la cuenta solo si el usuario tiene cuenta de práctica; en modo consulta no menciones saldo ni hagas ejemplos con su dinero.
+- Formato: números con el formato regional indicado en los datos. El chat solo muestra párrafos, listas, **negrita** y *cursiva*: no uses tablas ni títulos."""
 
-ESTADO DEL USUARIO (DATOS DE SOLO LECTURA):
-- Modo Activo: {account_mode_label}
-{account_status_details}
-- Activo Actualmente Abierto en Gráfico: {active_symbol} (Temporalidad: {timeframe})
-- Modo de Operativa del Terminal: {trade_mode}
-- Moneda Activa del Usuario: {currency} (Formato Regional: {locale_hint})
 
-DATOS DE MERCADO (ÚNICAS CIFRAS QUE PUEDES CITAR):
-{market_context_block}
-
-NORMAS ESTRICTAS DE RESPUESTA (OBLIGATORIAS):
-1. RESPUESTA A "¿CÓMO ESTÁ EL MERCADO?" O PREGUNTAS DE COTIZACIÓN:
-   - Si el usuario pregunta "¿cómo está el mercado?", "¿cómo va el mercado?" o consulta el precio de un activo: RESPONDE DE INMEDIATO EN LA PRIMERA LÍNEA citando el par (ejemplo: BTC/USDT), su cotización nativa, la equivalencia en {currency} (si difiere), la variación 24 h y su estado (en vivo, cierre de ayer o retrasado).
-   - Ejemplo exacto: "BTC/USDT cotiza a 67.234,50 USDT (≈ 61.855,30 €) con una variación 24 h de +2,45% (dato en vivo)."
-   - Realiza un análisis técnico o contextual más largo ÚNICAMENTE si el usuario lo solicita explícitamente.
-2. REGLA FUNDAMENTAL DE PRECIOS:
-   - Las cifras en "DATOS DE MERCADO" son las ÚNICAS que tienes permitido citar. No inventes ni menciones ningún otro precio numérico, soporte numérico o resistencia numérica que no esté en esa sección.
-3. SI UN ACTIVO ESTÁ "NO DISPONIBLE" O FALTA COTIZACIÓN:
-   - Responde obligatoriamente en una sola línea con la frase: "No tengo cotización de [Activo] ahora mismo." (ejemplo exacto: "No tengo cotización de BTC ahora mismo." o "No tengo cotización de Santander ahora mismo.").
-   - NUNCA uses plantillas largas, disculpas, explicaciones sobre el gráfico ni texto adicional.
-4. ACCIONES CERRADAS:
-   - Si una acción tiene el estado "cierre de ayer", DEBES indicar explícitamente "cierre de ayer" o "último cierre" y NUNCA llamarlo precio "actual" ni "en vivo".
-5. MODO CONSULTA (SIN CUENTA DE PRÁCTICA):
-   - Si el usuario está en Modo Consulta, está TERMINANTEMENTE PROHIBIDO mencionar saldo, capital, liquidez ni poner ejemplos con el saldo del usuario. Céntrate exclusivamente en el mercado y conceptos técnicos.
-6. DENOMINACIÓN DE PARES Y DIVISAS:
-   - Menciona siempre el par real de cotización (BTC/USDT, ETH/USDT, SOL/USDT, SAN/EUR, NVDA/USD) y la moneda de visualización del usuario ({currency}).
-7. FORMATO DE NÚMEROS Y MONEDAS:
-   - Usa siempre la moneda activa ({currency}) y el formato numérico regional ({locale_hint}). En formato español/europeo: 67.234,50 USDT o 61.855,30 €.
-8. Jamás des recomendaciones de inversión formal garantizadas; enfatiza la gestión matemática del riesgo, el ratio R:R y el Stop Loss."""
+def context_block(ctx: dict, market: list) -> str:
+    """Datos de la conversación (cuenta, gráfico, moneda y cotizaciones), ya saneados. Va al final del prompt."""
+    lines = ["", "", "Datos de esta conversación"]
+    if ctx["has_practice"]:
+        lines.append(f"- Cuenta de práctica: efectivo {ctx['balance']}, patrimonio {ctx['equity']}.")
+        lines.append(f"- Posiciones abiertas: {ctx['positions']}.")
+        lines.append(f"- Diario: {ctx['journal']}.")
+    else:
+        lines.append("- Modo consulta: el usuario no tiene cuenta de práctica.")
+    lines.append(f"- Gráfico abierto: {ctx['symbol']} ({ctx['timeframe']}).")
+    lines.append(f"- Moneda del usuario: {ctx['currency']}. Formato numérico: {ctx['number_format']}.")
+    lines += ["", "Datos de mercado (par: precio · variación 24 h · estado · hora):"]
+    for m in market:
+        if m["available"]:
+            disp = f" ({m['display']})" if m["display"] else ""
+            lines.append(f"- {m['pair']}: {m['native']}{disp} · {m['change']} · {m['status']} · {m['updated']}")
+        else:
+            lines.append(f"- {m['pair']}: sin cotización")
+    if not market:
+        lines.append(f"- {ctx['symbol']}: sin cotización")
+    return "\n".join(lines)
 
 # ==============================================================================
 # Desafío anti-bot. Firmado con el secreto del servidor (igual en todas las instancias) y de un solo uso
@@ -134,94 +131,45 @@ async def api_chat_stream(request):
         print(f"[Chat] Error verificando el desafío: {type(exc).__name__}: {exc}", file=sys.stderr)
         return JSONResponse({"error": "Error durante la verificación anti-bot."}, status_code=403)
 
-    # Validación y sanitización rigurosa del contexto de cuenta
+    # Contexto enviado por el navegador: todo se sanea y se acota antes de llegar al prompt
     account_ctx = body.get("context")
     if not isinstance(account_ctx, dict):
         account_ctx = {}
 
-    has_practice = bool(account_ctx.get("hasPracticeAccount", False))
-    raw_bal = str(account_ctx.get("balanceFormatted", account_ctx.get("balanceUsd", "0.00")))[:30].replace("\n", "").strip()
-    raw_eq = str(account_ctx.get("equityFormatted", account_ctx.get("equityUsd", raw_bal)))[:30].replace("\n", "").strip()
-    curr = str(account_ctx.get("currency", "EUR"))[:5].strip()
-    currency = curr if curr in ("EUR", "USD", "GBP") else "EUR"
-    locale = str(account_ctx.get("locale", "es-ES"))[:10].strip()
-    locale_hint = "español/europeo (separador de miles con punto y decimales con coma: '1.250,50')" if locale == "es-ES" else "anglosajón"
+    def clean(value, limit):
+        return str(value if value is not None else "").replace("\n", " ").replace("\r", " ")[:limit].strip()
 
-    # Sanitizar posiciones
-    raw_pos = account_ctx.get("positions", [])
+    has_practice = bool(account_ctx.get("hasPracticeAccount", False))
+    raw_bal = clean(account_ctx.get("balanceFormatted", account_ctx.get("balanceUsd", "0.00")), 30)
+    raw_eq = clean(account_ctx.get("equityFormatted", account_ctx.get("equityUsd", raw_bal)), 30)
+    curr = clean(account_ctx.get("currency", "EUR"), 5)
+    currency = curr if curr in ("EUR", "USD", "GBP") else "EUR"
+    locale = clean(account_ctx.get("locale", "es-ES"), 10)
+
     safe_positions = []
+    raw_pos = account_ctx.get("positions", [])
     if isinstance(raw_pos, list):
         for p in raw_pos[:10]:
             if isinstance(p, dict):
-                sym = str(p.get("symbol", ""))[:10].replace("\n", "").strip()
-                amt = p.get("amount", 0)
-                pnl_formatted = str(p.get("pnlFormatted", f"${p.get('pnlUsd', 0)}"))[:25].replace("\n", "").strip()
-                entry_formatted = str(p.get("entryPriceFormatted", p.get("entryPrice", "")))[:25].replace("\n", "").strip()
+                sym = "".join(c for c in clean(p.get("symbol", ""), 10) if c.isalnum() or c in "/-")
+                amt = clean(p.get("amount", 0), 20)
+                entry = clean(p.get("entryPriceFormatted", p.get("entryPrice", "")), 25)
+                pnl = clean(p.get("pnlFormatted", p.get("pnlUsd", "")), 25)
                 if sym:
-                    safe_positions.append(f"{sym} ({amt} ud, entrada: {entry_formatted}, PnL: {pnl_formatted})")
-    positions_summary = ", ".join(safe_positions) if safe_positions else "Ninguna posición abierta actualmente."
+                    safe_positions.append(f"{sym} {amt} ud., entrada {entry}, resultado {pnl}")
 
-    # Sanitizar resumen de diario
-    raw_journal = str(account_ctx.get("journalSummary", "Sin operaciones recientes."))[:120].replace("\n", " ").strip()
-    journal_summary = raw_journal if raw_journal else "Sin operaciones registradas."
-
-    # Activo y temporalidad
-    raw_sym = str(account_ctx.get("activeSymbol", "BTC"))[:12].replace("\n", "").strip()
-    active_symbol = "".join(c for c in raw_sym if c.isalnum() or c in "/-") or "BTC"
-
-    raw_tf = str(account_ctx.get("timeframe", "1D"))[:6].replace("\n", "").strip()
-    timeframe = raw_tf if raw_tf in ("1m", "5m", "15m", "1h", "4h", "1D", "1W") else "1D"
-
-    raw_tm = str(account_ctx.get("tradeMode", "Modo Fácil"))[:20].replace("\n", "").strip()
-    trade_mode = "Modo Avanzado" if "avanzado" in raw_tm.lower() or "pro" in raw_tm.lower() else "Modo Fácil"
-
-    if has_practice:
-        account_mode_label = "Cuenta de Práctica PaperPulse Activa"
-        account_status_details = (
-            f"- Saldo en Efectivo Disponible: {raw_bal}\n"
-            f"- Patrimonio Total (Equity): {raw_eq}\n"
-            f"- Posiciones Abiertas: {positions_summary}\n"
-            f"- Resumen del Diario: {journal_summary}"
-        )
-    else:
-        account_mode_label = "Modo Consulta PaperPulse (Sin cuenta de práctica activa)"
-        account_status_details = (
-            "- El usuario NO tiene cuenta de práctica activa en este momento; está en Modo Consulta de mercado.\n"
-            "- Está terminantemente PROHIBIDO mencionar saldo, efectivo, patrimonio o capital del usuario ni inventar ejemplos con su dinero."
-        )
-
-    # Sanitizar contexto de mercado (DATOS DE MERCADO ÚNICAS CIFRAS QUE PUEDES CITAR)
+    active_symbol = "".join(c for c in clean(account_ctx.get("activeSymbol", "BTC"), 12) if c.isalnum() or c in "/-") or "BTC"
+    timeframe = "".join(c for c in clean(account_ctx.get("timeframe", "1D"), 4) if c.isalnum()) or "1D"
     raw_market = account_ctx.get("market", [])
     market = chat_fixed.market_items(raw_market)
-    safe_market_lines = []
-    for m in market:
-        if not m["available"]:
-            line = f"- {m['symbol']} ({m['pair']}): Cotización No disponible (Estado: {m['status']})"
-        else:
-            disp_part = f" ({m['display']})" if m["display"] else ""
-            line = f"- {m['symbol']} ({m['pair']}): {m['native']}{disp_part} | Var 24h: {m['change']} | Estado: {m['status']} | Última actualización: {m['updated']}"
-        safe_market_lines.append(line)
 
-    if not safe_market_lines:
-        safe_market_lines = [
-            f"- {active_symbol}: Cotización No disponible",
-            "- BTC (BTC/USDT): Cotización No disponible",
-            "- ETH (ETH/USDT): Cotización No disponible",
-            "- SOL (SOL/USDT): Cotización No disponible"
-        ]
-
-    market_context_block = "\n".join(safe_market_lines)
-
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
-        account_mode_label=account_mode_label,
-        account_status_details=account_status_details,
-        market_context_block=market_context_block,
-        active_symbol=active_symbol,
-        timeframe=timeframe,
-        trade_mode=trade_mode,
-        currency=currency,
-        locale_hint=locale_hint
-    )
+    system_prompt = SYSTEM_PROMPT + context_block({
+        "has_practice": has_practice, "balance": raw_bal, "equity": raw_eq,
+        "positions": "; ".join(safe_positions) or "ninguna",
+        "journal": clean(account_ctx.get("journalSummary", ""), 120) or "sin operaciones",
+        "symbol": active_symbol, "timeframe": timeframe, "currency": currency,
+        "number_format": "1.250,50 (español)" if locale == "es-ES" else "1,250.50 (inglés)",
+    }, market)
 
     # Validar y formatear historial de conversación (hasta 8 mensajes anteriores)
     raw_history = body.get("history", [])
