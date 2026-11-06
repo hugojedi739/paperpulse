@@ -53,9 +53,15 @@ async def api_health(request):
                          "anthropicConfigured": bool(settings.get("anthropic_api_key"))})
 
 
+BUILT_INDEX = os.path.join(os.path.dirname(__file__), "templates", "index.html")  # generado por `npm run build:static`
+
+
 async def serve_index(request):
     """index.html con el dominio real en canonical y Open Graph."""
     index_path = os.path.join(FRONTEND_DIR, "index.html")
+    # En Vercel los estáticos con hash salen del CDN (public/): el index generado apunta a ellos y precarga los módulos
+    if IS_VERCEL and os.path.exists(BUILT_INDEX):
+        index_path = BUILT_INDEX
     if not os.path.exists(index_path):
         return Response("index.html no encontrado en frontend/", status_code=404)
     domain = app_domain()

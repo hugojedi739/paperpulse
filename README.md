@@ -267,6 +267,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | `python -m backend.db migrate` · `status` | Aplica las migraciones pendientes · muestra la versión del esquema |
 | `python -m backend.db demo` · `users` · `admin <email>` | Usuarios de prueba · listar · dar rol de admin |
 | `npm install && npm run vendor` | Actualiza Lightweight Charts, fuentes e iconos |
+| `npm run build:static` | Regenera `public/` y `backend/templates/index.html` (JS/CSS con hash para el CDN de Vercel). **Ejecútalo tras tocar `frontend/`**: un test falla si están desactualizados |
 | `npm run screenshots` | Capturas de todas las vistas (servidor en marcha y Chromium) |
 
 ## Producción
@@ -278,7 +279,7 @@ docker compose up --build
 - Define `ENV=production` y `APP_DOMAIN=https://tu-dominio` en `.env`: activa HSTS, cookies `__Host-`/Secure, `upgrade-insecure-requests`, quita `localhost` de la CSP y fija las URIs de redirección de OAuth.
 - La base de datos vive en el volumen `paperpulse-data` (`/app/data`).
 - Detrás de un proxy, añade su IP a `TRUSTED_PROXIES` y reenvía también las conexiones WebSocket de `/ws/market`.
-- **Vercel** (`vercel.json`): funciona sin WebSockets (el frontend usa el respaldo REST). Necesita **Turso** para que los datos persistan; sin `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` usa `/tmp`, que es efímero.
+- **Vercel** (`vercel.json`): los estáticos salen del CDN desde `public/` (generado por `npm run build:static`, con el hash en el nombre y `Cache-Control: immutable`); la función solo sirve `/` (con el dominio real) y `/api`. En local y con Docker no se usa `public/`: se sirve `frontend/` tal cual, sin build. Funciona sin WebSockets (el frontend usa el respaldo REST). Necesita **Turso** para que los datos persistan; sin `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` usa `/tmp`, que es efímero.
 
 ### Base local y dev containers
 SQLite **no funciona en carpetas compartidas con el anfitrión, de red o de máquina virtual**. En un dev container sobre Windows o macOS, `/workspaces` es virtiofs: el número de inodo de un fichero cambia tras el primer `fsync`, y SQLite corrompe la base (modo WAL: «database disk image is malformed») o la trata como movida (modo DELETE: «attempt to write a readonly database»). Por eso:

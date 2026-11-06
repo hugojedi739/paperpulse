@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>PaperPulse — Simulador de trading con datos en vivo</title>
+  <meta name="description" content="Practica trading con cotizaciones reales de cripto y bolsa, gráficos profesionales y un diario de operaciones, sin arriesgar dinero.">
+  <link rel="canonical" href="https://paperpulse.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://paperpulse.app/">
+  <meta property="og:title" content="PaperPulse — Simulador de trading con datos en vivo">
+  <meta property="og:description" content="Cotizaciones reales de cripto y bolsa, gráficos profesionales y práctica sin riesgo.">
+  <meta property="og:image" content="https://paperpulse.app/img/brand/og-preview.png">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0a0b0f" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
+  <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/app.1bf1fe12.css">
+  <link rel="modulepreload" href="/js/lib/account.38c76db0.js">
+  <link rel="modulepreload" href="/js/lib/api.d1caad06.js">
+  <link rel="modulepreload" href="/js/lib/auth.c90f6d5b.js">
+  <link rel="modulepreload" href="/js/lib/catalog.760e22b2.js">
+  <link rel="modulepreload" href="/js/lib/charts.f9853352.js">
+  <link rel="modulepreload" href="/js/lib/community.2573c6ff.js">
+  <link rel="modulepreload" href="/js/lib/dom.b3064165.js">
+  <link rel="modulepreload" href="/js/lib/el.71f9edc9.js">
+  <link rel="modulepreload" href="/js/lib/feed.6d0c0c04.js">
+  <link rel="modulepreload" href="/js/lib/format.bcd91d41.js">
+  <link rel="modulepreload" href="/js/lib/legal-content.9eaa2350.js">
+  <link rel="modulepreload" href="/js/lib/markdown.d4c8523f.js">
+  <link rel="modulepreload" href="/js/lib/marketdata.d86555d2.js">
+  <link rel="modulepreload" href="/js/lib/notifications.1ed2c6db.js">
+  <link rel="modulepreload" href="/js/lib/retention.db3e426f.js">
+  <link rel="modulepreload" href="/js/lib/router.de30a562.js">
+  <link rel="modulepreload" href="/js/lib/store.0fb0dfbb.js">
+  <link rel="modulepreload" href="/js/lib/trading.82934341.js">
+  <link rel="modulepreload" href="/js/lib/ui.ced569f0.js">
+  <link rel="modulepreload" href="/js/ui/chat.3fc719f1.js">
+  <link rel="modulepreload" href="/js/ui/dialogs.2f6b0a92.js">
+  <link rel="modulepreload" href="/js/ui/palette.4edac6a8.js">
+  <link rel="modulepreload" href="/js/ui/retention-card.d344c44b.js">
+  <link rel="modulepreload" href="/js/ui/share.dd599c38.js">
+  <link rel="modulepreload" href="/js/ui/terms.e9734cea.js">
+  <link rel="modulepreload" href="/js/ui/tour.6ab207de.js">
+  <link rel="modulepreload" href="/js/views/challenge.3467e3c1.js">
+  <link rel="modulepreload" href="/js/views/community.736ad3b9.js">
+  <link rel="modulepreload" href="/js/views/contact.fbd9248a.js">
+  <link rel="modulepreload" href="/js/views/dashboard.8f271da3.js">
+  <link rel="modulepreload" href="/js/views/journal.10d4c96c.js">
+  <link rel="modulepreload" href="/js/views/markets.e4c7d114.js">
+  <link rel="modulepreload" href="/js/views/news.a24b3da0.js">
+  <link rel="modulepreload" href="/js/views/trade.726b7a4f.js">
+  <link rel="modulepreload" href="/vendor/lightweight-charts.7d001f7d.mjs">
+  <script src="/js/theme-init.f6dbcac7.js"></script>
+  <script type="module" src="/js/main.e5eaaebd.js"></script>
+  <script type="module" src="/js/ui/status.8c35d296.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar al contenido</a>
+  <noscript><p class="noscript">PaperPulse necesita JavaScript para conectar con los mercados en vivo.</p></noscript>
+
+  <div class="app">
+    <!-- Navegación lateral -->
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand" href="#/dashboard" aria-label="PaperPulse, inicio">
+        <svg class="brand-mark" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10"/><path d="M5 18h6l3-7 4 16 4-20 3 14 2-3h4"/></svg>
+        <span class="brand-name">PaperPulse</span>
+      </a>
+      <nav class="nav">
+        <a href="#/dashboard" data-route="dashboard"><svg class="icon"><use href="/img/icons.svg#layout-dashboard"/></svg><span>Resumen</span></a>
+        <a href="#/trade" data-route="trade"><svg class="icon"><use href="/img/icons.svg#chart-candlestick"/></svg><span>Operar</span></a>
+        <a href="#/markets" data-route="markets"><svg class="icon"><use href="/img/icons.svg#coins"/></svg><span>Mercados</span></a>
+        <a href="#/news" data-route="news"><svg class="icon"><use href="/img/icons.svg#newspaper"/></svg><span>Noticias</span></a>
+        <a href="#/journal" data-route="journal"><svg class="icon"><use href="/img/icons.svg#book-open"/></svg><span>Diario</span></a>
+        <a href="#/community" data-route="community"><svg class="icon"><use href="/img/icons.svg#users"/></svg><span>Comunidad</span></a>
+        <a href="#/learn" data-route="learn"><svg class="icon"><use href="/img/icons.svg#graduation-cap"/></svg><span>Aprender</span></a>
+        <a href="#/admin" data-route="admin" data-admin-only hidden><svg class="icon"><use href="/img/icons.svg#shield-check"/></svg><span>Administración</span></a>
+      </nav>
+      <div class="nav nav-bottom">
+        <button type="button" data-action="guide"><svg class="icon"><use href="/img/icons.svg#graduation-cap"/></svg><span>Manual</span></button>
+        <button type="button" data-action="settings"><svg class="icon"><use href="/img/icons.svg#settings"/></svg><span>Ajustes</span></button>
+        <button type="button" data-action="collapse-nav" aria-label="Contraer menú"><svg class="icon"><use href="/img/icons.svg#chevron-left"/></svg><span>Contraer</span></button>
+      </div>
+    </aside>
+
+    <div class="shell">
+      <header class="topbar">
+        <h1 class="page-title" id="page-title">Resumen</h1>
+        <button type="button" class="search-trigger" data-action="palette" aria-keyshortcuts="Control+K">
+          <svg class="icon"><use href="/img/icons.svg#search"/></svg>
+          <span>Buscar activos o acciones…</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+        <div class="topbar-actions">
+          <span class="feed-status" id="feed-status" role="status" data-state="connecting"><i></i><span>Conectando</span></span>
+          <button type="button" class="account-chip" id="account-chip" data-action="account"></button>
+          <button type="button" class="icon-btn" data-action="theme" aria-label="Cambiar tema"><svg class="icon"><use href="/img/icons.svg#sun"/></svg></button>
+          <button type="button" class="icon-btn" popovertarget="notif-pop" aria-label="Notificaciones" id="notif-btn">
+            <svg class="icon"><use href="/img/icons.svg#bell"/></svg><span class="dot-badge" id="notif-badge" hidden></span>
+          </button>
+          <button type="button" class="avatar" popovertarget="user-pop" aria-label="Menú de cuenta"><svg class="icon"><use href="/img/icons.svg#user"/></svg></button>
+        </div>
+      </header>
+
+      <div class="statusbar" id="hdr-status"></div>
+
+      <div class="ticker" id="ticker" aria-label="Cotizaciones en vivo"><div class="ticker-track" id="ticker-track"></div></div>
+
+      <div class="offline-banner" id="offline-banner" role="alert" hidden>
+        <svg class="icon"><use href="/img/icons.svg#wifi-off"/></svg>
+        Sin conexión. Mostrando los últimos datos; reconectaremos automáticamente.
+      </div>
+
+      <main id="main" tabindex="-1">
+        <section class="view" data-view="dashboard" aria-labelledby="page-title"></section>
+        <section class="view" data-view="trade" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="markets" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="news" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="journal" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="community" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="learn" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="legal" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="contact" aria-labelledby="page-title" hidden></section>
+        <section class="view" data-view="admin" aria-labelledby="page-title" hidden></section>
+
+        <footer class="footer">
+          <p><svg class="icon"><use href="/img/icons.svg#info"/></svg>
+            Simulador educativo con saldo virtual. No es asesoramiento financiero. Las cotizaciones de bolsa pueden llevar retraso.</p>
+          <p>
+            <a href="#/legal/aviso-legal">Aviso legal</a> · <a href="#/legal/privacidad">Privacidad</a> · <a href="#/legal/terminos">Términos</a> ·
+            <a href="#/legal/cookies">Cookies</a> · <a href="#/legal/normas">Normas</a> · <a href="#/contact">Contacto</a> ·
+            Gráficos de <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts™</a>
+          </p>
+          <p class="credit">Diseñado y desarrollado por Hugo.</p>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- Barra inferior móvil -->
+  <nav class="tabbar" aria-label="Navegación móvil">
+    <a href="#/dashboard" data-route="dashboard"><svg class="icon"><use href="/img/icons.svg#layout-dashboard"/></svg>Resumen</a>
+    <a href="#/trade" data-route="trade"><svg class="icon"><use href="/img/icons.svg#chart-candlestick"/></svg>Operar</a>
+    <a href="#/markets" data-route="markets"><svg class="icon"><use href="/img/icons.svg#coins"/></svg>Mercados</a>
+    <a href="#/news" data-route="news"><svg class="icon"><use href="/img/icons.svg#newspaper"/></svg>Noticias</a>
+    <a href="#/journal" data-route="journal"><svg class="icon"><use href="/img/icons.svg#book-open"/></svg>Diario</a>
+    <a href="#/community" data-route="community"><svg class="icon"><use href="/img/icons.svg#users"/></svg>Comunidad</a>
+  </nav>
+
+  <!-- Popovers -->
+  <div popover id="user-pop" class="menu">
+    <div class="menu-head" id="user-pop-head"></div>
+    <div id="user-auth"></div>
+    <button type="button" data-action="account"><svg class="icon"><use href="/img/icons.svg#wallet"/></svg>Cuenta de práctica</button>
+    <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#bell-ring"/></svg>Alertas de precio</button>
+    <button type="button" data-action="theme"><svg class="icon"><use href="/img/icons.svg#moon"/></svg>Cambiar tema</button>
+    <button type="button" data-action="privacy"><svg class="icon"><use href="/img/icons.svg#eye-off"/></svg>Ocultar importes</button>
+    <button type="button" data-action="settings"><svg class="icon"><use href="/img/icons.svg#settings"/></svg>Ajustes y datos</button>
+    <a class="menu-item" href="#/admin" data-admin-only hidden><svg class="icon"><use href="/img/icons.svg#shield-check"/></svg>Administración</a>
+    <hr>
+    <button type="button" data-action="guide"><svg class="icon"><use href="/img/icons.svg#graduation-cap"/></svg>Manual de operativa</button>
+    <button type="button" data-action="tour"><svg class="icon"><use href="/img/icons.svg#sparkles"/></svg>Visita guiada</button>
+    <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
+  </div>
+
+  <div popover id="notif-pop" class="menu menu-wide">
+    <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
+    <div id="notif-list" class="notif-list"></div>
+    <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#plus"/></svg>Nueva alerta de precio</button>
+  </div>
+
+  <!-- Asistente IA -->
+  <button type="button" class="fab" data-action="chat" aria-label="Abrir asistente" aria-controls="chat" aria-expanded="false">
+    <svg class="icon"><use href="/img/icons.svg#sparkles"/></svg>
+  </button>
+  <aside class="chat" id="chat" aria-label="Asistente PaperPulse" hidden>
+    <header class="chat-head">
+      <div><strong>Asistente</strong><span class="muted">Explicaciones y datos del mercado</span></div>
+      <button type="button" class="icon-btn" data-action="chat" aria-label="Cerrar asistente"><svg class="icon"><use href="/img/icons.svg#x"/></svg></button>
+    </header>
+    <div class="chat-log" id="chat-log" aria-live="polite"></div>
+    <div class="chat-suggest" id="chat-suggest"></div>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" name="message" autocomplete="off" maxlength="2000" placeholder="Pregunta sobre un activo o un concepto…" aria-label="Mensaje">
+      <button class="icon-btn primary" aria-label="Enviar"><svg class="icon"><use href="/img/icons.svg#send"/></svg></button>
+    </form>
+  </aside>
+
+  <!-- Diálogos -->
+  <dialog id="palette" class="palette" aria-label="Buscar">
+    <div class="palette-input">
+      <svg class="icon"><use href="/img/icons.svg#search"/></svg>
+      <input id="palette-input" placeholder="Busca BTC, Santander, NVIDIA… o escribe un comando" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palette-list">
+      <kbd>Esc</kbd>
+    </div>
+    <div id="palette-list" class="palette-list" role="listbox"></div>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="dlg dlg-sm">
+    <div class="dlg-body"></div>
+    <footer class="dlg-foot">
+      <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+      <button type="button" class="btn btn-primary" data-confirm>Confirmar</button>
+    </footer>
+  </dialog>
+
+  <dialog id="dlg" class="dlg"><div id="dlg-content"></div></dialog>
+
+  <div class="tour" id="tour" hidden>
+    <div class="tour-spot" id="tour-spot"></div>
+    <div class="tour-card" id="tour-card" role="dialog" aria-live="polite"></div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="sr-only" id="sr-live" aria-live="polite"></div>
+</body>
+</html>

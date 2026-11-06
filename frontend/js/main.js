@@ -13,22 +13,25 @@ import * as trade from './views/trade.js';
 import * as markets from './views/markets.js';
 import * as newsView from './views/news.js';
 import * as journal from './views/journal.js';
-import * as admin from './views/admin.js';
 import * as community from './views/community.js';
 import * as dialogs from './ui/dialogs.js';
 import * as auth from './lib/auth.js';
 import * as account from './lib/account.js';
 import * as notifs from './lib/notifications.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.js';
-import * as learn from './views/learn.js';
-import * as legal from './views/legal.js';
 import * as contact from './views/contact.js';
 import { maybeAskTerms } from './ui/terms.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, learn, legal, contact, admin };
+const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
+// Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
+const LAZY = {
+  learn: () => import('./views/learn.js'),
+  legal: () => import('./views/legal.js'),
+  admin: () => import('./views/admin.js'),
+};
 const mounted = new Set();
 let active = null;
 
@@ -41,9 +44,13 @@ applyTheme(document.documentElement.dataset.theme);
 applyPrivacy();
 
 /* ---------- Enrutado ---------- */
-function route() {
+async function route() {
   const { route: name, param } = current();
-  const view = VIEWS[name] ? name : 'dashboard';
+  const view = VIEWS[name] || LAZY[name] ? name : 'dashboard';
+  if (!VIEWS[view]) {
+    try { VIEWS[view] = await LAZY[view](); } catch { toast('No se pudo cargar la sección. Comprueba la conexión e inténtalo de nuevo.', 'error'); return; }
+    if (current().route !== name) return; // se cambió de vista mientras se descargaba: ya la gestiona otro route()
+  }
   const swap = () => {
     if (active && active !== view) VIEWS[active].hide?.();
     for (const section of $$('.view')) section.hidden = section.dataset.view !== view;

@@ -6,6 +6,7 @@
   "description": "PaperPulse Terminal — simulador de trading con datos de mercado en vivo",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
+    "build:static": "node scripts/build-static.mjs",
     "test": "node --test tests/*.test.js",
     "dev": "python server.py",
     "screenshots": "node scripts/screenshots.mjs"
