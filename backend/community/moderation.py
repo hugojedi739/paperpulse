@@ -24,10 +24,11 @@ def list_reports(status: str, limit: int, offset: int) -> Dict:
         rows = conn.execute(
             "SELECT r.post_id, COUNT(*) AS n, GROUP_CONCAT(DISTINCT r.reason) AS reasons, MAX(r.created_at) AS last_at, "
             "po.body, po.status AS post_status, po.author_id, pa.alias AS author, po.thread_id, t.title, t.first_post_id, "
-            "u.suspended_until FROM reports r JOIN posts po ON po.id = r.post_id JOIN threads t ON t.id = po.thread_id "
+            "u.suspended_until, u.created_at AS author_since FROM reports r JOIN posts po ON po.id = r.post_id JOIN threads t ON t.id = po.thread_id "
             "JOIN users u ON u.id = po.author_id LEFT JOIN profiles pa ON pa.user_id = po.author_id "
             "WHERE r.status = ? GROUP BY r.post_id ORDER BY n DESC, last_at DESC LIMIT ? OFFSET ?",
             (status, limit, offset)).fetchall()
+        history = _author_history(conn, [r["author_id"] for r in rows])
         out = []
         for r in rows:
             reports = conn.execute(
@@ -42,12 +43,30 @@ def list_reports(status: str, limit: int, offset: int) -> Dict:
                 "reportedBody": first["post_body"] if first and first["post_body"] is not None else None,
                 "reportedAuthor": first["post_author_alias"] if first and first["post_author_alias"] else r["author"],
                 "threadId": r["thread_id"], "threadTitle": r["title"],
-                "author": {"userId": r["author_id"], "alias": r["author"], "suspended": (r["suspended_until"] or 0) > now()},
+                "author": {"userId": r["author_id"], "alias": r["author"], "suspended": (r["suspended_until"] or 0) > now(),
+                           "accountCreatedAt": r["author_since"], **history[r["author_id"]]},
                 "count": r["n"], "reasons": (r["reasons"] or "").split(","), "lastAt": r["last_at"],
                 "reports": [{"id": x["id"], "reason": x["reason"], "details": x["details"], "reporter": x["reporter"],
                              "createdAt": x["created_at"]} for x in reports],
             })
     return {"status": status, "total": total, "items": out}
+
+
+def _author_history(conn, author_ids) -> Dict[int, Dict]:
+    """Ficha de cada autor para decidir con contexto: mensajes publicados, ocultados y suspensiones previas.
+    Tres consultas agrupadas para toda la página (no una por denuncia: con Turso cada consulta es un viaje de red)."""
+    ids = sorted({i for i in author_ids if i})
+    stats = {i: {"posts": 0, "hiddenPosts": 0, "suspensions": 0} for i in ids}
+    if not ids:
+        return stats
+    marks = ",".join("?" * len(ids))
+    for r in conn.execute(f"SELECT author_id, SUM(status != 'deleted') AS n, SUM(status = 'hidden') AS hidden FROM posts "
+                          f"WHERE author_id IN ({marks}) GROUP BY author_id", ids).fetchall():
+        stats[r["author_id"]].update(posts=r["n"] or 0, hiddenPosts=r["hidden"] or 0)
+    for r in conn.execute(f"SELECT target_id, COUNT(*) AS n FROM moderation_log WHERE action = 'suspend_user' AND target_type = 'user' "
+                          f"AND target_id IN ({marks}) GROUP BY target_id", ids).fetchall():
+        stats[r["target_id"]]["suspensions"] = r["n"]
+    return stats
 
 
 def _set_post(admin_id: int, post_id: int, hide: bool, reason) -> Dict:

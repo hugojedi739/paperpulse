@@ -5,8 +5,8 @@ import { num, timeAgo } from '../lib/format.bcd91d41.js';
 import { api } from '../lib/api.d1caad06.js';
 import * as auth from '../lib/auth.12cec77c.js';
 import { empty } from '../lib/ui.6fc197dc.js';
-import * as moderation from './moderation.84c5bf51.js';
-import * as messages from './messages.83c87dad.js';
+import * as moderation from './moderation.83b16305.js';
+import * as messages from './messages.ce87459d.js';
 import * as audit from './audit.b085256d.js';
 
 export const title = 'Administración';
@@ -16,6 +16,7 @@ const PAGE = 25;
 let root, tab = 'overview';
 let usersQuery = '', usersOffset = 0;
 let cfg = null; // { settings, redirectUris }
+let badges = { openReports: 0, unreadMessages: 0 }; // pendientes que se muestran en las pestañas
 
 export function mount(el) {
   root = el;
@@ -25,12 +26,28 @@ export function mount(el) {
   on(root, 'input', '#ad-search', debounce((e) => { usersQuery = e.target.value; usersOffset = 0; renderUsers(); }, 300));
   on(root, 'submit', 'form[data-form]', (e, f) => { e.preventDefault(); saveForm(f); });
   auth.onAuth(() => { if (!root.hidden) show(); });
+  document.addEventListener('admin-badges', refreshBadges); // moderación y mensajes avisan al resolver algo
+}
+
+const BADGE_TAB = { moderation: 'openReports', messages: 'unreadMessages' };
+
+function renderTabs() {
+  render($('#ad-tabs', root), TABS.map(([id, label, ic]) => {
+    const n = badges[BADGE_TAB[id]] ?? 0;
+    return html`<button role="tab" data-tab="${id}" aria-selected="${tab === id}">${icon(ic, 'sm')} ${label}${n ? html` <span class="count alert" aria-label="${n} pendientes">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
+  }));
+}
+
+async function refreshBadges() {
+  if (!auth.isAdmin() || !root || root.hidden) return;
+  try { badges = await api('/api/admin/badges'); } catch { return; } // un fallo aquí no debe molestar: los contadores son un extra
+  renderTabs();
 }
 
 export function show(param) {
   if (param && TABS.some(([id]) => id === param)) tab = param;
-  render($('#ad-tabs', root), TABS.map(([id, label, ic]) =>
-    html`<button role="tab" data-tab="${id}" aria-selected="${tab === id}">${icon(ic, 'sm')} ${label}</button>`));
+  renderTabs();
+  refreshBadges();
   const body = $('#ad-body', root);
   if (!auth.isAdmin()) {
     return render(body, html`<section class="card">${empty('shield-check', 'Acceso restringido', auth.currentUser()
@@ -113,10 +130,14 @@ async function renderUsers() {
   const me = auth.currentUser();
   const providerName = { password: 'Email', google: 'Google', okta: 'Okta' };
   render($('#ad-users-table', root), r.users.length ? html`<table class="table admin-users"><thead><tr>
-      <th>Usuario</th><th>Rol</th><th>Acceso</th><th>Alta</th><th>Último acceso</th><th>Estado</th><th class="r">Acciones</th></tr></thead>
+      <th>Usuario</th><th>Rol</th><th>Comunidad</th><th>Acceso</th><th>Alta</th><th>Último acceso</th><th>Estado</th><th class="r">Acciones</th></tr></thead>
     <tbody>${r.users.map((u) => html`<tr>
       <td><div class="asset-cell"><div><strong>${u.name}${u.id === me?.id ? html` <span class="you">(tú)</span>` : ''}</strong><small>${u.email}</small></div></div></td>
       <td>${u.role === 'admin' ? html`<span class="chip accent">${icon('shield-check', 'sm')}Admin</span>` : html`<span class="chip">Usuario</span>`}</td>
+      <td><div class="md-user"><small class="muted">${u.alias ?? '(sin alias)'}</small>${u.suspendedUntil
+        ? html`<span class="chip down" title="${u.suspensionReason ?? ''}">${u.suspendedUntil > 253402200000 ? 'Suspendido (indefinida)' : `Suspendido hasta ${new Date(u.suspendedUntil * 1000).toLocaleDateString('es-ES')}`}</span>
+          <button class="btn btn-ghost btn-sm" data-ad="unsuspend" data-id="${u.id}" data-alias="${u.alias ?? u.name}">Reactivar</button>`
+        : u.role === 'admin' || u.id === me?.id ? '' : html`<button class="btn btn-ghost btn-sm" data-ad="suspend" data-id="${u.id}" data-alias="${u.alias ?? u.name}">${icon('ban', 'sm')} Suspender</button>`}</div></td>
       <td><div class="gap-4">${u.providers.map((p) => html`<span class="chip">${providerName[p] ?? p}</span>`)}</div></td>
       <td class="muted">${new Date(u.createdAt * 1000).toLocaleDateString('es-ES')}</td>
       <td class="muted">${u.lastLoginAt ? timeAgo(u.lastLoginAt * 1000) : '—'}</td>
@@ -272,6 +293,8 @@ const actions = {
     } catch (err) { toast(err.message, 'error'); }
     renderUsers();
   },
+  suspend(b) { moderation.suspendUser({ userId: b.dataset.id, alias: b.dataset.alias, onDone: renderUsers }); },
+  unsuspend(b) { moderation.unsuspendUser({ userId: b.dataset.id, alias: b.dataset.alias, onDone: renderUsers }); },
   async copy(b) {
     try { await navigator.clipboard.writeText(b.dataset.text); toast('Copiado.', 'success', 1500); } catch { toast('No se pudo copiar; selecciónalo a mano.', 'warning'); }
   },

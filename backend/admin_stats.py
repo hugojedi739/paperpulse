@@ -4,7 +4,7 @@ import datetime
 import time
 from contextlib import closing
 
-from backend import db
+from backend import contact, db
 
 
 def activity() -> dict:
@@ -25,3 +25,11 @@ def activity() -> dict:
             },
             "generatedAt": int(time.time()),
         }
+
+
+def badges() -> dict:
+    """Pendientes para los contadores de las pestañas: mensajes denunciados sin resolver y mensajes de contacto sin leer."""
+    with closing(db.connect()) as conn:
+        reports = conn.execute("SELECT COUNT(DISTINCT post_id) FROM reports WHERE status = 'open'").fetchone()[0]
+        unread = contact.unread_count(conn)
+    return {"openReports": reports, "unreadMessages": unread}

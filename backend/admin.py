@@ -147,6 +147,13 @@ async def oauth_test(request):
                "configured": bool(auth.provider_config(pid))})
 
 
+async def badges(request):
+    _, err = await require_admin(request)
+    if err:
+        return err
+    return ok(await run_in_threadpool(admin_stats.badges))
+
+
 async def audit(request):
     _, err = await require_admin(request)
     if err:
@@ -159,6 +166,7 @@ async def audit(request):
 
 routes = [
     Route("/api/admin/audit", audit, methods=["GET"]),
+    Route("/api/admin/badges", badges, methods=["GET"]),
     Route("/api/admin/overview", overview, methods=["GET"]),
     Route("/api/admin/users", users, methods=["GET"]),
     Route("/api/admin/users/{id}", user_detail, methods=["PATCH", "DELETE"]),

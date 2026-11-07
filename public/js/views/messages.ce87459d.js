@@ -7,6 +7,7 @@ import { timeAgo } from '../lib/format.bcd91d41.js';
 
 const FILTERS = [['all', 'Todos'], ['unread', 'Sin leer'], ['read', 'Leídos']];
 const PAGE = 25;
+const badgesChanged = () => document.dispatchEvent(new Event('admin-badges')); // refresca los contadores de las pestañas
 
 let box, status = 'all', page = 1, bound = false, renderId = 0;
 
@@ -62,10 +63,10 @@ const actions = {
   filter(b) { status = b.dataset.value; page = 1; draw(); },
   page(b) { page = Math.max(1, page + Number(b.dataset.dir)); draw(); },
   async read(b) {
-    try { await api(`/api/admin/messages/${b.dataset.id}`, { method: 'PATCH', body: { read: b.dataset.value === 'true' } }); draw(); } catch (err) { toast(err.message, 'error'); }
+    try { await api(`/api/admin/messages/${b.dataset.id}`, { method: 'PATCH', body: { read: b.dataset.value === 'true' } }); draw(); badgesChanged(); } catch (err) { toast(err.message, 'error'); }
   },
   async delete(b) {
     if (!await confirmDialog({ title: 'Borrar mensaje', body: 'El mensaje se eliminará de forma definitiva.', confirm: 'Borrar', danger: true })) return;
-    try { await api(`/api/admin/messages/${b.dataset.id}`, { method: 'DELETE' }); toast('Mensaje borrado.', 'success', 2000); draw(); } catch (err) { toast(err.message, 'error'); }
+    try { await api(`/api/admin/messages/${b.dataset.id}`, { method: 'DELETE' }); toast('Mensaje borrado.', 'success', 2000); draw(); badgesChanged(); } catch (err) { toast(err.message, 'error'); }
   },
 };

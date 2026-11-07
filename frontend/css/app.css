@@ -345,6 +345,7 @@
   }
   .tabs button:hover { color: var(--text-1); }
   .tabs button[aria-selected='true'] { color: var(--text-1); border-color: var(--accent); }
+  .count.alert { background: var(--down-fill); color: var(--down); font-weight: 700; }
   .count { min-width: 20px; padding: 0 4px; border-radius: 999px; background: var(--surface-3); font-size: var(--fs-xs); line-height: 18px; text-align: center; }
 
   /* Chips */
@@ -1043,6 +1044,19 @@
   .md-reports li { padding: 8px 0; border-top: 1px solid var(--border); font-size: var(--fs-md); }
   .md-actions { margin-top: 12px; }
   .md-user { display: grid; gap: 2px; }
+  .md-file { font-size: var(--fs-sm); }
+  .md-title .chip, .md-reports .chip { height: auto; min-height: 24px; padding-block: 2px; white-space: normal; max-width: 100%; }
+  .md-card { transition: opacity 0.18s ease, transform 0.18s ease; }
+  .md-card.md-leaving { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  .md-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .md-presets { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0; min-width: 0; }
+  .md-presets legend { padding: 0; margin-bottom: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+  .md-preset input { position: absolute; opacity: 0; pointer-events: none; }
+  .md-preset span { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-1); color: var(--text-2); font-size: var(--fs-md); cursor: pointer; }
+  .md-preset span:hover { border-color: var(--border-strong); color: var(--text-1); }
+  .md-preset input:checked + span { background: var(--accent-fill); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .md-preset input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .md-card { transition: none; } }
   .md-reason { display: block; max-width: 360px; overflow-wrap: anywhere; color: var(--text-2); }
 
   @media (max-width: 767px) {
