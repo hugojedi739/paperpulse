@@ -1,5 +1,5 @@
 // Visita guiada breve que resalta las zonas clave de la interfaz.
-import * as store from '../lib/store.0fb0dfbb.js';
+import * as store from '../lib/store.f9db7346.js';
 import { html, render, $ } from '../lib/dom.700bdea1.js';
 import { go } from '../lib/router.de30a562.js';
 

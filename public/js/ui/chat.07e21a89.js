@@ -1,10 +1,10 @@
 // Asistente IA: panel lateral con respuestas en streaming (SSE) desde /api/chat.
-import * as store from '../lib/store.0fb0dfbb.js';
-import { tick } from '../lib/feed.64804afc.js';
+import * as store from '../lib/store.f9db7346.js';
+import { tick } from '../lib/feed.c4d084b5.js';
 import { findAsset, displayPair } from '../lib/catalog.760e22b2.js';
 import { html, escape, render, $ } from '../lib/dom.700bdea1.js';
 import { money, price, pct, currency, locale, approx } from '../lib/format.bcd91d41.js';
-import { portfolio } from '../lib/trading.ed7b8a2a.js';
+import { portfolio } from '../lib/trading.73b0dcdf.js';
 import { INTERVALS, normalizeInterval } from '../lib/marketdata.d86555d2.js';
 import { markdown } from '../lib/markdown.a737a755.js';
 

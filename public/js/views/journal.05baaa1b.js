@@ -1,11 +1,11 @@
 // Vista Diario: estadísticas, curva de resultados, calendario de P&L y registro de operaciones.
-import * as store from '../lib/store.0fb0dfbb.js';
+import * as store from '../lib/store.f9db7346.js';
 import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.700bdea1.js';
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.bcd91d41.js';
 import { createEquityChart } from '../lib/charts.00e200e1.js';
-import { assetIcon, empty, seg, pressSeg } from '../lib/ui.51b169ed.js';
-import { noteDialog } from '../ui/dialogs.25876c9d.js';
-import { shareButton, shareDialog } from '../ui/share.d29f4482.js';
+import { assetIcon, empty, seg, pressSeg } from '../lib/ui.a28a6b49.js';
+import { noteDialog } from '../ui/dialogs.d3a839b3.js';
+import { shareButton, shareDialog } from '../ui/share.b1605ce9.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];
 const DAY = 86400000;

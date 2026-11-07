@@ -1,6 +1,6 @@
 // Sesión de usuario y sincronización de la cuenta de práctica con la base de datos del servidor.
 // La cookie de sesión es HttpOnly: este módulo nunca ve el token.
-import * as store from './store.0fb0dfbb.js';
+import * as store from './store.f9db7346.js';
 import { debounce, download } from './dom.700bdea1.js';
 import { api, apiUrl } from './api.d1caad06.js';
 

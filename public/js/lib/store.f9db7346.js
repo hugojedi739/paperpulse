@@ -125,13 +125,16 @@ function normalizeOrder(o) {
 }
 
 const symbolOf = (s) => findAsset(s)?.symbol ?? str(s, 15).toUpperCase();
+/** Importe que eligió la persona al crear la cuenta: { amount, currency: 'EUR' } o null. */
+const cleanInput = (x) => (x && Number(x.amount) > 0 && x.currency === 'EUR' ? { amount: Math.round(Number(x.amount) * 100) / 100, currency: 'EUR' } : null);
+
 const safeMap = (list, fn) => (Array.isArray(list) ? list : []).flatMap((x) => { try { return [fn(x)]; } catch { return []; } });
 
 const DEFAULT_SETTINGS = { theme: null, currency: 'auto', privacyMode: false, interval: '1h', chartType: 'candles', indicators: ['volume'], tourDone: false };
 
 /* ---------- Estado ---------- */
 const state = {
-  practice: false, capital: 1000, cash: 0,
+  practice: false, capital: 1000, cash: 0, initialInput: null, // initialInput: lo que eligió la persona { amount, currency: 'EUR' }, solo para mostrarlo
   positions: [], orders: [], trades: [], equity: [],
   alerts: [], watchlist: [...DEFAULT_WATCHLIST], recent: [],
   settings: { ...DEFAULT_SETTINGS }, markets: [], notifications: [],
@@ -141,6 +144,7 @@ export function load() {
   state.practice = read('practice_active', false) === true;
   state.capital = roundUsd(read('initial_capital', 1000)) || 1000;
   state.cash = state.practice ? roundUsd(read('balance', state.capital)) : 0;
+  state.initialInput = state.practice ? cleanInput(read('initial_input', null)) : null;
   state.positions = state.practice ? safeMap(read('positions', []), normalizePosition) : [];
   state.orders = state.practice ? safeMap(read('pending_orders', []), normalizeOrder) : [];
   state.equity = state.practice ? safeMap(read('equity_history', []), (e) => ({ time: Number(e.time), value: roundUsd(e.value) })).filter((e) => e.time > 0) : [];
@@ -160,6 +164,7 @@ export function load() {
 const PERSIST = {
   practice_active: () => state.practice,
   initial_capital: () => state.capital,
+  initial_input: () => (state.practice ? state.initialInput : null),
   balance: () => (state.practice ? state.cash : null),
   positions: () => (state.practice ? state.positions : null),
   pending_orders: () => (state.practice ? state.orders : null),
@@ -175,6 +180,7 @@ function persist(...keys) { for (const k of keys) write(k, PERSIST[k]()); }
 /* ---------- Lecturas ---------- */
 export const hasPractice = () => state.practice;
 export const initialCapital = () => state.capital;
+export const initialInput = () => state.initialInput;
 export const cash = () => state.cash;
 export const positions = () => state.positions;
 export const orders = () => state.orders;
@@ -188,24 +194,26 @@ export const markets = () => state.markets;
 export const notifications = () => state.notifications;
 
 /* ---------- Cuenta de práctica ---------- */
-export function activate(capitalUsd) {
+export function activate(capitalUsd, input = null) {
   state.practice = true;
   state.capital = Math.max(10, roundUsd(capitalUsd) || 1000);
+  state.initialInput = cleanInput(input);
   state.cash = state.capital;
   state.positions = [];
   state.orders = [];
   state.equity = [{ time: Math.floor(Date.now() / 1000), value: state.capital }];
-  persist('practice_active', 'initial_capital', 'balance', 'positions', 'pending_orders', 'equity_history');
+  persist('practice_active', 'initial_capital', 'initial_input', 'balance', 'positions', 'pending_orders', 'equity_history');
   emit('account');
 }
 
 export function closeAccount() {
   state.practice = false;
+  state.initialInput = null;
   state.cash = 0;
   state.positions = [];
   state.orders = [];
   state.equity = [];
-  persist('practice_active', 'balance', 'positions', 'pending_orders', 'equity_history');
+  persist('practice_active', 'initial_input', 'balance', 'positions', 'pending_orders', 'equity_history');
   emit('account');
 }
 
@@ -274,13 +282,21 @@ export const isServerMode = () => serverMode;
 export function applyServer(snap) {
   serverMode = true;
   Object.assign(state, {
-    practice: true, capital: snap.capital, cash: snap.cash,
+    practice: true, capital: snap.capital, cash: snap.cash, initialInput: cleanInput(snap.initialInput),
     positions: snap.positions, orders: snap.orders, trades: snap.trades,
   });
   if (!state.equity.length) state.equity = [{ time: Math.floor(Date.now() / 1000), value: snap.capital }];
-  persist('practice_active', 'initial_capital', 'balance', 'positions', 'pending_orders', 'trades', 'equity_history');
+  persist('practice_active', 'initial_capital', 'initial_input', 'balance', 'positions', 'pending_orders', 'trades', 'equity_history');
   emit('account', { server: true });
   emit('trades', { server: true });
+}
+
+/** Con sesión pero sin cuenta de práctica todavía (hay que elegir el saldo inicial): modo servidor, sin cuenta. */
+export function noServerAccount() {
+  serverMode = true;
+  Object.assign(state, { practice: false, cash: 0, initialInput: null, positions: [], orders: [], equity: [] });
+  persist('practice_active', 'initial_input', 'balance', 'positions', 'pending_orders', 'equity_history');
+  emit('account', { server: true });
 }
 
 /** Al cerrar sesión se vuelve al modo local (clearAll borra después la copia). */

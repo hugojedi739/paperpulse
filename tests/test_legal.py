@@ -69,6 +69,8 @@ class TermsTest(Base):
         self.assertEqual(c.post("/api/account/terms", json={"acceptTerms": True}).status_code, 400)  # falta la edad
         r = c.post("/api/account/terms", json={"acceptTerms": True, "ageConfirmed": True})
         self.assertEqual((r.status_code, r.json()["user"]["termsVersion"]), (200, account.LEGAL_VERSION))
+        self.assertEqual(c.post("/api/orders", json=order).status_code, 409)  # aún falta elegir el saldo de la cuenta de práctica
+        self.assertEqual(c.post("/api/portfolio/start", json={"amount": 1000, "currency": "EUR"}).status_code, 201)
         self.assertEqual(c.post("/api/orders", json=order).status_code, 201)
         forum.create_thread(user["id"], "novatos", "Mi primera duda", "¿Cómo empiezo?")
 

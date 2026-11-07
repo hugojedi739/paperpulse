@@ -2,7 +2,7 @@
 // La caché evita repetir peticiones al cambiar de pestaña o de periodo: la clasificación se recalcula en el
 // servidor como mucho cada 5 minutos, así que pedirla más a menudo no aporta nada.
 import { api } from './api.d1caad06.js';
-import * as auth from './auth.12cec77c.js';
+import * as auth from './auth.1b22f87f.js';
 
 const cache = new Map(); // clave -> { t, data }
 const TTL = { leaderboard: 60_000, categories: 60_000, threads: 20_000, profile: 30_000, me: 5 * 60_000 };

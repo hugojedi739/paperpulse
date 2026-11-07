@@ -21,7 +21,7 @@ from backend.db import transaction  # noqa: F401  (se mantiene aquí por compati
 from backend.retention import hooks
 from backend.trading import prices
 from backend.trading.rules import (
-    E8, MAX_PRICE_E8, MAX_QTY_E8, MIN_ORDER_CENTS, SIDES, TYPES, OrderError, candle_fill_price, fee_cents, immediate_price, marketable_now, notional_cents, parse_e8, reservation_cents,
+    E8, MAX_PRICE_E8, MAX_QTY_E8, MIN_ORDER_CENTS, SIDES, TYPES, OrderError, candle_fill_price, fee_cents, immediate_price, marketable_now, notional_cents, parse_e8, parse_start_amount, reservation_cents, START_MAX_EUR, START_MIN_EUR,
 )
 
 ORDER_TTL = 30 * 86400  # las órdenes pendientes caducan a los 30 días
@@ -51,6 +51,8 @@ def config() -> Dict[str, int]:
         "slippageBps": settings.get("trading_slippage_bps"),
         "initialCents": settings.get("trading_initial_balance_usd") * 100,
         "minOrderCents": MIN_ORDER_CENTS,
+        "startMinEur": START_MIN_EUR,
+        "startMaxEur": START_MAX_EUR,
     }
 
 
@@ -70,10 +72,34 @@ def clean_journal(raw) -> Optional[str]:
 
 
 def ensure_account(conn, user_id: int, now: int) -> Dict:
-    """Crea la cuenta con el saldo inicial configurado si aún no existe (nunca importa datos del navegador)."""
+    """Crea la cuenta con el saldo inicial configurado en el panel si aún no existe. Es el camino interno (tests, usuarios
+    sombra de los retos): la API HTTP de la cuenta personal no la usa, exige antes start_account (saldo elegido)."""
     initial = config()["initialCents"]
-    conn.execute("INSERT OR IGNORE INTO accounts VALUES (?, ?, ?, ?, ?)", (user_id, initial, initial, now, now))
+    conn.execute("INSERT OR IGNORE INTO accounts (user_id, cash_cents, initial_cents, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                 (user_id, initial, initial, now, now))
     return dict(conn.execute("SELECT * FROM accounts WHERE user_id = ?", (user_id,)).fetchone())
+
+
+def has_account(user_id: int) -> bool:
+    with closing(db.connect()) as conn:
+        return conn.execute("SELECT 1 FROM accounts WHERE user_id = ?", (user_id,)).fetchone() is not None
+
+
+def start_account(user_id: int, amount, currency, now: Optional[int] = None) -> Dict:
+    """Crea la cuenta de práctica con el saldo que elige la persona (50 a 1.000.000 €). Se convierte a USD UNA vez, con el tipo
+    de cambio del BCE de ese momento; la rentabilidad se mide sobre ese saldo en USD y el importe elegido se guarda aparte
+    solo para mostrarlo. No se puede cambiar después (la clasificación no admite saldos retocados): si ya existe, 409."""
+    eur_cents = parse_start_amount(amount, currency)
+    fx = prices.fx_e8("EUR")  # USD por euro, en 1e-8
+    initial = (eur_cents * fx + E8 // 2) // E8
+    now = now or int(time.time())
+    with transaction() as conn:
+        created = conn.execute(
+            "INSERT OR IGNORE INTO accounts (user_id, cash_cents, initial_cents, created_at, updated_at, initial_input_cents, initial_currency) "
+            "VALUES (?, ?, ?, ?, ?, ?, 'EUR')", (user_id, initial, initial, now, now, eur_cents)).rowcount
+        if not created:
+            raise Conflict("Ya tienes una cuenta de práctica: el saldo inicial no se puede cambiar.")
+    return portfolio(user_id)
 
 
 def _reserved_cents(conn, user_id: int, exclude: Optional[int] = None) -> int:
@@ -425,7 +451,8 @@ def portfolio(user_id: int) -> Dict:
     asset = lambda s: prices.ASSETS.get(s, {"name": s})
     return {
         "account": {"cashCents": acc["cash_cents"], "reservedCents": reserved, "availableCents": acc["cash_cents"] - reserved,
-                    "initialCents": acc["initial_cents"], "createdAt": acc["created_at"], "fills": n_fills},
+                    "initialCents": acc["initial_cents"], "createdAt": acc["created_at"], "fills": n_fills,
+                    "initialInputCents": acc["initial_input_cents"], "initialCurrency": acc["initial_currency"]},
         "positions": [{"symbol": p["symbol"], "name": asset(p["symbol"])["name"], "assetType": asset(p["symbol"]).get("type"),
                        "quote": asset(p["symbol"]).get("quote"), "quantity": num(p["qty_e8"]), "avgPrice": num(p["avg_price_e8"]),
                        "costCents": p["cost_cents"], "openedAt": p["opened_at"]} for p in positions],

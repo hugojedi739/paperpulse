@@ -48,7 +48,7 @@ def join(user_id: int, at: Optional[float] = None) -> Dict:
         cur = conn.execute("INSERT INTO users (email, name, password_hash, created_at, role, disabled, owner_id) VALUES (?, 'Reto', '', ?, 'user', 1, ?)",
                            (f"reto-{ch['slug']}-{user_id}@reto.invalid", at, user_id))
         ledger = cur.lastrowid
-        conn.execute("INSERT INTO accounts VALUES (?, ?, ?, ?, ?)", (ledger, ch["initial_cents"], ch["initial_cents"], at, at))
+        conn.execute("INSERT INTO accounts (user_id, cash_cents, initial_cents, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", (ledger, ch["initial_cents"], ch["initial_cents"], at, at))
         conn.execute("INSERT INTO challenge_entries VALUES (?, ?, ?, ?)", (ch["id"], user_id, ledger, at))
         achievements.evaluate(conn, user_id)
     return status(user_id, at)

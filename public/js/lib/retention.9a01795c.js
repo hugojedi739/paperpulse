@@ -1,6 +1,6 @@
 // Resumen de retención (racha, logros, onboarding) con caché de 60 s.
 import { api } from './api.d1caad06.js';
-import * as auth from './auth.12cec77c.js';
+import * as auth from './auth.1b22f87f.js';
 
 let cache = null;
 auth.onAuth(() => { cache = null; });

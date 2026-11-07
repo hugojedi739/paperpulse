@@ -1,16 +1,16 @@
 // Vista Resumen: patrimonio, KPIs, sesiones de bolsa, favoritos, movimientos, amplitud y cartera.
-import * as store from '../lib/store.0fb0dfbb.js';
-import { tick } from '../lib/feed.64804afc.js';
+import * as store from '../lib/store.f9db7346.js';
+import { tick } from '../lib/feed.c4d084b5.js';
 import { ASSETS, findAsset } from '../lib/catalog.760e22b2.js';
 import { html, icon, render, on, $ } from '../lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.bcd91d41.js';
-import { portfolio } from '../lib/trading.ed7b8a2a.js';
+import { portfolio } from '../lib/trading.73b0dcdf.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.00e200e1.js';
-import { currentUser } from '../lib/auth.12cec77c.js';
+import { currentUser } from '../lib/auth.1b22f87f.js';
 import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.d86555d2.js';
-import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.51b169ed.js';
+import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.a28a6b49.js';
 import { go } from '../lib/router.de30a562.js';
-import { mountCard } from '../ui/retention-card.1c7567a4.js';
+import { mountCard } from '../ui/retention-card.93195534.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };

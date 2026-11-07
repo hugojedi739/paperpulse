@@ -1,36 +1,37 @@
 // Arranque de PaperPulse: estado, datos en vivo, enrutado, cabecera y atajos globales.
-import * as store from './lib/store.0fb0dfbb.js';
-import * as feed from './lib/feed.64804afc.js';
+import * as store from './lib/store.f9db7346.js';
+import * as feed from './lib/feed.c4d084b5.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.760e22b2.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.bcd91d41.js';
-import { portfolio, checkTriggers } from './lib/trading.ed7b8a2a.js';
+import { portfolio, checkTriggers } from './lib/trading.73b0dcdf.js';
 import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
-import { updateLive, assetIcon } from './lib/ui.51b169ed.js';
+import { updateLive, assetIcon } from './lib/ui.a28a6b49.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.ed391042.js';
-import * as trade from './views/trade.a9df72ad.js';
-import * as markets from './views/markets.719a3568.js';
-import * as newsView from './views/news.15be892d.js';
-import * as journal from './views/journal.06f540f3.js';
-import * as community from './views/community.6896c44a.js';
-import * as dialogs from './ui/dialogs.25876c9d.js';
-import * as auth from './lib/auth.12cec77c.js';
-import * as account from './lib/account.76c3b674.js';
-import * as notifs from './lib/notifications.bfcaba3e.js';
+import * as dashboard from './views/dashboard.be822aad.js';
+import * as trade from './views/trade.913a1e39.js';
+import * as markets from './views/markets.b08249d9.js';
+import * as newsView from './views/news.c5160973.js';
+import * as journal from './views/journal.05baaa1b.js';
+import * as community from './views/community.72ce2dd8.js';
+import * as dialogs from './ui/dialogs.d3a839b3.js';
+import * as auth from './lib/auth.1b22f87f.js';
+import * as account from './lib/account.21889ca7.js';
+import * as notifs from './lib/notifications.edbf762b.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
-import * as contact from './views/contact.84dd5eed.js';
-import { maybeAskTerms } from './ui/terms.ffa66e96.js';
-import { initPalette, openPalette } from './ui/palette.6534ad54.js';
-import { initChat, toggleChat } from './ui/chat.0289d70f.js';
-import { startTour } from './ui/tour.cb1cdcd3.js';
+import * as contact from './views/contact.808f7938.js';
+import { maybeAskTerms } from './ui/terms.a8b9aba7.js';
+import { openWelcome } from './ui/welcome.0b350226.js';
+import { initPalette, openPalette } from './ui/palette.86af8dbd.js';
+import { initChat, toggleChat } from './ui/chat.07e21a89.js';
+import { startTour } from './ui/tour.974d1a63.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
 const LAZY = {
   learn: () => import('./views/learn.4cb6adab.js'),
   legal: () => import('./views/legal.dc79dfd8.js'),
-  admin: () => import('./views/admin.d57ee921.js'),
+  admin: () => import('./views/admin.38698ee6.js'),
 };
 const mounted = new Set();
 let active = null;
@@ -144,11 +145,22 @@ on($('#notif-list'), 'click', '[data-nclear]', () => notifs.remove('all').catch(
 // Con sesión, la cuenta de práctica es la del servidor. onAuth también salta tras cada sincronización:
 // solo se recarga la cuenta cuando cambia el usuario.
 let accountUserId;
+let welcomedFor = null;
+/** Con sesión y sin cuenta de práctica: elegir el saldo inicial. Espera a que se hayan aceptado los términos (comparten el diálogo) y
+ *  se abre con un pequeño retardo: el diálogo de términos se cierra justo después de refrescar el usuario y cerraría también este. */
+function maybeWelcome(user) {
+  if (!user || user.termsVersion == null || welcomedFor === user.id) return;
+  setTimeout(() => {
+    if (!account.needsSetup() || welcomedFor === user.id) return;
+    welcomedFor = user.id; // una vez por sesión: si la cierra, puede volver a abrirla con «Empezar a practicar»
+    openWelcome();
+  }, 400);
+}
 auth.onAuth((user) => {
-  if ((user?.id ?? null) === accountUserId) return;
+  if ((user?.id ?? null) === accountUserId) { maybeWelcome(user); return; } // p. ej. tras aceptar los términos
   accountUserId = user?.id ?? null;
-  account.setUser(user);
-  if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else notifs.reset();
+  account.setUser(user).then(() => maybeWelcome(user));
+  if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else { notifs.reset(); welcomedFor = null; }
 });
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 

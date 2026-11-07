@@ -307,7 +307,9 @@ class PendingOrdersTest(Base):
                          [("filled", "orden-0002"), ("filled", "orden-0001")])
 
 
-class ApiTest(Base):
+class ApiBase(Base):
+    """Cliente HTTP con sesión de Ana y términos aceptados, sin cuenta de práctica creada todavía."""
+
     def setUp(self):
         super().setUp()
         app = Starlette(routes=auth.build_routes(lambda r: "1.2.3.4") + trading_api.routes)
@@ -324,6 +326,13 @@ class ApiTest(Base):
     def post(self, **body):
         return self.client.post("/api/orders", json={"clientOrderId": "api-orden-1", "symbol": "BTC", "side": "buy",
                                                      "type": "market", "quantity": "1", **body})
+
+
+class ApiTest(ApiBase):
+    def setUp(self):
+        super().setUp()
+        with db.transaction() as conn:  # cuenta ya creada (camino interno, con el saldo del panel); StartAccountTest parte sin ella
+            ledger.ensure_account(conn, self.uid, T0)
 
     def test_requiere_sesion(self):
         with TestClient(Starlette(routes=trading_api.routes)) as anon:
@@ -382,6 +391,122 @@ class ApiTest(Base):
         self.assertTrue(journal["notes"].startswith("Hola <script>"))  # se guarda el texto; el frontend lo escapa al pintar
         self.assertEqual(len(journal["notes"]), 1000)
         self.assertEqual(journal["setup"], "5")
+
+
+class StartAccountTest(ApiBase):
+    """Elegir el saldo inicial (50 a 1.000.000 €) al crear la cuenta de práctica."""
+
+    def start(self, amount=1000, **extra):
+        return self.client.post("/api/portfolio/start", json={"amount": amount, "currency": "EUR", **extra})
+
+    def account(self):
+        return self.row("SELECT * FROM accounts WHERE user_id = ?", self.uid)
+
+    def test_sin_cuenta_la_cartera_pide_elegir_saldo_y_no_la_crea(self):
+        data = self.client.get("/api/portfolio").json()
+        self.assertEqual(data["needsSetup"], True)
+        self.assertEqual((data["config"]["startMinEur"], data["config"]["startMaxEur"]), (50, 1_000_000))
+        self.assertNotIn("account", data)
+        self.assertIsNone(self.account())
+
+    def test_sin_cuenta_no_se_puede_operar_y_no_se_crea_en_silencio(self):
+        r = self.post()
+        self.assertEqual((r.status_code, r.json()["needsSetup"]), (409, True))
+        self.assertIsNone(self.account())
+        self.assertEqual(self.count("orders"), 0)
+
+    def test_crea_la_cuenta_convirtiendo_a_usd_una_vez_y_guarda_lo_elegido(self):
+        r = self.start(1000)
+        self.assertEqual(r.status_code, 201, r.text)
+        acc = r.json()["account"]
+        self.assertEqual((acc["initialCents"], acc["cashCents"], acc["availableCents"]), (110_000, 110_000, 110_000))  # 1.000 € a 1,10 $/€
+        self.assertEqual((acc["initialInputCents"], acc["initialCurrency"]), (100_000, "EUR"))
+        row = self.account()
+        self.assertEqual((row["initial_cents"], row["cash_cents"], row["initial_input_cents"], row["initial_currency"]), (110_000, 110_000, 100_000, "EUR"))
+        self.assertEqual(self.client.get("/api/portfolio").json()["account"]["initialCents"], 110_000)
+        self.market.fx["EUR"] = P(1.30)  # el tipo cambia después: lo elegido y el saldo no se mueven
+        acc = self.client.get("/api/portfolio").json()["account"]
+        self.assertEqual((acc["initialCents"], acc["initialInputCents"]), (110_000, 100_000))
+
+    def test_redondea_el_cambio_al_centimo_y_admite_decimales_y_coma(self):
+        self.market.fx["EUR"] = P(1.0837)
+        self.assertEqual(self.start("123,45").status_code, 201)
+        self.assertEqual(self.account()["initial_input_cents"], 12_345)
+        self.assertEqual(self.account()["initial_cents"], round(12_345 * 1.0837))
+
+    def test_limites_incluidos_en_los_extremos(self):
+        for amount, ok_ in ((49.99, False), (50, True)):
+            with db.transaction() as conn:
+                conn.execute("DELETE FROM accounts WHERE user_id = ?", (self.uid,))
+            self.assertEqual(self.start(amount).status_code, 201 if ok_ else 400, amount)
+        with db.transaction() as conn:
+            conn.execute("DELETE FROM accounts WHERE user_id = ?", (self.uid,))
+        self.assertEqual(self.start(1_000_001).status_code, 400)
+        self.assertEqual(self.start(1_000_000).status_code, 201)
+        self.assertEqual(self.account()["initial_input_cents"], 100_000_000)
+
+    def test_importes_no_validos_se_rechazan_sin_crear_nada(self):
+        for bad in (None, "", "abc", "NaN", "Infinity", "-100", 0, 10, True, [500], {"a": 1}, "1e3x", "100.123", 49):
+            r = self.start(bad)
+            self.assertEqual(r.status_code, 400, bad)
+            self.assertIn("error", r.json())
+        self.assertIsNone(self.account())
+
+    def test_solo_euros(self):
+        for currency in ("USD", "eur", "BTC", None, 5):
+            r = self.client.post("/api/portfolio/start", json={"amount": 500, "currency": currency})
+            self.assertEqual(r.status_code, 400, currency)
+        self.assertEqual(self.client.post("/api/portfolio/start", json={"amount": 500}).status_code, 201)  # sin divisa: euros
+
+    def test_no_se_puede_repetir_ni_cambiar_el_saldo(self):
+        self.assertEqual(self.start(500).status_code, 201)
+        r = self.start(5000)
+        self.assertEqual(r.status_code, 409)
+        self.assertIn("no se puede cambiar", r.json()["error"])
+        self.assertEqual(self.account()["initial_input_cents"], 50_000)
+
+    def test_una_cuenta_anterior_no_se_toca(self):
+        with db.transaction() as conn:
+            ledger.ensure_account(conn, self.uid, T0)  # como las de antes: saldo del panel, sin importe elegido
+        self.assertEqual(self.start(5000).status_code, 409)
+        acc = self.client.get("/api/portfolio").json()["account"]
+        self.assertEqual((acc["initialCents"], acc["initialInputCents"], acc["initialCurrency"]), (1_000_000, None, None))
+
+    def test_con_la_cuenta_creada_se_opera_con_ese_saldo(self):
+        self.assertEqual(self.start(500).status_code, 201)
+        r = self.post(quantity="1")  # 1 BTC a 100 $ + comisión
+        self.assertEqual(r.status_code, 201, r.text)
+        self.assertEqual(self.client.get("/api/portfolio").json()["account"]["cashCents"], 55_000 - 10_010)
+
+    def test_exige_sesion_origen_y_terminos(self):
+        with TestClient(Starlette(routes=trading_api.routes)) as anon:
+            self.assertEqual(anon.post("/api/portfolio/start", json={"amount": 500}).status_code, 401)
+        r = self.client.post("/api/portfolio/start", json={"amount": 500}, headers={"Origin": "https://malicioso.example"})
+        self.assertEqual(r.status_code, 403)
+        with db.transaction() as conn:
+            conn.execute("UPDATE users SET terms_version = NULL WHERE id = ?", (self.uid,))
+        self.assertEqual(self.start(500).status_code, 403)
+        self.assertIsNone(self.account())
+
+    def test_sin_tipo_de_cambio_no_se_crea(self):
+        with mock.patch.object(prices, "fx_e8", side_effect=OrderError("Sin tipo de cambio EUR/USD disponible. Inténtalo más tarde.")):
+            r = self.start(500)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("tipo de cambio", r.json()["error"])
+        self.assertIsNone(self.account())
+
+    def test_el_reto_no_se_ve_afectado_por_el_saldo_elegido(self):
+        self.assertEqual(self.start(50).status_code, 201)
+        from backend.retention import challenges
+        with db.transaction() as conn:
+            conn.execute("INSERT INTO profiles (user_id, alias, created_at, updated_at) VALUES (?, 'Ana', 1, 1)", (self.uid,))
+        challenges.join(self.uid)
+        ledger_id = challenges.ledger_for(self.uid, True)
+        row = self.row("SELECT initial_cents, initial_input_cents FROM accounts WHERE user_id = ?", ledger_id)
+        self.assertEqual(row["initial_cents"], 1_000_000)  # el del reto (panel), igual para todos
+        self.assertIsNone(row["initial_input_cents"])
+        # y la cartera del reto no pide elegir saldo
+        self.assertNotIn("needsSetup", self.client.get("/api/challenge/portfolio").json())
 
 
 if __name__ == "__main__":

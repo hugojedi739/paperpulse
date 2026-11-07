@@ -10,6 +10,8 @@ import * as auth from '../lib/auth.js';
 import { safeUrl } from '../lib/marketdata.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.js';
 import { go } from '../lib/router.js';
+import { openWelcome } from './welcome.js';
+import { startedWith, startedAmount } from '../lib/starting-balance.js';
 
 const dlg = () => document.getElementById('dlg');
 
@@ -40,8 +42,9 @@ function serverAccountDialog() {
         <div><dt>Patrimonio</dt><dd class="money">${money(p.equityUsd)}</dd></div>
         <div><dt>Efectivo libre</dt><dd class="money">${money(p.cashUsd)}</dd></div>
         <div><dt>Reservado en órdenes</dt><dd class="money">${money(p.reservedUsd)}</dd></div>
-        <div><dt>Capital inicial</dt><dd class="money">${money(store.initialCapital())}</dd></div>
+        <div><dt>Capital inicial</dt><dd class="money">${startedAmount(store.initialInput()) || money(store.initialCapital())}</dd></div>
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
+      ${startedWith(store.initialInput()) ? html`<p class="hint">${icon('wallet', 'sm')} ${startedWith(store.initialInput())}. Tu saldo es privado; tu rentabilidad puede aparecer en la clasificación si tu perfil es público.</p>` : ''}
       <p class="hint">${icon('info', 'sm')} Los precios de ejecución los decide el servidor con cotizaciones reales.
         Comisión: ${(cfg.feeBps / 100).toLocaleString('es-ES')} % por operación; las órdenes a mercado y stop tienen además un deslizamiento de ${(cfg.slippageBps / 100).toLocaleString('es-ES')} %.</p>
       <p class="hint">${icon('shield-check', 'sm')} Esta cuenta no se puede reiniciar. Sin sesión puedes seguir practicando en modo local con el capital que quieras.</p>
@@ -50,48 +53,26 @@ function serverAccountDialog() {
 }
 
 export function accountDialog() {
-  if (account.isActive()) return serverAccountDialog();
-  const cur = currency();
-  const presets = [500, 1000, 5000, 10000];
-  let chosen = 1000;
-  const practice = store.hasPractice();
-  const p = practice ? trading.portfolio() : null;
+  if (account.isActive()) return account.needsSetup() ? openWelcome() : serverAccountDialog();
+  if (!store.hasPractice()) return openWelcome();
+  const p = trading.portfolio();
   const d = show(html`
-    ${head(practice ? 'Tu cuenta de práctica' : 'Empieza a practicar', practice ? 'Saldo virtual con cotizaciones reales.' : 'Elige con cuánto dinero ficticio quieres empezar. Podrás cambiarlo cuando quieras.')}
+    ${head('Tu cuenta de práctica', 'Saldo virtual con cotizaciones reales.')}
     <div class="dlg-body">
-      ${practice ? html`<dl class="summary">
+      <dl class="summary">
         <div><dt>Patrimonio</dt><dd class="money">${money(p.equityUsd)}</dd></div>
         <div><dt>Efectivo</dt><dd class="money">${money(p.cashUsd)}</dd></div>
-        <div><dt>Capital inicial</dt><dd class="money">${money(store.initialCapital())}</dd></div>
+        <div><dt>Capital inicial</dt><dd class="money">${startedAmount(store.initialInput()) || money(store.initialCapital())}</dd></div>
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
-        <span class="label">Reiniciar con un capital nuevo</span>` : ''}
-      <div class="options" id="cap-options">${presets.map((v) => html`<button type="button" class="option" data-v="${v}" aria-pressed="${v === chosen}"><strong>${money(v, { from: cur })}</strong><small>${v === 1000 ? 'Recomendado' : v < 1000 ? 'Prudente' : 'Amplio'}</small></button>`)}</div>
-      <div class="field"><label for="cap-custom">O un importe propio (${cur})</label>
-        <div class="input-group"><input id="cap-custom" type="number" inputmode="decimal" min="20" max="1000000" step="any" placeholder="Mín. 20"><span>${cur}</span></div></div>
-      ${practice ? html`<p class="hint">${icon('info', 'sm')} Reiniciar cierra posiciones y órdenes. Tu diario, favoritos y alertas se conservan.</p>` : ''}
+      <p class="hint">${icon('info', 'sm')} Reiniciar cierra posiciones y órdenes y te deja elegir otro saldo. Tu diario, favoritos y alertas se conservan.</p>
     </div>
     <footer class="dlg-foot">
-      ${practice ? html`<button class="btn btn-danger" data-act="close-account">Cerrar cuenta</button>` : ''}
+      <button class="btn btn-danger" data-act="close-account">Cerrar cuenta</button>
       <button class="btn btn-ghost" data-close>Cancelar</button>
-      <button class="btn btn-primary" data-act="start">${icon(practice ? 'rotate-ccw' : 'play')} ${practice ? 'Reiniciar' : 'Empezar'}</button>
+      <button class="btn btn-primary" data-act="restart">${icon('rotate-ccw')} Reiniciar</button>
     </footer>`, 'dlg-sm');
 
-  d.querySelector('#cap-options').onclick = (e) => {
-    const b = e.target.closest('[data-v]');
-    if (!b) return;
-    chosen = Number(b.dataset.v);
-    d.querySelectorAll('#cap-options [data-v]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    d.querySelector('#cap-custom').value = '';
-  };
-  d.querySelector('[data-act="start"]').onclick = async () => {
-    const custom = parseFloat(d.querySelector('#cap-custom').value);
-    const amount = Number.isFinite(custom) ? custom : chosen;
-    if (!(amount >= 20 && amount <= 1e6)) return toast(`Elige un capital entre 20 y 1.000.000 ${cur}.`, 'warning');
-    if (practice && !(await confirmDialog({ title: '¿Reiniciar la cuenta?', body: 'Se cerrarán tus posiciones y órdenes pendientes sin registrarlas en el diario.', confirm: 'Reiniciar', danger: true }))) return;
-    store.activate(convert(amount, cur, 'USD'));
-    d.close();
-    toast(`Cuenta de práctica lista con ${money(amount, { from: cur })}. ¡A operar!`, 'success');
-  };
+  d.querySelector('[data-act="restart"]').onclick = () => openWelcome({ reset: true });
   d.querySelector('[data-act="close-account"]')?.addEventListener('click', async () => {
     if (!(await confirmDialog({ title: '¿Cerrar la cuenta de práctica?', body: 'Volverás al modo consulta: se borran saldo, posiciones y órdenes. El diario y tus favoritos se mantienen.', confirm: 'Cerrar cuenta', danger: true }))) return;
     store.closeAccount();

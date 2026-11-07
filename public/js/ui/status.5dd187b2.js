@@ -1,5 +1,5 @@
 // Estado de la cabecera: hora de la última cotización recibida y distintivo Abierto/Cerrado de las bolsas (/api/markets).
-import * as store from '../lib/store.0fb0dfbb.js';
+import * as store from '../lib/store.f9db7346.js';
 import { html, render, $ } from '../lib/dom.700bdea1.js';
 
 const MARKETS = [['us', 'Wall St'], ['es', 'Madrid']];

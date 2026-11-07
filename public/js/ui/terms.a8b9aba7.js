@@ -5,7 +5,7 @@ import { api } from '../lib/api.d1caad06.js';
 import { LEGAL_VERSION } from '../lib/legal-content.dde43b20.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
 import { openDialog, toast } from '../lib/dom.700bdea1.js';
-import * as auth from '../lib/auth.12cec77c.js';
+import * as auth from '../lib/auth.1b22f87f.js';
 
 const SEEN = 'paperpulse_terms_prompted';
 export const needsTerms = (user) => Boolean(user) && user.termsVersion !== LEGAL_VERSION;

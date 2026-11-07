@@ -21,6 +21,7 @@ import * as notifs from './lib/notifications.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.js';
 import * as contact from './views/contact.js';
 import { maybeAskTerms } from './ui/terms.js';
+import { openWelcome } from './ui/welcome.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
@@ -144,11 +145,22 @@ on($('#notif-list'), 'click', '[data-nclear]', () => notifs.remove('all').catch(
 // Con sesión, la cuenta de práctica es la del servidor. onAuth también salta tras cada sincronización:
 // solo se recarga la cuenta cuando cambia el usuario.
 let accountUserId;
+let welcomedFor = null;
+/** Con sesión y sin cuenta de práctica: elegir el saldo inicial. Espera a que se hayan aceptado los términos (comparten el diálogo) y
+ *  se abre con un pequeño retardo: el diálogo de términos se cierra justo después de refrescar el usuario y cerraría también este. */
+function maybeWelcome(user) {
+  if (!user || user.termsVersion == null || welcomedFor === user.id) return;
+  setTimeout(() => {
+    if (!account.needsSetup() || welcomedFor === user.id) return;
+    welcomedFor = user.id; // una vez por sesión: si la cierra, puede volver a abrirla con «Empezar a practicar»
+    openWelcome();
+  }, 400);
+}
 auth.onAuth((user) => {
-  if ((user?.id ?? null) === accountUserId) return;
+  if ((user?.id ?? null) === accountUserId) { maybeWelcome(user); return; } // p. ej. tras aceptar los términos
   accountUserId = user?.id ?? null;
-  account.setUser(user);
-  if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else notifs.reset();
+  account.setUser(user).then(() => maybeWelcome(user));
+  if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else { notifs.reset(); welcomedFor = null; }
 });
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 

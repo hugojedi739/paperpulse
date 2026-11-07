@@ -1,5 +1,6 @@
 """Endpoints de la cuenta del servidor (requieren sesión).
 
+POST   /api/portfolio/start      {amount, currency: "EUR"} crea la cuenta con el saldo elegido (50 a 1.000.000 €); no se puede repetir
 GET    /api/portfolio            saldo, posiciones, órdenes pendientes y operaciones cerradas (resuelve antes las pendientes)
 GET    /api/orders?status=&limit=&before=   historial de órdenes paginado
 POST   /api/orders               {clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?}
@@ -7,6 +8,7 @@ DELETE /api/orders/{id}          cancela una orden pendiente y libera su reserva
 PATCH  /api/orders/{id}          {journal: {setup, emotion, notes}} notas del diario
 """
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from backend.http import current_user, error, ok, read_json, same_origin
@@ -49,12 +51,23 @@ def _status(exc: OrderError) -> int:
     return 404 if isinstance(exc, ledger.NotFound) else 409 if isinstance(exc, ledger.Conflict) else 400
 
 
+def _is_challenge(request) -> bool:
+    return request.url.path.startswith("/api/challenge/")
+
+
+async def _needs_setup(request, owner) -> bool:
+    """La cuenta personal no existe todavía: hay que elegir el saldo inicial (POST /api/portfolio/start). La del reto siempre existe."""
+    return not _is_challenge(request) and not await run_in_threadpool(ledger.has_account, owner)
+
+
 async def api_portfolio(request):
     user, err = await _guard(request, "read")
     if err:
         return err
     try:
         owner = await _owner(request, user)
+        if await _needs_setup(request, owner):
+            return ok({"needsSetup": True, "config": ledger.config()})
         events = await run_in_threadpool(ledger.resolve, owner)
         data = await run_in_threadpool(ledger.portfolio, owner)
     except OrderError as exc:
@@ -91,11 +104,27 @@ async def api_place_order(request):
     try:
         # Antes de operar se resuelven las pendientes: el saldo y las posiciones están al día
         owner = await _owner(request, user)
+        if await _needs_setup(request, owner):
+            return JSONResponse({"error": "Crea primero tu cuenta de práctica y elige tu saldo inicial.", "needsSetup": True}, status_code=409)
         await run_in_threadpool(ledger.resolve, owner, None, True)
         order, created = await run_in_threadpool(ledger.place_order, owner, body)
     except OrderError as exc:
         return error(str(exc), _status(exc))
     return ok({"order": order, "replayed": not created}, 201 if created else 200)
+
+
+async def api_start_account(request):
+    user, err = await _guard(request, "write")
+    if err:
+        return err
+    body, err = await read_json(request, limit=512)
+    if err:
+        return err
+    try:
+        data = await run_in_threadpool(ledger.start_account, user["id"], body.get("amount"), body.get("currency", "EUR"))
+    except OrderError as exc:
+        return error(str(exc), _status(exc))
+    return ok({**data, "events": []}, 201)
 
 
 def _order_id(request):
@@ -130,6 +159,7 @@ async def api_update_order(request):
 
 routes = [
     Route("/api/portfolio", api_portfolio, methods=["GET"]),
+    Route("/api/portfolio/start", api_start_account, methods=["POST"]),
     Route("/api/orders", api_list_orders, methods=["GET"]),
     Route("/api/orders", api_place_order, methods=["POST"]),
     Route("/api/orders/{order_id:int}", api_cancel_order, methods=["DELETE"]),

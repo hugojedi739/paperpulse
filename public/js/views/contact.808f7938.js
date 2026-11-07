@@ -2,7 +2,7 @@
 // nuestro backend (POST /api/contact) y lo lee la administración en Administración → Mensajes.
 import { api } from '../lib/api.d1caad06.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
-import * as auth from '../lib/auth.12cec77c.js';
+import * as auth from '../lib/auth.1b22f87f.js';
 
 export const title = 'Contacto';
 export const LIMITS = { reason: 100, message: 2000 };

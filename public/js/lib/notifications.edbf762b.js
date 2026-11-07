@@ -1,6 +1,6 @@
 // Notificaciones del servidor (usuarios con sesión). Se consultan al abrir la app y al abrir la campana: sin sondeo.
 import { api } from './api.d1caad06.js';
-import * as auth from './auth.12cec77c.js';
+import * as auth from './auth.1b22f87f.js';
 
 let items = [], unread = 0, hasMore = false;
 const listeners = new Set();

@@ -2,7 +2,7 @@
 // (tickers, profundidad, velas y el stream "stocks" de bolsa). Si el WebSocket no está disponible (p. ej. en
 // despliegues serverless) se consultan los mismos datos por REST cada pocos segundos.
 import { CRYPTO, findAsset } from './catalog.760e22b2.js';
-import { emit } from './store.0fb0dfbb.js';
+import { emit } from './store.f9db7346.js';
 import { getJson, wsUrl } from './api.d1caad06.js';
 
 const POLL_FAST_MS = 5000; // Operar: el gráfico y el libro necesitan datos frescos

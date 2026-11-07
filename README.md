@@ -98,7 +98,7 @@ data/                        Base de datos local sin Turso (se crea sola; ignora
 Hay dos modos:
 
 - **Modo local (sin sesión)**: todo (saldo, posiciones, órdenes, diario, alertas, favoritos, ajustes) vive en `localStorage` (`frontend/js/lib/store.js`, claves `paperpulse_*`). Las órdenes se ejecutan en el navegador (`lib/trading.js`, `checkTriggers`), sin comisiones. El usuario elige su capital y puede reiniciar. No cuenta para clasificaciones.
-- **Cuenta del servidor (con sesión)**: saldo, posiciones, órdenes y operaciones cerradas viven en la base de datos (`backend/trading/`) y el navegador solo guarda una copia para pintar (`lib/account.js` → `store.applyServer`). La cuenta empieza limpia con el saldo inicial del panel (no se importa nada de `localStorage`) y no se puede reiniciar.
+- **Cuenta del servidor (con sesión)**: saldo, posiciones, órdenes y operaciones cerradas viven en la base de datos (`backend/trading/`) y el navegador solo guarda una copia para pintar (`lib/account.js` → `store.applyServer`). La cuenta empieza limpia (no se importa nada de `localStorage`) y no se puede reiniciar. **El saldo inicial lo elige la persona** en un paso de bienvenida (`ui/welcome.js`, `lib/starting-balance.js`) que se abre tras iniciar sesión y aceptar los términos: de 50 a 1.000.000 €, siempre en euros, con importes rápidos de 50 a 10.000 €. `GET /api/portfolio` devuelve `needsSetup: true` mientras no exista la cuenta; `POST /api/portfolio/start {amount, currency: "EUR"}` la crea (validación en servidor, 409 si ya existe: el saldo no se puede cambiar) y las órdenes se rechazan con 409 hasta entonces. El servidor convierte a USD **una vez**, con el tipo del BCE de ese momento: `initial_cents` (USD) es la base de la rentabilidad y `initial_input_cents` + `initial_currency` (migración `0013`) guardan lo elegido solo para mostrar «Empezaste con X €». Las cuentas anteriores (saldo del panel, sin importe elegido) no se tocan. El ajuste `trading_initial_balance_usd` queda como saldo de respaldo del camino interno (tests, usuarios sombra). Con saldos pequeños la orden mínima (5 USD) deja pocas posiciones a la vez: el formulario avisa por debajo de 100 €. Los retos no se ven afectados: usan cuentas sombra con el saldo del reto, igual para todos.
 - Con sesión, `lib/auth.js` sigue subiendo a `/api/data` la copia de alertas, favoritos y ajustes (debounce de 2 s). Esa copia no afecta a la cuenta del servidor.
 
 ### Cuenta del servidor: cómo se ejecutan las órdenes
@@ -228,7 +228,8 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET/DELETE | `/api/auth/me` | Usuario actual (`role`, `hasPassword`) · borrar cuenta |
 | GET | `/api/auth/oauth/{google\|okta}/start` · `/callback` | Inicio de sesión OIDC |
 | GET/PUT | `/api/data` | Copia de los datos del modo local (alertas, favoritos, ajustes) |
-| GET | `/api/portfolio` | Cuenta del servidor: saldo, posiciones, órdenes pendientes, operaciones cerradas y eventos (resuelve antes las pendientes) |
+| GET | `/api/portfolio` | Cuenta del servidor: saldo, posiciones, órdenes pendientes, operaciones cerradas y eventos (resuelve antes las pendientes). Sin cuenta: `{needsSetup: true, config}` |
+| POST | `/api/portfolio/start` | `{amount, currency: "EUR"}` crea la cuenta con el saldo elegido (50 a 1.000.000 €); 409 si ya existe |
 | GET/POST | `/api/orders?status=&limit=&before=` | Historial paginado · `{clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?}` |
 | DELETE/PATCH | `/api/orders/{id}` | Cancelar una orden pendiente · `{journal}` notas del diario |
 | GET/PUT | `/api/community/me` | Mi perfil `{alias, bio, isPrivate}` y si estoy suspendido |

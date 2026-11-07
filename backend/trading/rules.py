@@ -15,6 +15,10 @@ MIN_ORDER_CENTS = 500  # 5 USD, igual que el modo local
 MAX_QTY_E8 = 10**9 * E8  # mil millones de unidades: tope de cordura
 MAX_PRICE_E8 = 10**8 * E8  # cien millones por unidad
 
+# Saldo inicial que elige la persona al crear su cuenta de práctica (siempre en euros; se convierte a USD una vez)
+START_MIN_EUR = 50
+START_MAX_EUR = 1_000_000
+
 SIDES = ("buy", "sell")
 TYPES = ("market", "limit", "stop")
 
@@ -125,3 +129,22 @@ def candle_fill_price(side: str, type_: str, trigger_e8: int, candle: Dict[str, 
     if side == "sell" and low <= trigger_e8:
         return apply_slippage(min(o, trigger_e8), "sell", slippage_bps)
     return None
+
+
+def parse_start_amount(value, currency) -> int:
+    """Importe elegido para la cuenta nueva, en céntimos de euro. Entre START_MIN_EUR y START_MAX_EUR y con 2 decimales como mucho."""
+    if currency != "EUR":
+        raise OrderError("Por ahora el saldo inicial se elige en euros (currency: «EUR»).")
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise OrderError("El importe no es un número válido.")
+    try:
+        d = Decimal(str(value).strip().replace(",", "."))
+    except InvalidOperation:
+        raise OrderError("El importe no es un número válido.") from None
+    if not d.is_finite():
+        raise OrderError("El importe no es un número válido.")
+    if d.as_tuple().exponent < -2:
+        raise OrderError("El importe admite como mucho dos decimales.")
+    if d < START_MIN_EUR or d > START_MAX_EUR:
+        raise OrderError(f"El saldo inicial debe estar entre {START_MIN_EUR} y {START_MAX_EUR:,} €.".replace(",", "."))
+    return int(d * 100)

@@ -1,17 +1,19 @@
 // Cuenta de práctica del servidor (usuarios con sesión).
 // El navegador solo envía activo, lado, cantidad, tipo y, en límite/stop, el nivel de activación:
 // el precio de ejecución, la comisión y el saldo los decide siempre el servidor.
-import * as store from './store.0fb0dfbb.js';
+import * as store from './store.f9db7346.js';
 import { api } from './api.d1caad06.js';
 import { findAsset } from './catalog.760e22b2.js';
-import * as notifications from './notifications.bfcaba3e.js';
+import * as notifications from './notifications.edbf762b.js';
 
 let active = false;
+let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)
 let timer = null;
 let cfg = { feeBps: 0, slippageBps: 0, minOrderCents: 500 };
 const POLL_MS = 20_000; // con órdenes pendientes, el servidor las resuelve en cada consulta
 
 export const isActive = () => active;
+export const needsSetup = () => active && needs;
 export const config = () => cfg;
 
 const cents = (c) => (Number(c) || 0) / 100;
@@ -25,6 +27,7 @@ export function toStore(p) {
   };
   return {
     capital: cents(p.account.initialCents),
+    initialInput: p.account.initialInputCents ? { amount: cents(p.account.initialInputCents), currency: p.account.initialCurrency } : null,
     cash: cents(p.account.availableCents), // libre; lo reservado va en cada orden
     positions: p.positions.map((x) => ({
       ...base(x), id: x.symbol, amount: x.quantity, entryPrice: x.avgPrice, investedUsd: cents(x.costCents), openedAt: x.openedAt * 1000,
@@ -57,9 +60,20 @@ export async function refresh() {
   if (!active) return null;
   const data = await api('/api/portfolio');
   if (!active) return null; // la sesión se cerró mientras tanto
-  cfg = data.config;
-  store.applyServer(toStore(data));
+  cfg = { ...cfg, ...data.config };
+  needs = Boolean(data.needsSetup);
+  if (needs) store.noServerAccount();
+  else store.applyServer(toStore(data));
   announce(data.events);
+  return data;
+}
+
+/** Crea la cuenta de práctica con el saldo elegido (en euros). El servidor lo valida, lo convierte a USD y no deja cambiarlo después. */
+export async function startAccount(amountEur) {
+  const data = await api('/api/portfolio/start', { method: 'POST', body: { amount: amountEur, currency: 'EUR' } });
+  cfg = { ...cfg, ...data.config };
+  needs = false;
+  store.applyServer(toStore(data));
   return data;
 }
 
@@ -73,6 +87,7 @@ function poll() {
 /** Se llama al iniciar o cerrar sesión (main.js). */
 export async function setUser(user) {
   active = Boolean(user);
+  needs = false;
   if (!active) {
     clearInterval(timer);
     store.leaveServerMode();
@@ -98,6 +113,7 @@ export async function placeOrder({ symbol, side, type, quantity, triggerPrice, j
       return order;
     } catch (err) {
       lastErr = err;
+      if (err.status === 409 && !needs) await refresh().catch(() => {}); // sin cuenta todavía: el estado pasa a «hay que elegir saldo»
       if (err.status) throw err; // el servidor respondió (validación, saldo...): no se reintenta
       await new Promise((r) => setTimeout(r, 600 * (attempt + 1))); // fallo de red: mismo clientOrderId
     }
