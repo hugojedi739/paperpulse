@@ -10,6 +10,7 @@ import { createTradingChart, INDICATORS } from '../lib/charts.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.js';
 import { go } from '../lib/router.js';
+import { watchScroll } from '../lib/scroll-hint.js';
 import { closePositionDialog } from '../ui/dialogs.js';
 import { shareButton, shareDialog } from '../ui/share.js';
 
@@ -116,6 +117,8 @@ export function mount(el) {
   anchorPopover($('#iv-pop', root));
   anchorPopover($('#date-pop', root));
   renderIntervals();
+  watchScroll($('.toolbar', root)); // en móvil estas dos filas se desplazan: se difuminan los bordes con contenido oculto
+  watchScroll($('.range-bar .seg', root));
   chart.onReachStart(() => loadOlder(loadId));
 
   const chooseInterval = (value) => {
