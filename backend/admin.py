@@ -58,7 +58,16 @@ async def users(request):
         limit, offset = min(100, max(1, int(q.get("limit", "25")))), max(0, int(q.get("offset", "0")))
     except ValueError:
         return error("limit y offset deben ser números.", 400)
-    return ok(await run_in_threadpool(db.list_users, q.get("q", "")[:100], limit, offset))
+    filters = {"role": q.get("role"), "status": q.get("status"), "verified": q.get("verified")}
+    allowed = {"role": db.ROLES, "status": ("active", "disabled", "suspended"), "verified": ("yes", "no")}
+    for name, value in filters.items():
+        if value not in (None, "") and value not in allowed[name]:
+            return error(f"Valor no válido para {name}.", 400)
+    sort, direction = q.get("sort", "created"), q.get("dir", "desc")
+    if sort not in db.USER_SORTS or direction not in ("asc", "desc"):
+        return error("Orden no válido.", 400)
+    filters = {k: (v or None) for k, v in filters.items()}
+    return ok(await run_in_threadpool(lambda: db.list_users(q.get("q", "")[:100], limit, offset, sort=sort, direction=direction, **filters)))
 
 
 async def user_detail(request):

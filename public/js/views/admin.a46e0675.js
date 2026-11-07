@@ -5,16 +5,25 @@ import { num, timeAgo } from '../lib/format.bcd91d41.js';
 import { api } from '../lib/api.d1caad06.js';
 import * as auth from '../lib/auth.12cec77c.js';
 import { empty } from '../lib/ui.6fc197dc.js';
-import * as moderation from './moderation.83b16305.js';
-import * as messages from './messages.ce87459d.js';
+import * as moderation from './moderation.2bfca045.js';
+import * as messages from './messages.577e3264.js';
 import * as audit from './audit.b085256d.js';
+import { parseParam, buildPath, nonDefault, pickAllowed } from '../lib/admin-url.df7c25a4.js';
 
 export const title = 'Administración';
 
 const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag'], ['messages', 'Mensajes', 'message-square'], ['audit', 'Auditoría', 'scroll-text']];
 const PAGE = 25;
 let root, tab = 'overview';
-let usersQuery = '', usersOffset = 0;
+let usersOffset = 0;
+const USER_FILTERS = [
+  ['role', 'Rol', [['', 'Todos'], ['admin', 'Administradores'], ['user', 'Usuarios']]],
+  ['status', 'Estado', [['', 'Todos'], ['active', 'Activos'], ['disabled', 'Desactivados'], ['suspended', 'Suspendidos']]],
+  ['verified', 'Email', [['', 'Todos'], ['yes', 'Verificado'], ['no', 'Sin verificar']]],
+];
+const USER_ORDERS = [['created_desc', 'Alta reciente'], ['created_asc', 'Alta antigua'], ['login_desc', 'Acceso reciente'], ['login_asc', 'Acceso antiguo']];
+const USERS_DEFAULT = { q: '', role: '', status: '', verified: '', order: 'created_desc' };
+let usersState = { ...USERS_DEFAULT };
 let cfg = null; // { settings, redirectUris }
 let badges = { openReports: 0, unreadMessages: 0 }; // pendientes que se muestran en las pestañas
 
@@ -22,8 +31,20 @@ export function mount(el) {
   root = el;
   render(root, html`<div class="tabs admin-tabs" role="tablist" id="ad-tabs"></div><div id="ad-body" class="stack"></div>`);
   on(root, 'click', '[data-tab]', (_, b) => { tab = b.dataset.tab; show(); });
-  on(root, 'click', '[data-ad]', (e, b) => actions[b.dataset.ad]?.(b, e));
-  on(root, 'input', '#ad-search', debounce((e) => { usersQuery = e.target.value; usersOffset = 0; renderUsers(); }, 300));
+  on(root, 'click', '[data-ad]', (e, b) => {
+    if (b.getAttribute('aria-disabled') === 'true') return; // opción del menú no disponible: su motivo ya se ve debajo
+    b.closest('[popover]')?.hidePopover?.();
+    actions[b.dataset.ad]?.(b, e);
+  });
+  on(root, 'input', '#ad-search', debounce((e) => { usersState.q = e.target.value.trim(); usersOffset = 0; renderUsers(); syncUrl(); }, 300));
+  on(root, 'change', '[data-uf]', (_, sel) => { usersState[sel.dataset.uf] = sel.value; usersOffset = 0; renderUsers(); syncUrl(); });
+  root.addEventListener('toggle', (e) => { // los menús de fila se colocan junto a su botón (la tabla tiene scroll propio y un menú normal quedaría recortado)
+    const pop = e.target;
+    if (!pop.matches?.('.row-menu') || e.newState !== 'open') return;
+    placeMenu(pop);
+    pop.querySelector('[role="menuitem"]')?.focus();
+    addEventListener('scroll', () => pop.hidePopover?.(), { once: true, passive: true });
+  }, true);
   on(root, 'submit', 'form[data-form]', (e, f) => { e.preventDefault(); saveForm(f); });
   auth.onAuth(() => { if (!root.hidden) show(); });
   document.addEventListener('admin-badges', refreshBadges); // moderación y mensajes avisan al resolver algo
@@ -44,8 +65,47 @@ async function refreshBadges() {
   renderTabs();
 }
 
+/** Coloca el menú bajo su botón, alineado a la derecha; si no cabe debajo, lo abre hacia arriba. */
+function placeMenu(pop) {
+  const btn = root.querySelector(`[popovertarget="${pop.id}"]`);
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  pop.style.left = 'auto';
+  pop.style.right = `${Math.max(8, innerWidth - r.right)}px`;
+  pop.style.top = `${r.bottom + 4}px`;
+  const height = pop.getBoundingClientRect().height;
+  if (r.bottom + 4 + height > innerHeight - 8 && r.top - 4 - height > 8) pop.style.top = `${r.top - 4 - height}px`;
+}
+
+/* ---------- Estado en la URL: #/admin/<pestaña>:<filtros> (se escribe sin recargar ni añadir entradas al historial) ---------- */
+function currentState() {
+  if (tab === 'users') return nonDefault(usersState, USERS_DEFAULT);
+  if (tab === 'moderation') return moderation.state();
+  if (tab === 'messages') return messages.state();
+  return {};
+}
+
+function syncUrl() {
+  if (!root || root.hidden) return;
+  const hash = `#${buildPath(tab, currentState())}`;
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+}
+
+function restoreState(t, st) {
+  if (t === 'users') {
+    usersState = {
+      q: String(st.q ?? '').slice(0, 100),
+      ...Object.fromEntries(USER_FILTERS.map(([key, , opts]) => [key, pickAllowed(st[key], opts.map(([v]) => v), '')])),
+      order: pickAllowed(st.order, USER_ORDERS.map(([v]) => v), USERS_DEFAULT.order),
+    };
+    usersOffset = 0;
+  } else if (t === 'moderation') moderation.restore(st);
+  else if (t === 'messages') messages.restore(st);
+}
+
 export function show(param) {
-  if (param && TABS.some(([id]) => id === param)) tab = param;
+  const parsed = parseParam(param);
+  if (parsed.tab) { tab = parsed.tab; restoreState(tab, parsed.state); } // sin parámetro se conserva la pestaña y los filtros actuales
   renderTabs();
   refreshBadges();
   const body = $('#ad-body', root);
@@ -56,7 +116,8 @@ export function show(param) {
     auth.currentUser() ? '' : html`<button class="btn btn-primary" data-action="login">${icon('log-in', 'sm')} Iniciar sesión</button>`)}</section>`);
   }
   render(body, html`<section class="card">${empty('refresh-cw', 'Cargando…')}</section>`);
-  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body), messages: () => messages.render(body), audit: () => audit.render(body) })[tab]();
+  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body, syncUrl), messages: () => messages.render(body, syncUrl), audit: () => audit.render(body) })[tab]();
+  syncUrl();
 }
 
 const fail = (err) => render($('#ad-body', root), html`<section class="card">${empty('triangle-alert', 'No se pudo cargar', err.message)}</section>`);
@@ -116,41 +177,68 @@ async function renderOverview() {
 }
 
 /* ---------- Usuarios ---------- */
+const usersActive = () => Object.keys(nonDefault(usersState, USERS_DEFAULT)).length > 0;
+
 async function renderUsers() {
   const body = $('#ad-body', root);
   if (!$('#ad-users', root)) {
     render(body, html`<section class="card flush" id="ad-users">
       <div class="card-head"><h2 class="card-title">${icon('users')} Usuarios</h2>
-        <div class="input-group">${icon('search', 'sm')}<input id="ad-search" type="search" placeholder="Buscar por nombre o email" value="${usersQuery}" aria-label="Buscar usuarios"></div></div>
+        <div class="input-group">${icon('search', 'sm')}<input id="ad-search" type="search" placeholder="Buscar por nombre, alias o email" value="${usersState.q}" aria-label="Buscar usuarios" maxlength="100"></div></div>
+      <div class="admin-filters">
+        ${USER_FILTERS.map(([key, label, opts]) => html`<div class="field"><label for="uf-${key}">${label}</label>
+          <select id="uf-${key}" data-uf="${key}">${opts.map(([v, l]) => html`<option value="${v}" ${v === usersState[key] ? 'selected' : ''}>${l}</option>`)}</select></div>`)}
+        <div class="field"><label for="uf-order">Ordenar por</label>
+          <select id="uf-order" data-uf="order">${USER_ORDERS.map(([v, l]) => html`<option value="${v}" ${v === usersState.order ? 'selected' : ''}>${l}</option>`)}</select></div>
+        <button class="btn btn-ghost btn-sm" id="ad-clear" data-ad="clear-filters" hidden>${icon('x', 'sm')} Quitar filtros</button>
+      </div>
       <div class="table-wrap" id="ad-users-table"></div><div class="pager" id="ad-pager"></div></section>`);
   }
+  $('#ad-clear', root).hidden = !usersActive();
+  const [sort, dir] = usersState.order.split('_');
+  const qs = new URLSearchParams({ q: usersState.q, role: usersState.role, status: usersState.status, verified: usersState.verified, sort, dir, limit: PAGE, offset: usersOffset });
   let r;
-  try { r = await api(`/api/admin/users?q=${encodeURIComponent(usersQuery)}&limit=${PAGE}&offset=${usersOffset}`); } catch (err) { return fail(err); }
+  try { r = await api(`/api/admin/users?${qs}`); } catch (err) { return fail(err); }
   if (tab !== 'users') return;
   const me = auth.currentUser();
   const providerName = { password: 'Email', google: 'Google', okta: 'Okta' };
   render($('#ad-users-table', root), r.users.length ? html`<table class="table admin-users"><thead><tr>
-      <th>Usuario</th><th>Rol</th><th>Comunidad</th><th>Acceso</th><th>Alta</th><th>Último acceso</th><th>Estado</th><th class="r">Acciones</th></tr></thead>
-    <tbody>${r.users.map((u) => html`<tr>
-      <td><div class="asset-cell"><div><strong>${u.name}${u.id === me?.id ? html` <span class="you">(tú)</span>` : ''}</strong><small>${u.email}</small></div></div></td>
-      <td>${u.role === 'admin' ? html`<span class="chip accent">${icon('shield-check', 'sm')}Admin</span>` : html`<span class="chip">Usuario</span>`}</td>
-      <td><div class="md-user"><small class="muted">${u.alias ?? '(sin alias)'}</small>${u.suspendedUntil
-        ? html`<span class="chip down" title="${u.suspensionReason ?? ''}">${u.suspendedUntil > 253402200000 ? 'Suspendido (indefinida)' : `Suspendido hasta ${new Date(u.suspendedUntil * 1000).toLocaleDateString('es-ES')}`}</span>
-          <button class="btn btn-ghost btn-sm" data-ad="unsuspend" data-id="${u.id}" data-alias="${u.alias ?? u.name}">Reactivar</button>`
-        : u.role === 'admin' || u.id === me?.id ? '' : html`<button class="btn btn-ghost btn-sm" data-ad="suspend" data-id="${u.id}" data-alias="${u.alias ?? u.name}">${icon('ban', 'sm')} Suspender</button>`}</div></td>
-      <td><div class="gap-4">${u.providers.map((p) => html`<span class="chip">${providerName[p] ?? p}</span>`)}</div></td>
-      <td class="muted">${new Date(u.createdAt * 1000).toLocaleDateString('es-ES')}</td>
-      <td class="muted">${u.lastLoginAt ? timeAgo(u.lastLoginAt * 1000) : '—'}</td>
-      <td>${u.disabled ? html`<span class="chip down">Desactivado</span>` : html`<span class="chip up"><span class="dot"></span>Activo</span>`}</td>
-      <td class="r"><div class="gap-4">
-        <button class="btn btn-ghost btn-sm" data-ad="role" data-id="${u.id}" data-role="${u.role === 'admin' ? 'user' : 'admin'}" ${u.id === me?.id ? 'disabled' : ''}>${u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}</button>
-        <button class="btn btn-ghost btn-sm" data-ad="toggle" data-id="${u.id}" data-disabled="${!u.disabled}" ${u.id === me?.id ? 'disabled' : ''}>${u.disabled ? 'Activar' : 'Desactivar'}</button>
-        <button class="icon-btn sm" data-ad="delete" data-id="${u.id}" data-email="${u.email}" aria-label="Eliminar ${u.email}" title="Eliminar" ${u.id === me?.id ? 'disabled' : ''}>${icon('trash-2', 'sm')}</button>
-      </div></td></tr>`)}</tbody></table>` : empty('search', 'Sin resultados', usersQuery ? `Ningún usuario coincide con «${usersQuery}».` : 'Aún no hay usuarios registrados.'));
+      <th>Usuario</th><th>Rol</th><th class="hide-sm">Verificado</th><th class="hide-sm">Comunidad</th><th class="hide-sm">Acceso</th><th class="hide-sm">Alta</th><th class="hide-sm">Último acceso</th><th>Estado</th><th class="r"><span class="sr-only">Acciones</span></th></tr></thead>
+    <tbody>${r.users.map((u) => userRow(u, me, providerName))}</tbody></table>`
+    : empty('search', 'Sin resultados', usersActive() ? 'Ningún usuario coincide con la búsqueda y los filtros.' : 'Aún no hay usuarios registrados.'));
   const to = Math.min(r.total, usersOffset + PAGE);
-  render($('#ad-pager', root), html`<small class="muted">${r.total ? `${usersOffset + 1}–${to} de ${r.total}` : ''}</small>
+  render($('#ad-pager', root), html`<small class="muted">${r.total ? `${usersOffset + 1}–${to} de ${r.total}` : '0 usuarios'}</small>
     <div class="gap-8"><button class="btn btn-ghost btn-sm" data-ad="page" data-dir="-1" ${usersOffset === 0 ? 'disabled' : ''}>${icon('chevron-left', 'sm')} Anterior</button>
     <button class="btn btn-ghost btn-sm" data-ad="page" data-dir="1" ${to >= r.total ? 'disabled' : ''}>Siguiente ${icon('chevron-right', 'sm')}</button></div>`);
+}
+
+/** Fila de la tabla y su menú de acciones. Las opciones no disponibles se quedan visibles, atenuadas y con el motivo debajo. */
+function userRow(u, me, providerName) {
+  const self = u.id === me?.id, suspended = Boolean(u.suspendedUntil), admin = u.role === 'admin';
+  const mi = (act, label, { hint = '', off = false, danger = false } = {}) => html`<button type="button" role="menuitem" class="menu-item${danger ? ' danger' : ''}" aria-disabled="${off}"
+      data-ad="${act}" data-id="${u.id}" data-email="${u.email}" data-alias="${u.alias ?? u.name}" data-role="${admin ? 'user' : 'admin'}" data-disabled="${!u.disabled}"><span>${label}</span>${hint ? html`<small>${hint}</small>` : ''}</button>`;
+  const yours = 'Es tu cuenta.';
+  return html`<tr>
+    <td><div class="asset-cell"><div><strong>${u.name}${self ? html` <span class="you">(tú)</span>` : ''}</strong><small>${u.email}</small></div></div></td>
+    <td>${admin ? html`<span class="chip accent">${icon('shield-check', 'sm')}Admin</span>` : html`<span class="chip">Usuario</span>`}</td>
+    <td class="hide-sm">${u.emailVerified ? html`<span class="chip up">Verificado</span>` : html`<span class="chip">Sin verificar</span>`}</td>
+    <td class="hide-sm"><div class="md-user"><small class="muted">${u.alias ?? '(sin alias)'}</small>${suspended
+      ? html`<span class="chip down" title="${u.suspensionReason ?? ''}">${u.suspendedUntil > 253402200000 ? 'Suspendido (indefinida)' : `Suspendido hasta ${new Date(u.suspendedUntil * 1000).toLocaleDateString('es-ES')}`}</span>` : ''}</div></td>
+    <td class="hide-sm"><div class="gap-4">${u.providers.map((p) => html`<span class="chip">${providerName[p] ?? p}</span>`)}</div></td>
+    <td class="muted hide-sm">${new Date(u.createdAt * 1000).toLocaleDateString('es-ES')}</td>
+    <td class="muted hide-sm">${u.lastLoginAt ? timeAgo(u.lastLoginAt * 1000) : '—'}</td>
+    <td>${u.disabled ? html`<span class="chip down">Desactivado</span>` : suspended ? html`<span class="chip warn">Suspendido</span>` : html`<span class="chip up"><span class="dot"></span>Activo</span>`}</td>
+    <td class="r">
+      <button type="button" class="icon-btn sm" popovertarget="um-${u.id}" aria-label="Acciones de ${u.email}" title="Acciones" aria-haspopup="menu">${icon('ellipsis', 'sm')}</button>
+      <div popover id="um-${u.id}" class="menu row-menu" role="menu" aria-label="Acciones de ${u.email}">
+        ${admin ? mi('role', 'Quitar administrador', { off: self, hint: self ? yours : '' })
+          : mi('role', 'Hacer administrador', { off: self || !u.emailVerified, hint: self ? yours : u.emailVerified ? '' : 'Solo cuentas con el email verificado (acceso con Google u Okta).' })}
+        ${mi('toggle', u.disabled ? 'Activar cuenta' : 'Desactivar cuenta', { off: self, hint: self ? yours : u.disabled ? '' : 'Cierra sus sesiones.' })}
+        ${suspended ? mi('unsuspend', 'Reactivar en la comunidad')
+          : mi('suspend', 'Suspender en la comunidad', { off: self || admin, hint: self ? yours : admin ? 'Quítale antes el rol de administrador.' : 'Impide publicar, votar y denunciar.' })}
+        ${mi('delete', 'Eliminar cuenta…', { off: self, danger: true, hint: self ? yours : 'Irreversible.' })}
+      </div>
+    </td></tr>`;
 }
 
 async function patchUser(id, body, message) {
@@ -292,6 +380,14 @@ const actions = {
       toast('Usuario eliminado.', 'success');
     } catch (err) { toast(err.message, 'error'); }
     renderUsers();
+  },
+  'clear-filters'() {
+    usersState = { ...USERS_DEFAULT };
+    usersOffset = 0;
+    for (const sel of $$('[data-uf]', root)) sel.value = usersState[sel.dataset.uf];
+    $('#ad-search', root).value = '';
+    renderUsers();
+    syncUrl();
   },
   suspend(b) { moderation.suspendUser({ userId: b.dataset.id, alias: b.dataset.alias, onDone: renderUsers }); },
   unsuspend(b) { moderation.unsuspendUser({ userId: b.dataset.id, alias: b.dataset.alias, onDone: renderUsers }); },

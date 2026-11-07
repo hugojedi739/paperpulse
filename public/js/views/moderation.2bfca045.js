@@ -8,6 +8,7 @@ import { toast, openDialog } from '../lib/dom.700bdea1.js';
 import { timeAgo } from '../lib/format.bcd91d41.js';
 import { go } from '../lib/router.de30a562.js';
 import { errorMessage, REPORT_REASONS } from '../lib/community.562a3224.js';
+import { pickAllowed } from '../lib/admin-url.df7c25a4.js';
 import { PRESETS, OTHER, MAX_DETAIL, defaultPreset, buildReason, accountAgeLabel, isRepeatOffender } from '../lib/mod-helpers.04abd2eb.js';
 
 const SECTIONS = [['open', 'Denuncias pendientes'], ['resolved', 'Resueltas'], ['dismissed', 'Descartadas']];
@@ -16,11 +17,16 @@ const DAYS = [[1, '1 día'], [3, '3 días'], [7, '7 días'], [30, '30 días'], [
 const PAGE = 25;
 const LEAVE_MS = 180;
 
-let box, content, section = 'open', page = 1, items = [], total = 0, bound = false, renderId = 0;
+let box, content, section = 'open', page = 1, items = [], total = 0, bound = false, renderId = 0, onState = null;
+
+/** Estado que va a la URL (solo si no es el de por defecto) y su restauración desde ella. */
+export const state = () => (section === 'open' ? {} : { section });
+export function restore(s = {}) { section = pickAllowed(s.section, SECTIONS.map(([v]) => v), 'open'); page = 1; }
 
 /** Pinta la sección en `container` (el cuerpo del panel de administración). */
-export function render(container) {
+export function render(container, stateChanged) {
   box = container;
+  onState = stateChanged;
   if (!bound) {
     bound = true;
     box.addEventListener('click', (e) => {
@@ -203,7 +209,7 @@ export function unsuspendUser({ userId, alias, onDone }) {
 }
 
 const actions = {
-  section(b) { section = b.dataset.value; page = 1; draw(); },
+  section(b) { section = b.dataset.value; page = 1; onState?.(); draw(); },
   page(b) { page = Math.max(1, page + Number(b.dataset.dir)); draw(); },
   thread(b) { go(`/community/thread:${b.dataset.id}`); },
   hide(b) {

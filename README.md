@@ -194,7 +194,9 @@ Hay dos modos:
 Visible solo para administradores (el backend lo comprueba en cada petición con `require_admin`).
 - **Resumen**: usuarios, activos, sesiones, altas de 30 días, actividad de hoy (operaciones, foro, denuncias abiertas, mensajes sin leer), consumo de IA de hoy y de los últimos 14 días, integraciones y mercados. Todo sale de la base de datos salvo el relay de Binance, que es de la instancia que responde (en Vercel no hay WebSocket); por eso no se muestran uptime ni errores, que eran contadores en memoria por instancia.
 - **Auditoría**: `admin_log` (migración `0012`) anota cambios de rol, activar/desactivar, eliminar cuentas y cambios de ajustes; se muestra junto con `moderation_log`. Guarda solo ids y **nombres** de ajustes, nunca valores (pueden ser secretos) ni emails. Eliminar una cuenta exige escribir su email, también en el servidor.
-- **Usuarios**: búsqueda, dar/quitar admin, desactivar/activar, eliminar. Siempre debe quedar al menos un admin activo y nadie puede degradarse a sí mismo.
+- **Usuarios**: búsqueda (nombre, alias, email), filtros por rol, estado (activo, desactivado, suspendido) y email verificado, y orden por alta o último acceso. Las acciones de cada fila están en un menú «⋯»: dar/quitar admin, desactivar/activar, suspender/reactivar en la comunidad y eliminar; las no disponibles se ven atenuadas con el motivo (p. ej. «Hacer administrador» exige el email verificado). Siempre debe quedar al menos un admin activo y nadie puede degradarse a sí mismo. En móvil la tabla solo muestra usuario, rol y estado.
+- **Mensajes**: búsqueda en motivo y texto (`%` y `_` se buscan tal cual), filtro de leídos, «Marcar todo como leído» y tarjetas plegables: abrir un mensaje sin leer lo marca como leído.
+- **Estado en la URL**: los filtros y subsecciones se guardan en el hash, p. ej. `#/admin/users:status=suspended&order=login_asc`, `#/admin/moderation:section=resolved`, `#/admin/messages:status=unread` (`lib/admin-url.js`; se escribe con `history.replaceState`, sin ensuciar el historial). Un valor desconocido en la URL se ignora.
 - **Inicio de sesión**: activar email+contraseña y el registro; configurar Google y Okta, con botón «Probar conexión».
 - **Integraciones**: clave, modelo y esfuerzo de Anthropic (`anthropic_effort`, por defecto `low`: razona menos y gasta menos salida; «El del modelo» no envía el parámetro); proveedor de bolsa y clave de Finnhub.
 
@@ -240,14 +242,14 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | DELETE · PUT · POST | `/api/forum/posts/{id}` · `/vote {value}` · `/report {reason, details}` | Borrar lo mío · votar (1, -1, 0) · denunciar |
 | GET · POST | `/api/admin/reports?status=` · `/api/admin/posts/{id}/hide\|restore\|dismiss` | Moderación de mensajes |
 | POST · GET | `/api/admin/users/{id}/suspend\|unsuspend` · `/api/admin/moderation-log` | Suspensiones · registro |
-| GET | `/api/admin/overview` · `/api/admin/users?q=&limit=&offset=` | Panel: métricas · usuarios |
+| GET | `/api/admin/overview` · `/api/admin/users?q=&role=&status=&verified=&sort=&dir=&limit=&offset=` | Panel: métricas · usuarios (`role` admin\|user, `status` active\|disabled\|suspended, `verified` yes\|no, `sort` created\|login, `dir` asc\|desc; un valor no válido da 400) |
 | PATCH/DELETE | `/api/admin/users/{id}` | `{role, disabled}` · eliminar `{confirmEmail}` (debe coincidir con el email de la cuenta) |
 | GET | `/api/admin/badges` | Pendientes para los contadores de las pestañas: `{openReports, unreadMessages}` |
 | GET | `/api/admin/audit?before=` | Auditoría (administración + moderación), páginas de 50 con cursor `tiempo.origen.id` |
 | GET/PUT | `/api/admin/settings` | Ajustes `{values: {clave: valor\|null}}` (`null` = volver a `.env`) |
 | POST | `/api/admin/oauth/{provider}/test` | Comprueba el documento OpenID del proveedor |
 | POST | `/api/contact` | Formulario de contacto `{reason, message}` (el campo `website` es un honeypot) |
-| GET · PATCH · DELETE | `/api/admin/messages?status=&page=` · `/api/admin/messages/{id}` | Bandeja de contacto · `{read}` · borrar |
+| GET · POST · PATCH · DELETE | `/api/admin/messages?status=&q=&page=` · `/api/admin/messages/read-all` · `/api/admin/messages/{id}` | Bandeja de contacto (con búsqueda) · marcar todo como leído · `{read}` · borrar |
 | GET | `/api/health` | Estado; con sesión admin o `X-Admin-Key`, métricas |
 
 ## Convenciones del código

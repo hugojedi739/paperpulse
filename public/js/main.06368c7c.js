@@ -30,7 +30,7 @@ const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, c
 const LAZY = {
   learn: () => import('./views/learn.4cb6adab.js'),
   legal: () => import('./views/legal.dc79dfd8.js'),
-  admin: () => import('./views/admin.ef13eb40.js'),
+  admin: () => import('./views/admin.a46e0675.js'),
 };
 const mounted = new Set();
 let active = null;

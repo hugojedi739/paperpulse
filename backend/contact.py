@@ -37,13 +37,27 @@ def save(reason, message, user_id: Optional[int]) -> int:
         return cur.lastrowid
 
 
-def listing(status: str, page: int) -> dict:
-    where = {"unread": "WHERE m.read_at IS NULL", "read": "WHERE m.read_at IS NOT NULL"}.get(status, "")
+def _like(term: str) -> str:
+    """Patrón LIKE que busca el texto tal cual: % y _ del usuario no son comodines."""
+    return "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+def listing(status: str, page: int, query: str = "") -> dict:
+    conds, args = [], []
+    if status == "unread":
+        conds.append("m.read_at IS NULL")
+    elif status == "read":
+        conds.append("m.read_at IS NOT NULL")
+    query = (query or "").strip()[:100]
+    if query:
+        conds.append("(m.reason LIKE ? ESCAPE '\\' OR m.message LIKE ? ESCAPE '\\')")
+        args += [_like(query)] * 2
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
     with closing(db.connect()) as conn:
         rows = conn.execute(
             f"SELECT m.id, m.reason, m.message, m.created_at, m.read_at, m.user_id, p.alias FROM contact_messages m "
-            f"LEFT JOIN profiles p ON p.user_id = m.user_id {where} ORDER BY m.id DESC LIMIT ? OFFSET ?", (PAGE, (page - 1) * PAGE)).fetchall()
-        total = conn.execute(f"SELECT COUNT(*) FROM contact_messages m {where}").fetchone()[0]
+            f"LEFT JOIN profiles p ON p.user_id = m.user_id {where} ORDER BY m.id DESC LIMIT ? OFFSET ?", (*args, PAGE, (page - 1) * PAGE)).fetchall()
+        total = conn.execute(f"SELECT COUNT(*) FROM contact_messages m {where}", args).fetchone()[0]
         unread = unread_count(conn)
     return {"items": [{"id": r["id"], "reason": r["reason"], "message": r["message"], "createdAt": r["created_at"], "read": r["read_at"] is not None,
                        "user": {"id": r["user_id"], "alias": r["alias"]} if r["user_id"] else None} for r in rows],
@@ -87,7 +101,19 @@ async def api_messages(request):
         page = max(1, int(q.get("page", "1")))
     except ValueError:
         return error("Página no válida.", 400)
-    return ok(await run_in_threadpool(listing, q.get("status", "all"), page))
+    return ok(await run_in_threadpool(listing, q.get("status", "all"), page, q.get("q", "")))
+
+
+async def api_read_all(request):
+    """Marca como leídos todos los mensajes sin leer. Devuelve cuántos eran."""
+    _, err = await require_admin(request)
+    if err:
+        return err
+
+    def mark_all():
+        with transaction() as conn:
+            return conn.execute("UPDATE contact_messages SET read_at = ? WHERE read_at IS NULL", (int(time.time()),)).rowcount
+    return ok({"ok": True, "marked": await run_in_threadpool(mark_all)})
 
 
 async def api_message(request):
@@ -122,5 +148,6 @@ async def api_message(request):
 routes = [
     Route("/api/contact", api_contact, methods=["POST"]),
     Route("/api/admin/messages", api_messages, methods=["GET"]),
+    Route("/api/admin/messages/read-all", api_read_all, methods=["POST"]),
     Route("/api/admin/messages/{id}", api_message, methods=["PATCH", "DELETE"]),
 ]

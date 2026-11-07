@@ -490,18 +490,41 @@ def put_settings(values: Dict[str, Optional[str]], by: Optional[int]) -> None:
 
 
 # ---------------------------------------------------------------- administración de usuarios
-def list_users(query: str = "", limit: int = 50, offset: int = 0) -> Dict:
+USER_SORTS = {"created": "u.created_at", "login": "COALESCE(u.last_login_at, 0)"}
+
+
+def list_users(query: str = "", limit: int = 50, offset: int = 0, role: Optional[str] = None, status: Optional[str] = None,
+               verified: Optional[str] = None, sort: str = "created", direction: str = "desc") -> Dict:
+    """Usuarios con filtros (rol, estado activo/desactivado/suspendido, email verificado sí/no) y orden por alta o último acceso.
+    Los valores que no se reconocen se ignoran aquí; la API los rechaza antes con un 400."""
     like = f"%{query.strip()}%"
+    now = int(time.time())
+    conds, args = ["u.owner_id IS NULL", "u.deleted_at IS NULL", "(u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?)"], [like, like, like]
+    if role in ROLES:
+        conds.append("u.role = ?")
+        args.append(role)
+    if status == "disabled":
+        conds.append("u.disabled = 1")
+    elif status == "suspended":
+        conds.append("COALESCE(u.suspended_until, 0) > ?")
+        args.append(now)
+    elif status == "active":
+        conds += ["u.disabled = 0", "COALESCE(u.suspended_until, 0) <= ?"]
+        args.append(now)
+    if verified in ("yes", "no"):
+        conds.append("u.email_verified = ?")
+        args.append(1 if verified == "yes" else 0)
+    where = "WHERE " + " AND ".join(conds)
+    order = f"{USER_SORTS.get(sort, USER_SORTS['created'])} {'ASC' if direction == 'asc' else 'DESC'}, u.id {'ASC' if direction == 'asc' else 'DESC'}"
     with closing(connect()) as conn:
-        where = "WHERE u.owner_id IS NULL AND u.deleted_at IS NULL AND (u.email LIKE ? OR u.name LIKE ? OR pr.alias LIKE ?)"
-        total = conn.execute(f"SELECT COUNT(*) FROM users u LEFT JOIN profiles pr ON pr.user_id = u.id {where}", (like, like, like)).fetchone()[0]
+        total = conn.execute(f"SELECT COUNT(*) FROM users u LEFT JOIN profiles pr ON pr.user_id = u.id {where}", args).fetchone()[0]
         rows = conn.execute(
             f"""SELECT u.*, GROUP_CONCAT(DISTINCT i.provider) AS providers,
                        (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.expires_at > ?) AS sessions,
                        (SELECT updated_at FROM practice_data p WHERE p.user_id = u.id) AS data_at, pr.alias AS alias
                 FROM users u LEFT JOIN identities i ON i.user_id = u.id LEFT JOIN profiles pr ON pr.user_id = u.id {where}
-                GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?""",
-            (int(time.time()), like, like, like, limit, offset),
+                GROUP BY u.id ORDER BY {order} LIMIT ? OFFSET ?""",
+            (now, *args, limit, offset),
         ).fetchall()
     users = [{
         **public_user(r), "disabled": bool(r["disabled"]), "lastLoginAt": r["last_login_at"],

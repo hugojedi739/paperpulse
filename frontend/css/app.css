@@ -924,6 +924,22 @@
   .spark-bars i { flex: 1; min-width: 3px; height: var(--w); border-radius: 3px 3px 0 0; background: var(--accent); opacity: 0.8; }
   .src { font-size: var(--fs-xs); color: var(--text-3); font-weight: 500; }
   .admin-users td .gap-4 { flex-wrap: nowrap; }
+  .admin-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; padding: 0 16px 12px; }
+  .admin-filters .field { min-width: 150px; flex: 1 1 150px; max-width: 220px; }
+  .admin-filters .field label { font-size: var(--fs-sm); }
+  [popover].row-menu { min-width: 236px; max-width: min(320px, calc(100vw - 16px)); }
+  .row-menu .menu-item { flex-direction: column; align-items: flex-start; gap: 1px; }
+  .row-menu .menu-item small { color: var(--text-3); font-size: var(--fs-xs); font-weight: 400; white-space: normal; }
+  .row-menu .menu-item[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }
+  .row-menu .menu-item[aria-disabled='true']:hover { background: none; color: var(--text-2); }
+  .row-menu .menu-item.danger { color: var(--down); }
+  .msg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .msg-bar .input-group { flex: 1 1 220px; max-width: 360px; }
+  .msg-toggle { display: inline-flex; align-items: center; gap: 8px; min-width: 0; text-align: left; font: inherit; color: inherit; }
+  .msg-toggle .icon { flex: none; transition: transform 0.15s; }
+  .msg-toggle[aria-expanded='true'] .icon { transform: rotate(90deg); }
+  .msg-body.clamp p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) { .msg-toggle .icon { transition: none; } }
   .admin-users .you { font-size: var(--fs-xs); color: var(--accent-strong); }
   .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
 
@@ -1060,6 +1076,9 @@
   .md-reason { display: block; max-width: 360px; overflow-wrap: anywhere; color: var(--text-2); }
 
   @media (max-width: 767px) {
+    .admin-users .hide-sm { display: none; }
+    .admin-filters .field { max-width: none; min-width: 0; flex: 1 1 110px; }
+    .admin-filters #ad-clear { flex: 1 1 100%; }
     .cm-notice .link { margin-left: 0; }
     .cm-cat { grid-template-columns: auto minmax(0, 1fr); }
     .cm-cat-meta { grid-column: 2; justify-items: start; }
@@ -1202,6 +1221,12 @@
   .show-sm { display: block; }
   .toolbar-row .input-group { width: 100%; }
   .table td, .table th { padding-inline: 8px; }
+  /* Tabla de usuarios del panel: va aquí (sin capa) porque la regla anterior, sin capa, gana a cualquier regla de @layer */
+  .table.admin-users th, .table.admin-users td { padding-inline: 6px; }
+  .admin-users td:first-child { max-width: 38vw; white-space: normal; }
+  .admin-users .asset-cell strong { white-space: normal; overflow: visible; }
+  .admin-users .asset-cell small { display: block; }
+  .admin-users strong, .admin-users small { overflow-wrap: anywhere; }
   .markets-table .asset-cell { gap: 8px; }
   .markets-table .asset-cell small { display: none; }
   .markets-table .asset-cell { max-width: calc(100vw - 260px); }

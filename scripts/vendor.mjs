@@ -19,7 +19,7 @@ const ICONS = [
   'bell-ring', 'wifi-off', 'keyboard', 'graduation-cap', 'sliders-horizontal', 'list-filter', 'scan',
   // Comunidad
   'message-square', 'trophy', 'rss', 'flag', 'share-2', 'user-plus', 'user-check', 'lock', 'ban',
-  'arrow-big-up', 'arrow-big-down', 'reply', 'scroll-text',
+  'arrow-big-up', 'arrow-big-down', 'reply', 'scroll-text', 'ellipsis',
 ];
 
 rmSync(out, { recursive: true, force: true });
