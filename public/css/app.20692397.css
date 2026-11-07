@@ -207,7 +207,7 @@
   }
   .page-title { font-size: var(--fs-lg); min-width: 120px; }
   .search-trigger {
-    flex: 0 1 380px; margin-inline: auto;
+    flex: 0 1 380px; min-width: 0; margin-inline: auto;
     display: flex; align-items: center; gap: 8px;
     height: 36px; padding: 0 8px 0 12px;
     border-radius: var(--r-md); border: 1px solid var(--border);
@@ -303,7 +303,7 @@
   @keyframes pulse { 70% { box-shadow: 0 0 0 6px transparent; } }
 
   .account-chip {
-    display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px;
+    display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; white-space: nowrap;
     border-radius: var(--r-md); font-weight: 600; font-variant-numeric: tabular-nums;
     border: 1px solid var(--border); background: var(--surface-1);
   }
@@ -1170,6 +1170,15 @@
   .dash, .trade, .journal-charts, .admin-grid { grid-template-columns: minmax(0, 1fr); }
   .side { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
   .news-card.feature { grid-column: auto; }
+}
+/* Tablet (768–1080 px): barra lateral compacta, solo iconos. Con la barra completa (232 px) la cabecera no cabe y toda la
+   página desbordaba. Los textos siguen en el DOM (ocultos solo a la vista) y cada enlace lleva un title. */
+@media (min-width: 768px) and (max-width: 1080px) {
+  .app { --nav-w: 72px; }
+  .sidebar .brand-name, .sidebar .nav span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .nav a, .nav button { justify-content: center; padding-inline: 0; }
+  [data-action='collapse-nav'] { display: none; }
+  .feed-status span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* solo el punto de color; el texto sigue para lectores de pantalla */
 }
 @media (max-width: 767px) {
   .features { grid-template-columns: 1fr; }
