@@ -2,8 +2,8 @@
 import { html, icon, render, on, $ } from '../lib/dom.700bdea1.js';
 import { timeAgo } from '../lib/format.bcd91d41.js';
 import { news, safeUrl } from '../lib/marketdata.d86555d2.js';
-import { empty } from '../lib/ui.fefb5422.js';
-import { newsDialog } from '../ui/dialogs.1b6f1358.js';
+import { empty } from '../lib/ui.51b169ed.js';
+import { newsDialog } from '../ui/dialogs.25876c9d.js';
 
 const FILTERS = [['all', 'Todas'], ['crypto', 'Cripto'], ['stocks', 'Bolsa'], ['economy', 'Economía'], ['analysis', 'Análisis']];
 const CATEGORY = { crypto: ['Cripto', 'coins'], stocks: ['Bolsa', 'chart-candlestick'], economy: ['Economía', 'globe'], analysis: ['Análisis', 'chart-line'] };

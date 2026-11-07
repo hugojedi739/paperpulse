@@ -1,14 +1,14 @@
 // Vista Resumen: patrimonio, KPIs, sesiones de bolsa, favoritos, movimientos, amplitud y cartera.
 import * as store from '../lib/store.0fb0dfbb.js';
-import { tick } from '../lib/feed.18c84950.js';
+import { tick } from '../lib/feed.64804afc.js';
 import { ASSETS, findAsset } from '../lib/catalog.760e22b2.js';
 import { html, icon, render, on, $ } from '../lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.bcd91d41.js';
-import { portfolio } from '../lib/trading.18758d04.js';
+import { portfolio } from '../lib/trading.ed7b8a2a.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.00e200e1.js';
 import { currentUser } from '../lib/auth.12cec77c.js';
 import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.d86555d2.js';
-import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.fefb5422.js';
+import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.51b169ed.js';
 import { go } from '../lib/router.de30a562.js';
 import { mountCard } from '../ui/retention-card.1c7567a4.js';
 

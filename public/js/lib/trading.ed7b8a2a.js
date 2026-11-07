@@ -3,7 +3,7 @@
 // (lib/account.js), que decide precio, comisión y saldo; las funciones de este módulo son asíncronas en ambos casos.
 import * as store from './store.0fb0dfbb.js';
 import * as account from './account.76c3b674.js';
-import { priceOf, tick } from './feed.18c84950.js';
+import { priceOf, tick } from './feed.64804afc.js';
 import { toUsd, convert, price as fmtPrice, units } from './format.bcd91d41.js';
 import { findAsset } from './catalog.760e22b2.js';
 

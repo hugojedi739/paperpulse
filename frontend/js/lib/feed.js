@@ -23,6 +23,8 @@ let lastPoll = 0;
 let status = 'connecting';
 let polling = false; // una ronda a la vez: si la anterior sigue en curso no se lanza otra
 let noRealtime = false; // el servidor dice que no hay tiempo real (/api/health): se queda en REST sin reconectar
+let lastStocksFrame = 0; // última trama de bolsa recibida por WebSocket (si dejan de llegar, se piden por REST)
+const STOCKS_STALE_MS = 15000; // el relay difunde la bolsa cada 5 s: sin tramas en 15 s es que no la está difundiendo
 
 const backoff = (d) => Math.min(30000, Math.round(d * 2 * (0.85 + Math.random() * 0.3)));
 const allStreams = () => [...tickerStreams, ...handlers.keys(), 'stocks'];
@@ -72,7 +74,10 @@ function send(method, params) {
 
 /** `rest`: el dato viene de una petición REST, no del WebSocket (no cuenta para el estado «en vivo»). */
 function route(stream, data, rest = false) {
-  if (stream === 'stocks') return applyStocks(data);
+  if (stream === 'stocks') {
+    if (!rest) lastStocksFrame = Date.now();
+    return applyStocks(data);
+  }
   if (stream.endsWith('@ticker')) {
     const asset = findAsset(data.s);
     const symbol = asset?.symbol ?? data.s.replace(/USDT$/, '');
@@ -296,6 +301,12 @@ export function start() {
   connect();
   pollStocks();
   pollCrypto().then(() => saveCrypto(true)); // sin esperar al WebSocket (el relay tarda unos segundos en tener el primer ticker)
+  // En Vercel no corre el proceso de fondo del relay que difunde la bolsa cada 5 s: el WebSocket entrega solo la instantánea
+  // inicial y, como al recibir datos se detiene el sondeo, las cotizaciones de bolsa se quedaban congeladas. Si con el socket
+  // abierto dejan de llegar tramas, se piden por REST (con el relay completo no hace falta: siempre llegan).
+  setInterval(() => {
+    if (ws?.readyState === WebSocket.OPEN && !document.hidden && Date.now() - lastStocksFrame > STOCKS_STALE_MS) pollStocks();
+  }, STOCKS_STALE_MS / 2);
   addEventListener('pagehide', () => saveCrypto(true));
   setInterval(() => {
     if (changed.size) {

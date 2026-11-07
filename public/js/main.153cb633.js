@@ -1,28 +1,28 @@
 // Arranque de PaperPulse: estado, datos en vivo, enrutado, cabecera y atajos globales.
 import * as store from './lib/store.0fb0dfbb.js';
-import * as feed from './lib/feed.18c84950.js';
+import * as feed from './lib/feed.64804afc.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.760e22b2.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.bcd91d41.js';
-import { portfolio, checkTriggers } from './lib/trading.18758d04.js';
+import { portfolio, checkTriggers } from './lib/trading.ed7b8a2a.js';
 import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
-import { updateLive, assetIcon } from './lib/ui.fefb5422.js';
+import { updateLive, assetIcon } from './lib/ui.51b169ed.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.db4a16a5.js';
-import * as trade from './views/trade.875bcfa3.js';
-import * as markets from './views/markets.1ebd6400.js';
-import * as newsView from './views/news.800d2acf.js';
-import * as journal from './views/journal.4f7f9da5.js';
+import * as dashboard from './views/dashboard.ed391042.js';
+import * as trade from './views/trade.a9df72ad.js';
+import * as markets from './views/markets.719a3568.js';
+import * as newsView from './views/news.15be892d.js';
+import * as journal from './views/journal.06f540f3.js';
 import * as community from './views/community.6896c44a.js';
-import * as dialogs from './ui/dialogs.1b6f1358.js';
+import * as dialogs from './ui/dialogs.25876c9d.js';
 import * as auth from './lib/auth.12cec77c.js';
 import * as account from './lib/account.76c3b674.js';
 import * as notifs from './lib/notifications.bfcaba3e.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
 import * as contact from './views/contact.84dd5eed.js';
 import { maybeAskTerms } from './ui/terms.ffa66e96.js';
-import { initPalette, openPalette } from './ui/palette.f1a0a533.js';
-import { initChat, toggleChat } from './ui/chat.2f59ab77.js';
+import { initPalette, openPalette } from './ui/palette.6534ad54.js';
+import { initChat, toggleChat } from './ui/chat.0289d70f.js';
 import { startTour } from './ui/tour.cb1cdcd3.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
@@ -30,7 +30,7 @@ const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, c
 const LAZY = {
   learn: () => import('./views/learn.4cb6adab.js'),
   legal: () => import('./views/legal.dc79dfd8.js'),
-  admin: () => import('./views/admin.8ecc5d2f.js'),
+  admin: () => import('./views/admin.d57ee921.js'),
 };
 const mounted = new Set();
 let active = null;
