@@ -463,6 +463,12 @@
   .empty .btn { margin-top: 8px; }
   .skeleton { border-radius: var(--r-sm); background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
   @keyframes shimmer { to { background-position: -200% 0; } }
+  /* Esqueleto del área principal: está en el HTML, así que se ve desde el primer pintado hasta que la vista tiene contenido */
+  .boot { display: flex; flex-direction: column; gap: 20px; }
+  .boot-title { height: 28px; width: min(240px, 60%); }
+  .boot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+  .boot-card { height: 96px; border-radius: var(--r-lg); }
+  .boot-wide { height: 220px; border-radius: var(--r-lg); }
 
   /* Menús (Popover API) */
   [popover].menu {

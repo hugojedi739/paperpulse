@@ -81,6 +81,12 @@
       </div>
 
       <main id="main" tabindex="-1">
+        <div class="boot" id="boot" role="status" aria-label="Cargando">
+          <span class="sr-only">Cargando…</span>
+          <div class="skeleton boot-title"></div>
+          <div class="boot-grid"><div class="skeleton boot-card"></div><div class="skeleton boot-card"></div><div class="skeleton boot-card"></div></div>
+          <div class="skeleton boot-wide"></div>
+        </div>
         <section class="view" data-view="dashboard" aria-labelledby="page-title"></section>
         <section class="view" data-view="trade" aria-labelledby="page-title" hidden></section>
         <section class="view" data-view="markets" aria-labelledby="page-title" hidden></section>

@@ -19,7 +19,7 @@
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
   <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/app.91b47b95.css">
+  <link rel="stylesheet" href="/css/app.a8809ba0.css">
   <link rel="modulepreload" href="/js/lib/account.76c3b674.js">
   <link rel="modulepreload" href="/js/lib/api.d1caad06.js">
   <link rel="modulepreload" href="/js/lib/auth.12cec77c.js">
@@ -57,7 +57,7 @@
   <link rel="modulepreload" href="/js/views/trade.a56877cf.js">
   <link rel="modulepreload" href="/vendor/lightweight-charts.7d001f7d.mjs">
   <script src="/js/theme-init.f6dbcac7.js"></script>
-  <script type="module" src="/js/main.3cac2dea.js"></script>
+  <script type="module" src="/js/main.f90c56a9.js"></script>
   <script type="module" src="/js/ui/status.1d88b01f.js"></script>
 </head>
 <body>
@@ -117,6 +117,12 @@
       </div>
 
       <main id="main" tabindex="-1">
+        <div class="boot" id="boot" role="status" aria-label="Cargando">
+          <span class="sr-only">Cargando…</span>
+          <div class="skeleton boot-title"></div>
+          <div class="boot-grid"><div class="skeleton boot-card"></div><div class="skeleton boot-card"></div><div class="skeleton boot-card"></div></div>
+          <div class="skeleton boot-wide"></div>
+        </div>
         <section class="view" data-view="dashboard" aria-labelledby="page-title"></section>
         <section class="view" data-view="trade" aria-labelledby="page-title" hidden></section>
         <section class="view" data-view="markets" aria-labelledby="page-title" hidden></section>

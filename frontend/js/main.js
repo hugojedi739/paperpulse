@@ -47,11 +47,22 @@ applyPrivacy();
 async function route() {
   const { route: name, param } = current();
   const view = VIEWS[name] || LAZY[name] ? name : 'dashboard';
+  const boot = $('#boot');
   if (!VIEWS[view]) {
-    try { VIEWS[view] = await LAZY[view](); } catch { toast('No se pudo cargar la sección. Comprueba la conexión e inténtalo de nuevo.', 'error'); return; }
+    // Vista perezosa: si tarda en llegar se enseña el esqueleto (con un pequeño retardo para que una descarga rápida no parpadee)
+    const wait = setTimeout(() => { $$('.view').forEach((section) => { section.hidden = true; }); boot.hidden = false; }, 150);
+    try { VIEWS[view] = await LAZY[view](); } catch {
+      clearTimeout(wait);
+      boot.hidden = true;
+      $$('.view').forEach((section) => { section.hidden = section.dataset.view !== active; }); // se vuelve a la vista anterior
+      toast('No se pudo cargar la sección. Comprueba la conexión e inténtalo de nuevo.', 'error');
+      return;
+    }
+    clearTimeout(wait);
     if (current().route !== name) return; // se cambió de vista mientras se descargaba: ya la gestiona otro route()
   }
   const swap = () => {
+    boot.hidden = true;
     if (active && active !== view) VIEWS[active].hide?.();
     for (const section of $$('.view')) section.hidden = section.dataset.view !== view;
     const section = $(`.view[data-view="${view}"]`);
