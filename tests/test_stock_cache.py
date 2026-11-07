@@ -92,17 +92,76 @@ class SharedCacheTest(unittest.TestCase):
 
 
 class HealthRealtimeTest(unittest.TestCase):
-    def test_health_tells_client_whether_websocket_is_available(self):
+    """`realtime` de /api/health refleja el estado real del relay, no la plataforma: el navegador lo usa para decidir si
+    sigue intentando el WebSocket o se queda en REST."""
+
+    def health(self, **patches):
         from starlette.applications import Starlette
         from starlette.routing import Route
         from starlette.testclient import TestClient
         from backend import app as backend_app
+        from backend.market import stream
 
         client = TestClient(Starlette(routes=[Route("/api/health", backend_app.api_health)]))
-        with mock.patch.object(backend_app, "IS_VERCEL", True):
-            self.assertIs(client.get("/api/health").json()["realtime"], False)
-        with mock.patch.object(backend_app, "IS_VERCEL", False):
-            self.assertIs(client.get("/api/health").json()["realtime"], True)
+        with mock.patch.object(stream, "REALTIME_ENABLED", patches.get("enabled", True)), \
+                mock.patch.object(stream.hub, "failures", patches.get("failures", 0)), \
+                mock.patch.object(backend_app, "IS_VERCEL", patches.get("vercel", False)):
+            return client.get("/api/health").json()
+
+    def test_activo_por_defecto_tambien_en_vercel(self):
+        self.assertIs(self.health(vercel=False)["realtime"], True)
+        self.assertIs(self.health(vercel=True)["realtime"], True)  # el WebSocket funciona en Vercel (medido en producción)
+
+    def test_se_puede_desactivar_por_configuracion(self):
+        self.assertIs(self.health(enabled=False)["realtime"], False)
+        self.assertIs(self.health(enabled=False, vercel=True)["realtime"], False)
+
+    def test_un_relay_que_no_conecta_con_binance_se_considera_no_disponible(self):
+        self.assertIs(self.health(failures=2)["realtime"], True)   # un tropiezo no basta
+        self.assertIs(self.health(failures=3)["realtime"], False)  # varios seguidos sí
+        self.assertIs(self.health(failures=50, vercel=True)["realtime"], False)
+
+    def test_sin_conexion_todavia_no_cuenta_como_fallo(self):
+        from backend.market import stream
+        fresh = stream.Hub()  # relay recién creado: sin conexión con Binance, pero sin fallos
+        self.assertIsNone(fresh.upstream)
+        self.assertEqual(fresh.failures, 0)
+        self.assertIs(self.health(failures=fresh.failures)["realtime"], True)
+
+    def test_el_estado_del_relay_expone_los_fallos_seguidos(self):
+        from backend.market import stream
+        with mock.patch.object(stream.hub, "failures", 2):
+            self.assertEqual(stream.status()["upstreamFailures"], 2)
+
+    def test_los_fallos_seguidos_suben_y_se_reinician_al_conectar(self):
+        import asyncio
+        from backend.market import stream
+
+        class Fake:  # conexión de Binance simulada: no envía nada y se cierra
+            async def __aenter__(self): return self
+            async def __aexit__(self, *a): return False
+            def __aiter__(self): return self
+            async def __anext__(self): raise StopAsyncIteration
+
+        hub = stream.Hub()
+        hub.refs = {"btcusdt@ticker": {object()}}  # alguien quiere ese stream
+        attempts = []
+
+        def connect(*a, **k):
+            attempts.append(1)
+            if len(attempts) <= 2:
+                raise OSError("sin red")
+            hub.refs = {}  # a la tercera se conecta y ya no hace falta: el bucle termina
+            return Fake()
+
+        async def run():
+            real_sleep = asyncio.sleep
+            async def fast(_): await real_sleep(0)
+            with mock.patch.object(stream.websockets, "connect", connect), mock.patch.object(stream.asyncio, "sleep", fast):
+                await hub.run_upstream()
+        asyncio.run(run())
+        self.assertEqual(len(attempts), 3)
+        self.assertEqual(hub.failures, 0)  # conectó: contador a cero
 
 
 if __name__ == "__main__":

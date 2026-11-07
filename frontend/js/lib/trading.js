@@ -23,7 +23,8 @@ export function valuePosition(p) {
   const px = live ?? p.entryPrice;
   const valueUsd = toUsd(p.amount * px, p.quote);
   const pnlUsd = valueUsd - p.investedUsd;
-  return { price: px, live: live != null, valueUsd, pnlUsd, pnlPct: p.investedUsd > 0 ? (pnlUsd / p.investedUsd) * 100 : 0 };
+  // Un precio sembrado de la caché local (feed.js) se pinta, pero no cuenta como en vivo: así no entra en el historial de patrimonio
+  return { price: px, live: live != null && !tick(p.symbol)?.seeded, valueUsd, pnlUsd, pnlPct: p.investedUsd > 0 ? (pnlUsd / p.investedUsd) * 100 : 0 };
 }
 
 export function portfolio() {

@@ -17,6 +17,7 @@ from typing import Dict, Optional, Set
 import websockets
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from backend.config import REALTIME_ENABLED
 from backend.market.stocks import fetch_live_stock_quotes
 from backend.security import cleanup_stale_ip_data, get_client_ip
 
@@ -53,6 +54,7 @@ class Hub:
         self.task: Optional[asyncio.Task] = None
         self.connected_at = 0.0
         self.messages = 0
+        self.failures = 0  # fallos seguidos al conectar con Binance (se pone a 0 al conseguirlo)
 
     # ---------------------------------------------------------- clientes
     def wanted(self) -> Set[str]:
@@ -100,6 +102,7 @@ class Hub:
             try:
                 async with websockets.connect(f"{UPSTREAM}?streams={'/'.join(streams)}", ping_interval=20, max_size=2**22, open_timeout=10) as up:
                     self.upstream, self.upstream_streams, self.connected_at = up, set(streams), time.time()
+                    self.failures = 0
                     delay = 1
                     flusher = asyncio.create_task(self.flush(up))
                     async for raw in up:
@@ -108,6 +111,7 @@ class Hub:
                             self.messages += 1
                             self.publish(stream, raw)
             except Exception as e:
+                self.failures += 1
                 print(f"[Stream] Conexión con Binance perdida: {type(e).__name__}: {e}", file=sys.stderr)
             finally:
                 self.upstream, self.upstream_streams = None, set()
@@ -205,9 +209,22 @@ async def stocks_broadcast_worker():
         await asyncio.sleep(5)
 
 
+MAX_UPSTREAM_FAILURES = 3  # a partir de aquí el relay se considera inservible y se aconseja el respaldo REST
+
+
+def realtime_available() -> bool:
+    """¿Le conviene al navegador usar el WebSocket? Es lo que publica /api/health como `realtime`.
+
+    Falso si está desactivado por configuración (REALTIME=false) o si el relay no consigue conectar con Binance (varios fallos
+    seguidos): el sondeo REST tiene sus propios servidores de respaldo. Verdadero en cualquier otro caso, también en Vercel
+    (el relay abre su conexión con Binance al primer suscriptor, así que «sin conexión todavía» no cuenta como fallo)."""
+    return REALTIME_ENABLED and hub.failures < MAX_UPSTREAM_FAILURES
+
+
 def status() -> Dict:
     return {
         "clients": len(hub.clients), "streams": len(hub.refs), "upstreamConnected": hub.upstream is not None,
         "upstreamStreams": len(hub.upstream_streams), "messagesRelayed": hub.messages,
         "upstreamSince": int(hub.connected_at) if hub.upstream is not None else None,
+        "upstreamFailures": hub.failures,
     }

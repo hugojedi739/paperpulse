@@ -3,8 +3,8 @@ import * as store from '../lib/store.0fb0dfbb.js';
 import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.700bdea1.js';
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.bcd91d41.js';
 import { createEquityChart } from '../lib/charts.00e200e1.js';
-import { assetIcon, empty, seg, pressSeg } from '../lib/ui.6fc197dc.js';
-import { noteDialog } from '../ui/dialogs.846cda52.js';
+import { assetIcon, empty, seg, pressSeg } from '../lib/ui.fefb5422.js';
+import { noteDialog } from '../ui/dialogs.1b6f1358.js';
 import { shareButton, shareDialog } from '../ui/share.d29f4482.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];

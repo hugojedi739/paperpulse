@@ -1,11 +1,11 @@
 // Paleta de comandos (Ctrl/Cmd + K): busca activos en el catálogo y en Binance/bolsa, y ejecuta acciones.
 import * as store from '../lib/store.0fb0dfbb.js';
-import { tick } from '../lib/feed.6d0c0c04.js';
+import { tick } from '../lib/feed.18c84950.js';
 import { ASSETS, findAsset, toAsset, register } from '../lib/catalog.760e22b2.js';
 import { html, icon, render, openDialog, debounce, $ } from '../lib/dom.700bdea1.js';
 import { price, pct, trendClass } from '../lib/format.bcd91d41.js';
 import { search } from '../lib/marketdata.d86555d2.js';
-import { assetIcon } from '../lib/ui.6fc197dc.js';
+import { assetIcon } from '../lib/ui.fefb5422.js';
 import { go } from '../lib/router.de30a562.js';
 
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

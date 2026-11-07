@@ -1,28 +1,28 @@
 // Arranque de PaperPulse: estado, datos en vivo, enrutado, cabecera y atajos globales.
 import * as store from './lib/store.0fb0dfbb.js';
-import * as feed from './lib/feed.6d0c0c04.js';
+import * as feed from './lib/feed.18c84950.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.760e22b2.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.bcd91d41.js';
-import { portfolio, checkTriggers } from './lib/trading.b7f39839.js';
+import { portfolio, checkTriggers } from './lib/trading.18758d04.js';
 import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
-import { updateLive, assetIcon } from './lib/ui.6fc197dc.js';
+import { updateLive, assetIcon } from './lib/ui.fefb5422.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.d4864935.js';
-import * as trade from './views/trade.5fc8dfb3.js';
-import * as markets from './views/markets.54ecd537.js';
-import * as newsView from './views/news.e2453822.js';
-import * as journal from './views/journal.85bd407c.js';
+import * as dashboard from './views/dashboard.db4a16a5.js';
+import * as trade from './views/trade.875bcfa3.js';
+import * as markets from './views/markets.1ebd6400.js';
+import * as newsView from './views/news.800d2acf.js';
+import * as journal from './views/journal.4f7f9da5.js';
 import * as community from './views/community.6896c44a.js';
-import * as dialogs from './ui/dialogs.846cda52.js';
+import * as dialogs from './ui/dialogs.1b6f1358.js';
 import * as auth from './lib/auth.12cec77c.js';
 import * as account from './lib/account.76c3b674.js';
 import * as notifs from './lib/notifications.bfcaba3e.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
 import * as contact from './views/contact.84dd5eed.js';
 import { maybeAskTerms } from './ui/terms.ffa66e96.js';
-import { initPalette, openPalette } from './ui/palette.7445c570.js';
-import { initChat, toggleChat } from './ui/chat.0b130ea2.js';
+import { initPalette, openPalette } from './ui/palette.f1a0a533.js';
+import { initChat, toggleChat } from './ui/chat.2f59ab77.js';
 import { startTour } from './ui/tour.cb1cdcd3.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
@@ -30,7 +30,7 @@ const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, c
 const LAZY = {
   learn: () => import('./views/learn.4cb6adab.js'),
   legal: () => import('./views/legal.dc79dfd8.js'),
-  admin: () => import('./views/admin.a46e0675.js'),
+  admin: () => import('./views/admin.8ecc5d2f.js'),
 };
 const mounted = new Set();
 let active = null;
@@ -317,6 +317,7 @@ auth.init(dialogs.chooseCloudData).then(({ user, fromOAuth }) => {
 }
 renderFeedStatus(feed.getStatus());
 feed.start();
+renderTape(); // la cinta se pintó antes de que el feed sembrara los últimos precios conocidos (caché local)
 refreshMarkets();
 refreshRates();
 setInterval(refreshMarkets, 60_000);

@@ -317,6 +317,7 @@ auth.init(dialogs.chooseCloudData).then(({ user, fromOAuth }) => {
 }
 renderFeedStatus(feed.getStatus());
 feed.start();
+renderTape(); // la cinta se pintó antes de que el feed sembrara los últimos precios conocidos (caché local)
 refreshMarkets();
 refreshRates();
 setInterval(refreshMarkets, 60_000);

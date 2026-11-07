@@ -3,7 +3,7 @@
 // (lib/account.js), que decide precio, comisión y saldo; las funciones de este módulo son asíncronas en ambos casos.
 import * as store from './store.0fb0dfbb.js';
 import * as account from './account.76c3b674.js';
-import { priceOf, tick } from './feed.6d0c0c04.js';
+import { priceOf, tick } from './feed.18c84950.js';
 import { toUsd, convert, price as fmtPrice, units } from './format.bcd91d41.js';
 import { findAsset } from './catalog.760e22b2.js';
 
@@ -23,7 +23,8 @@ export function valuePosition(p) {
   const px = live ?? p.entryPrice;
   const valueUsd = toUsd(p.amount * px, p.quote);
   const pnlUsd = valueUsd - p.investedUsd;
-  return { price: px, live: live != null, valueUsd, pnlUsd, pnlPct: p.investedUsd > 0 ? (pnlUsd / p.investedUsd) * 100 : 0 };
+  // Un precio sembrado de la caché local (feed.js) se pinta, pero no cuenta como en vivo: así no entra en el historial de patrimonio
+  return { price: px, live: live != null && !tick(p.symbol)?.seeded, valueUsd, pnlUsd, pnlPct: p.investedUsd > 0 ? (pnlUsd / p.investedUsd) * 100 : 0 };
 }
 
 export function portfolio() {

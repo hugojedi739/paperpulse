@@ -1,17 +1,17 @@
 // Vista Operar: gráfico con indicadores, ticket de órdenes, libro de órdenes y posiciones.
 import * as store from '../lib/store.0fb0dfbb.js';
-import * as feed from '../lib/feed.6d0c0c04.js';
+import * as feed from '../lib/feed.18c84950.js';
 import { findAsset, displayPair } from '../lib/catalog.760e22b2.js';
 import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.700bdea1.js';
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.bcd91d41.js';
-import * as trading from '../lib/trading.b7f39839.js';
+import * as trading from '../lib/trading.18758d04.js';
 import * as account from '../lib/account.76c3b674.js';
 import { createTradingChart, INDICATORS } from '../lib/charts.00e200e1.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.d86555d2.js';
-import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.6fc197dc.js';
+import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.fefb5422.js';
 import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
-import { closePositionDialog } from '../ui/dialogs.846cda52.js';
+import { closePositionDialog } from '../ui/dialogs.1b6f1358.js';
 import { shareButton, shareDialog } from '../ui/share.d29f4482.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
@@ -473,7 +473,7 @@ const actions = {
     b.setAttribute('aria-pressed', String(added));
     toast(added ? `${asset.symbol} añadido a favoritos` : `${asset.symbol} quitado de favoritos`, 'success', 2500);
   },
-  alert() { import('../ui/dialogs.846cda52.js').then((m) => m.alertsDialog(asset)); },
+  alert() { import('../ui/dialogs.1b6f1358.js').then((m) => m.alertsDialog(asset)); },
   fit() { chart.fit(); },
   fullscreen() {
     const card = $('#t-chart-card', root);

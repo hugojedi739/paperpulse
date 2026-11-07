@@ -22,7 +22,7 @@ let lastCryptoTick = 0;
 let lastPoll = 0;
 let status = 'connecting';
 let polling = false; // una ronda a la vez: si la anterior sigue en curso no se lanza otra
-let noRealtime = false; // el servidor (p. ej. Vercel) no admite WebSocket: se queda en REST sin reconectar
+let noRealtime = false; // el servidor dice que no hay tiempo real (/api/health): se queda en REST sin reconectar
 
 const backoff = (d) => Math.min(30000, Math.round(d * 2 * (0.85 + Math.random() * 0.3)));
 const allStreams = () => [...tickerStreams, ...handlers.keys(), 'stocks'];
@@ -70,16 +70,19 @@ function send(method, params) {
   if (ws?.readyState === WebSocket.OPEN && params.length) ws.send(JSON.stringify({ method, params, id: reqId++ }));
 }
 
-function route(stream, data) {
+/** `rest`: el dato viene de una petición REST, no del WebSocket (no cuenta para el estado «en vivo»). */
+function route(stream, data, rest = false) {
   if (stream === 'stocks') return applyStocks(data);
   if (stream.endsWith('@ticker')) {
     const asset = findAsset(data.s);
     const symbol = asset?.symbol ?? data.s.replace(/USDT$/, '');
     setTick(symbol, {
       price: +data.c, change24h: +data.P, high24h: +data.h, low24h: +data.l,
-      volume24h: +data.q, open24h: +data.o, live: true, marketOpen: true,
+      volume24h: +data.q, open24h: +data.o, live: true, marketOpen: true, seeded: false,
     });
-    lastCryptoTick = Date.now();
+    cryptoSeen.add(symbol);
+    if (!rest) lastCryptoTick = Date.now();
+    saveCrypto();
   }
   handlers.get(stream)?.forEach((cb) => cb(data));
 }
@@ -129,15 +132,33 @@ async function pollStream(stream) {
 async function poll() {
   if (polling || document.hidden) return;
   polling = true;
-  const pairs = [...tickerStreams].map((s) => s.split('@')[0].toUpperCase());
   const jobs = [
-    getJson(`/api/crypto/tickers?symbols=${pairs.join(',')}`).then((j) => j.data?.forEach((t) => route(`${t.s.toLowerCase()}@ticker`, t))),
+    pollCrypto(),
     pollStocks(),
     ...[...handlers.keys()].map(pollStream),
   ];
   try { await Promise.allSettled(jobs); } finally { polling = false; }
   lastPoll = Date.now();
   updateStatus();
+}
+
+// Cotizaciones de cripto por REST. Se pide también al arrancar, en paralelo con el WebSocket: el relay del servidor abre su
+// conexión con Binance al primer suscriptor y el primer ticker tarda de 2 a 4 s (más con la función en frío), mientras que
+// esta petición responde en menos de 1 s. La petición de arranque y la primera ronda del sondeo comparten la misma.
+let cryptoRequest = null;
+let cryptoAt = -Infinity;
+function pollCrypto() {
+  if (!cryptoRequest && Date.now() - cryptoAt < 2000) return Promise.resolve();
+  const pairs = [...tickerStreams].map((s) => s.split('@')[0].toUpperCase());
+  cryptoRequest ??= getJson(`/api/crypto/tickers?symbols=${pairs.join(',')}`)
+    .then((j) => j.data?.forEach((t) => {
+      const mine = ticks.get(findAsset(t.s)?.symbol ?? t.s.replace(/USDT$/, ''));
+      if (mine && !mine.seeded && mine.live && Date.now() - mine.time < 1500) return; // el WebSocket ya entregó uno más reciente
+      route(`${t.s.toLowerCase()}@ticker`, t, true);
+    }))
+    .catch(() => { /* servidor no disponible: llegará por el WebSocket o en la siguiente ronda */ })
+    .then(() => { cryptoRequest = null; cryptoAt = Date.now(); });
+  return cryptoRequest;
 }
 
 /** Ritmo del respaldo REST según la vista (main.js): 5 s en Operar, 10 s en el resto. */
@@ -183,10 +204,47 @@ function seedStocks() {
       if (!(q?.price > 0) || ticks.has(sym)) continue;
       ticks.set(sym, {
         price: q.price, change24h: q.change24h, high24h: q.high24h, low24h: q.low24h,
-        volume24h: q.volume, live: false, marketOpen: q.marketOpen !== false, marketStatus: q.marketStatus, symbol: sym, time: saved.at,
+        volume24h: q.volume, live: false, seeded: true, marketOpen: q.marketOpen !== false, marketStatus: q.marketStatus, symbol: sym, time: saved.at,
       });
     }
   } catch { /* sin almacenamiento o dato corrupto */ }
+}
+
+/* ---------- Cripto: caché local ---------- */
+// Igual que la bolsa: el último precio conocido se pinta al arrancar mientras llega el real. Caduca a los 10 minutos (los precios
+// de cripto se mueven mucho más que los de bolsa fuera de horario) y los datos sembrados llevan `seeded: true` hasta el primer
+// dato real, para que no se usen como precio de operación ni en el historial de patrimonio.
+const CRYPTO_KEY = 'paperpulse_crypto_cache';
+const CRYPTO_MAX_AGE = 10 * 60 * 1000;
+const CRYPTO_SAVE_EVERY = 30 * 1000;
+const cryptoSeen = new Set();
+let cryptoSavedAt = 0;
+
+function seedCrypto() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CRYPTO_KEY));
+    if (!saved || !(Date.now() - saved.at <= CRYPTO_MAX_AGE) || saved.at > Date.now() + 60000) return; // caducada, ilegible o «del futuro»
+    for (const [sym, q] of Object.entries(saved.data || {})) {
+      if (!(q?.price > 0) || ticks.has(sym)) continue;
+      ticks.set(sym, {
+        price: q.price, change24h: q.change24h, high24h: q.high24h, low24h: q.low24h, volume24h: q.volume24h, open24h: q.open24h,
+        live: false, seeded: true, marketOpen: true, symbol: sym, time: saved.at,
+      });
+    }
+  } catch { /* sin almacenamiento o dato corrupto */ }
+}
+
+function saveCrypto(force = false) {
+  const now = Date.now();
+  if (!force && now - cryptoSavedAt < CRYPTO_SAVE_EVERY) return;
+  cryptoSavedAt = now;
+  const data = {};
+  for (const sym of cryptoSeen) {
+    const t = ticks.get(sym);
+    if (t && !t.seeded && t.price > 0) data[sym] = { price: t.price, change24h: t.change24h, high24h: t.high24h, low24h: t.low24h, volume24h: t.volume24h, open24h: t.open24h };
+  }
+  if (!Object.keys(data).length) return;
+  try { localStorage.setItem(CRYPTO_KEY, JSON.stringify({ at: now, data })); } catch { /* sin almacenamiento */ }
 }
 
 function saveStocks(data) {
@@ -199,7 +257,7 @@ function applyStocks(data) {
     if (!(q?.price > 0)) continue;
     setTick(sym, {
       price: q.price, change24h: q.change24h, high24h: q.high24h, low24h: q.low24h,
-      volume24h: q.volume, live: Boolean(q.live), marketOpen: q.marketOpen !== false, marketStatus: q.marketStatus,
+      volume24h: q.volume, live: Boolean(q.live), seeded: false, marketOpen: q.marketOpen !== false, marketStatus: q.marketStatus,
     });
   }
 }
@@ -213,7 +271,7 @@ function setTick(symbol, data) {
 
 /** Precio externo (p. ej. último cierre de velas para activos sin feed). No pisa datos en vivo. */
 export function setFallbackPrice(symbol, price) {
-  if (price > 0 && !ticks.get(symbol)?.live) setTick(symbol, { price, live: false });
+  if (price > 0 && !ticks.get(symbol)?.live) setTick(symbol, { price, live: false, seeded: false });
 }
 
 export const tick = (symbol) => ticks.get(findAsset(symbol)?.symbol ?? String(symbol).toUpperCase()) ?? null;
@@ -234,8 +292,11 @@ export function start() {
   if (started) return;
   started = true;
   seedStocks();
+  seedCrypto();
   connect();
   pollStocks();
+  pollCrypto().then(() => saveCrypto(true)); // sin esperar al WebSocket (el relay tarda unos segundos en tener el primer ticker)
+  addEventListener('pagehide', () => saveCrypto(true));
   setInterval(() => {
     if (changed.size) {
       const symbols = new Set(changed);

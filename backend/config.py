@@ -36,6 +36,9 @@ PORT = int(os.getenv("PORT", "8000"))
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 IS_PRODUCTION = os.environ.get("ENV", "").lower() == "production"
 IS_VERCEL = bool(os.environ.get("VERCEL"))
+# Relay de mercado en vivo (/ws/market). Con REALTIME=false /api/health dice que no hay tiempo real y el navegador se queda en REST
+# (útil si un proxy o plataforma no deja pasar WebSocket). Por defecto activo en todas partes, también en Vercel.
+REALTIME_ENABLED = os.getenv("REALTIME", "true").strip().lower() not in ("0", "false", "no", "off")
 
 # Orígenes CORS permitidos (solo hacen falta si el frontend se sirve desde otro dominio)
 ALLOWED_ORIGINS = _csv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")

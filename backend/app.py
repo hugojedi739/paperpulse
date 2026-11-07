@@ -48,8 +48,8 @@ async def api_health(request):
     by_key = bool(ADMIN_API_KEY) and hmac.compare_digest(provided.encode(), ADMIN_API_KEY.encode())
     user = None if by_key else await current_user(request)
     if not by_key and not (user and user["role"] == "admin"):
-        return JSONResponse({"status": "healthy", "realtime": not IS_VERCEL})
-    return JSONResponse({"status": "healthy", "realtime": not IS_VERCEL, **(await run_in_threadpool(admin.usage)), "stream": stream.status(),
+        return JSONResponse({"status": "healthy", "realtime": stream.realtime_available()})
+    return JSONResponse({"status": "healthy", "realtime": stream.realtime_available(), **(await run_in_threadpool(admin.usage)), "stream": stream.status(),
                          "anthropicConfigured": bool(settings.get("anthropic_api_key"))})
 
 

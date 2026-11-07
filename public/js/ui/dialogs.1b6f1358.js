@@ -1,14 +1,14 @@
 // Diálogos de la aplicación. Todos se pintan en el <dialog id="dlg"> compartido.
 import * as store from '../lib/store.0fb0dfbb.js';
-import { priceOf } from '../lib/feed.6d0c0c04.js';
+import { priceOf } from '../lib/feed.18c84950.js';
 import { ASSETS, findAsset } from '../lib/catalog.760e22b2.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.700bdea1.js';
 import { money, price, units, pct, currency, convert, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.bcd91d41.js';
-import * as trading from '../lib/trading.b7f39839.js';
+import * as trading from '../lib/trading.18758d04.js';
 import * as account from '../lib/account.76c3b674.js';
 import * as auth from '../lib/auth.12cec77c.js';
 import { safeUrl } from '../lib/marketdata.d86555d2.js';
-import { assetIcon, seg, pressSeg } from '../lib/ui.6fc197dc.js';
+import { assetIcon, seg, pressSeg } from '../lib/ui.fefb5422.js';
 import { go } from '../lib/router.de30a562.js';
 
 const dlg = () => document.getElementById('dlg');
