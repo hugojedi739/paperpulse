@@ -2,7 +2,7 @@
 // La caché evita repetir peticiones al cambiar de pestaña o de periodo: la clasificación se recalcula en el
 // servidor como mucho cada 5 minutos, así que pedirla más a menudo no aporta nada.
 import { api } from './api.d1caad06.js';
-import * as auth from './auth.1b22f87f.js';
+import * as auth from './auth.71ee1dd2.js';
 
 const cache = new Map(); // clave -> { t, data }
 const TTL = { leaderboard: 60_000, categories: 60_000, threads: 20_000, profile: 30_000, me: 5 * 60_000 };
@@ -55,6 +55,10 @@ export const me = (force = false) => {
 
 export const leaderboard = (period, page = 1) =>
   cached(`leaderboard:${period}:${page}`, TTL.leaderboard, () => api(`/api/community/leaderboard?period=${enc(period)}&page=${page}`));
+
+/** Pulso público para la home sin sesión: top 5 de la semana, últimos hilos y traders activos (GET /api/community/pulse). */
+let pulseInflight = null; // varias vistas pueden pedirlo a la vez al arrancar: una sola petición
+export const pulse = () => (pulseInflight ??= cached('pulse', 5 * 60_000, () => api('/api/community/pulse')).finally(() => { pulseInflight = null; }));
 
 export const categories = () => cached('categories', TTL.categories, () => api('/api/forum/categories'));
 

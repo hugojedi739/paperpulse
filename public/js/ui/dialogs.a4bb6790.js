@@ -4,13 +4,13 @@ import { priceOf } from '../lib/feed.c4d084b5.js';
 import { ASSETS, findAsset } from '../lib/catalog.760e22b2.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.700bdea1.js';
 import { money, price, units, pct, currency, convert, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.bcd91d41.js';
-import * as trading from '../lib/trading.73b0dcdf.js';
-import * as account from '../lib/account.21889ca7.js';
-import * as auth from '../lib/auth.1b22f87f.js';
+import * as trading from '../lib/trading.558dd930.js';
+import * as account from '../lib/account.c9db58b4.js';
+import * as auth from '../lib/auth.71ee1dd2.js';
 import { safeUrl } from '../lib/marketdata.d86555d2.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.a28a6b49.js';
 import { go } from '../lib/router.de30a562.js';
-import { openWelcome } from './welcome.0b350226.js';
+import { openWelcome } from './welcome.8483b205.js';
 import { startedWith, startedAmount } from '../lib/starting-balance.f588d167.js';
 
 const dlg = () => document.getElementById('dlg');

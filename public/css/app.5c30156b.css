@@ -715,6 +715,24 @@
   .feature p { color: var(--text-2); font-size: var(--fs-md); }
   .feature-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--accent-fill); color: var(--accent-text); margin-bottom: 4px; }
   .feature-link { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-size: var(--fs-md); font-weight: 600; margin-top: 4px; }
+  /* Con sesión: saludo con patrimonio, notificaciones y accesos rápidos */
+  .greet { display: grid; gap: var(--s-4); }
+  .greet h2.hero-label { font-size: var(--fs-lg); font-weight: 650; color: var(--text-1); margin: 0; }
+  .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .quick-link { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--tap); padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-1); color: var(--text-1); font-weight: 600; text-align: center; text-decoration: none; transition: border-color 0.15s, background 0.15s; }
+  .quick-link:hover { border-color: var(--accent); background: var(--accent-fill); }
+  .quick-link .icon { flex: none; color: var(--accent-text); }
+  /* Sin sesión: actividad real de la comunidad (solo si la hay) */
+  .pulse-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); }
+  .pulse-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .pulse-col h3 { font-size: var(--fs-md); font-weight: 650; color: var(--text-2); }
+  .pulse-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .pulse-list li { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .pulse-list li > a { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: var(--text-1); }
+  .pulse-list li > a:hover { color: var(--accent-text); }
+  .pulse-list li > small { flex: none; }
+  .pulse-rank { flex: none; width: 20px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .pulse-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin: var(--s-4) 0 0; padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: var(--fs-md); }
   /* Tarjetas de cotización con minigráfico */
   .kpi-spark strong { font-size: var(--fs-lg); white-space: nowrap; }
   .kpi-spark { position: relative; }
@@ -1193,6 +1211,7 @@
 }
 @media (max-width: 767px) {
   .features { grid-template-columns: 1fr; }
+  .pulse-grid { grid-template-columns: minmax(0, 1fr); }
   .app { grid-template-columns: minmax(0, 1fr); }
   .sidebar, .page-title, .feed-status span, .account-chip small { display: none; }
   .topbar { padding: 0 12px; padding-top: env(safe-area-inset-top); height: calc(var(--top-h) + env(safe-area-inset-top)); gap: 8px; }

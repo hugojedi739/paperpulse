@@ -4,13 +4,16 @@ import { tick } from '../lib/feed.c4d084b5.js';
 import { ASSETS, findAsset } from '../lib/catalog.760e22b2.js';
 import { html, icon, render, on, $ } from '../lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.bcd91d41.js';
-import { portfolio } from '../lib/trading.73b0dcdf.js';
+import { portfolio } from '../lib/trading.558dd930.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.00e200e1.js';
-import { currentUser } from '../lib/auth.1b22f87f.js';
+import { currentUser, onAuth, ready as authReady } from '../lib/auth.71ee1dd2.js';
+import * as notifs from '../lib/notifications.2f6c509c.js';
+import * as community from '../lib/community.759966c2.js';
+import { h, mount as put } from '../lib/el.71f9edc9.js';
 import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.d86555d2.js';
 import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.a28a6b49.js';
 import { go } from '../lib/router.de30a562.js';
-import { mountCard } from '../ui/retention-card.93195534.js';
+import { mountCard } from '../ui/retention-card.73b8089b.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -24,6 +27,8 @@ const SESSIONS = {
 
 let root, equity, range = '1M', movers = 'gainers', timer;
 let minis = []; // minigráficos de las tarjetas de cotización
+let alias = null; // alias del perfil de comunidad para el saludo (null = aún no se sabe o no hay perfil)
+let pulseData = null; // última respuesta de /api/community/pulse (para repintar sin parpadeo)
 
 /** Precio en vivo que parpadea al cambiar (data-flash); vacío = esqueleto hasta la primera cotización. */
 const livePrice = (a) => html`<span class="num" data-px="${a.symbol}" data-q="${a.quote}" data-flash>${tick(a.symbol)?.price ? price(tick(a.symbol).price, a.quote) : ''}</span>`;
@@ -38,6 +43,9 @@ export function mount(el) {
   on(root, 'click', '[data-seg="movers"] button', (_, b) => { movers = b.dataset.value; pressSeg(root, 'movers', movers); renderMovers(); });
   on(root, 'click', '[data-asset]', (_, el2) => go(`/trade/${el2.dataset.asset}`));
   store.on('account', () => root.isConnected && !root.hidden && renderAll());
+  let seenUser = currentUser()?.id ?? null; // la home cambia con la sesión: se repinta cuando entra o sale alguien (onAuth también salta en cada sincronización)
+  onAuth((user) => { const id = user?.id ?? null; if (id === seenUser) return; seenUser = id; alias = null; if (root.isConnected && !root.hidden) renderAll(); });
+  notifs.onChange(() => root.isConnected && !root.hidden && renderNotifCount());
   store.on('watchlist', () => !root.hidden && renderWatchlist());
   store.on('markets', () => !root.hidden && renderSessions());
 }
@@ -52,6 +60,7 @@ export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.
 
 function renderAll() {
   const practice = store.hasPractice();
+  const user = currentUser();
   equity?.destroy();
   equity = null;
   minis.forEach((m) => m.destroy());
@@ -60,28 +69,34 @@ function renderAll() {
     <div id="d-retention" class="stack"></div>
     <div class="dash">
       <div class="stack">
+        ${user ? greeting(user, practice) : ''}
         ${practice ? html`
           <section class="card">
             <div class="hero-top">
-              <div>
+              ${user ? html`<span class="hero-label">${icon('activity', 'sm')} Evolución del patrimonio</span>` : html`<div>
                 <span class="hero-label">${icon('wallet', 'sm')} Patrimonio total</span>
                 <div class="hero-value money" id="d-equity"></div>
                 <div class="hero-delta" id="d-delta"></div>
-              </div>
+              </div>`}
               ${seg('range', RANGES, range)}
             </div>
             <div class="hero-chart" id="d-chart"></div>
           </section>
-          <div class="kpis" id="d-kpis"></div>` : html`
+          <div class="kpis" id="d-kpis"></div>
+          ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
+          <section class="card" aria-labelledby="d-start-title">
+            <h2 class="card-title" id="d-start-title">${icon('wallet')} Crea tu cuenta de práctica</h2>
+            <p class="hero-sub">Elige con cuánto dinero virtual quieres empezar y practica con cotizaciones reales.</p>
+            <div class="hero-actions"><button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Elegir mi saldo</button></div>
+          </section>
+          <div class="kpis" id="d-tiles"></div>` : html`
           <section class="card cta" aria-labelledby="d-cta-title">
             <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
             <h2 id="d-cta-title">Compite con otros traders, sin arriesgar un euro.</h2>
             <p class="hero-sub">Cotizaciones reales, ranking mensual y retos. Practica con saldo virtual.</p>
             <div class="hero-actions">
-              ${currentUser()
-                ? html`<button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Empezar a practicar</button>`
-                : html`<button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
-                  <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>`}
+              <button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
+              <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>
               <button class="btn btn-lg btn-link" data-action="tour">Ver cómo funciona</button>
             </div>
             <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador con dinero virtual. No es asesoramiento financiero.</p>
@@ -106,6 +121,7 @@ function renderAll() {
               <span class="feature-link">Ver mercados ${icon('arrow-right', 'sm')}</span>
             </a>
           </section>
+          <div id="d-pulse"></div>
           <div class="kpis" id="d-tiles"></div>`}
         <section class="card">
           <div class="card-head"><h2 class="card-title">${icon('globe')} Sesiones de mercado</h2><span class="card-sub">Tu hora local</span></div>
@@ -144,6 +160,7 @@ function renderAll() {
     drawEquity();
   }
   mountCard($('#d-retention', root));
+  if (user) { renderHello(user); renderNotifCount(); } else renderPulse(practice);
   if (!practice) renderTiles();
   renderSummary();
   renderWatchlist();
@@ -172,6 +189,7 @@ function renderSummary() {
   if (store.hasPractice()) {
     const p = portfolio();
     const total = p.equityUsd - store.initialCapital();
+    if (!$('#d-equity', root)) return; // la cuenta se acaba de activar y la vista aún no se ha repintado (lo hace el evento de cuenta)
     render($('#d-equity', root), money(p.equityUsd));
     render($('#d-delta', root), html`${changeChip(p.returnPct)}
       <span class="money delta ${trendClass(total)}">${money(total, { signed: true })}</span> desde el inicio
@@ -184,6 +202,76 @@ function renderSummary() {
       ${kpi('P&L no realizado', html`<span class="money delta ${trendClass(p.unrealizedUsd)}">${money(p.unrealizedUsd, { signed: true })}</span>`, p.investedUsd ? pct((p.unrealizedUsd / p.investedUsd) * 100) : '—')}
       ${kpi('Tasa de acierto', t.length ? pct((wins / t.length) * 100, { signed: false, decimals: 0 }) : '—', `${t.length} operaciones cerradas`)}`);
   }
+}
+
+/* ---------- Con sesión: saludo, patrimonio, notificaciones y accesos rápidos ---------- */
+function greeting(user, practice) {
+  return html`<section class="card greet" aria-labelledby="d-hello">
+    <div class="hero-top">
+      <div>
+        <h2 class="hero-label" id="d-hello">${icon('user', 'sm')} <span>Hola, ${user.name}</span></h2>
+        ${practice ? html`<div class="hero-value money" id="d-equity"></div><div class="hero-delta" id="d-delta"></div>` : ''}
+      </div>
+      <div id="d-notif"></div>
+    </div>
+    <nav class="quick" aria-label="Accesos rápidos">
+      <a class="quick-link" href="#/trade">${icon('chart-candlestick')}<span>Operar</span></a>
+      <a class="quick-link" href="#/community">${icon('users')}<span>Comunidad</span></a>
+      <a class="quick-link" href="#/community/challenge">${icon('flame')}<span>Reto del mes</span></a>
+    </nav>
+  </section>`;
+}
+
+/** «Hola, alias» cuando hay perfil de comunidad; si no, el nombre de la cuenta (que ya está pintado). */
+async function renderHello(user) {
+  if (alias === null) {
+    try { alias = (await community.me())?.profile?.alias ?? ''; } catch { alias = ''; }
+  }
+  const el = $('#d-hello span', root);
+  if (alias && el && currentUser()?.id === user.id) el.textContent = `Hola, ${alias}`;
+}
+
+function renderNotifCount() {
+  const box = $('#d-notif', root);
+  if (!box) return;
+  const { unread } = notifs.state();
+  render(box, unread > 0
+    ? html`<button type="button" class="chip accent" popovertarget="notif-pop">${icon('bell', 'sm')} ${unread === 1 ? '1 notificación sin leer' : `${unread} notificaciones sin leer`}</button>`
+    : '');
+}
+
+/* ---------- Sin sesión: actividad real de la comunidad (solo si la hay) ---------- */
+/** Lo que se ve sin iniciar sesión: top 5 de la semana, últimos hilos y traders activos. Si la comunidad está vacía no se pinta nada. */
+async function renderPulse(localPractice) {
+  const box = $('#d-pulse', root);
+  if (!box) return;
+  if (pulseData) drawPulse(box, pulseData, localPractice); // al repintar se enseña lo último que se sabía mientras llega lo nuevo
+  await authReady; // hasta saber si hay sesión no se pide nada: quien ya ha entrado ve su panel, no esto
+  if (currentUser() || !$('#d-pulse', root)) return;
+  try { pulseData = await community.pulse(); } catch { return; } // sin servidor: se deja como está, nunca un error en la home
+  const now = $('#d-pulse', root);
+  if (now && !currentUser()) drawPulse(now, pulseData, localPractice);
+}
+
+function drawPulse(box, d, localPractice) {
+  if (d.empty) return box.replaceChildren();
+  const column = (title, body) => h('div', { class: 'pulse-col' }, h('h3', {}, title), body);
+  const top = d.topWeek.length
+    ? column('Mejores rentabilidades de la semana', h('ol', { class: 'pulse-list' }, d.topWeek.map((e) => h('li', {},
+      h('span', { class: 'pulse-rank' }, String(e.rank)), h('a', { href: `#/community/user:${e.alias}` }, e.alias),
+      h('strong', { class: `delta ${trendClass(e.returnPct)}` }, pct(e.returnPct)), e.approximate ? h('small', { class: 'muted' }, 'aprox.') : null))))
+    : null;
+  const threads = d.latestThreads.length
+    ? column('Últimos hilos del foro', h('ul', { class: 'pulse-list' }, d.latestThreads.map((t) => h('li', {},
+      h('a', { href: `#/community/thread:${t.id}` }, t.title), h('small', { class: 'muted' }, t.categoryName)))))
+    : null;
+  put(box, h('section', { class: 'card', 'aria-labelledby': 'd-pulse-title' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'card-title', id: 'd-pulse-title' }, 'La comunidad esta semana'),
+      h('a', { class: 'link', href: '#/community/ranking' }, 'Ver clasificación')),
+    h('div', { class: 'pulse-grid' }, top, threads),
+    d.activeTraders7d != null ? h('p', { class: 'muted pulse-foot' }, `${d.activeTraders7d} traders han operado esta semana.`) : null,
+    localPractice ? h('p', { class: 'pulse-foot' }, 'Tu cuenta de práctica vive solo en este navegador. Regístrate para guardarla y poder aparecer en la clasificación. ',
+      h('button', { type: 'button', class: 'btn btn-primary btn-sm', dataset: { action: 'register' } }, 'Crear cuenta')) : null));
 }
 
 /* ---------- Tarjetas de cotización con minigráfico (series que ya se cargan: 7 días cripto, 1 mes bolsa; sin peticiones nuevas) ---------- */

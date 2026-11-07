@@ -56,6 +56,10 @@ export const me = (force = false) => {
 export const leaderboard = (period, page = 1) =>
   cached(`leaderboard:${period}:${page}`, TTL.leaderboard, () => api(`/api/community/leaderboard?period=${enc(period)}&page=${page}`));
 
+/** Pulso público para la home sin sesión: top 5 de la semana, últimos hilos y traders activos (GET /api/community/pulse). */
+let pulseInflight = null; // varias vistas pueden pedirlo a la vez al arrancar: una sola petición
+export const pulse = () => (pulseInflight ??= cached('pulse', 5 * 60_000, () => api('/api/community/pulse')).finally(() => { pulseInflight = null; }));
+
 export const categories = () => cached('categories', TTL.categories, () => api('/api/forum/categories'));
 
 export const threads = (slug, sort, page = 1) =>

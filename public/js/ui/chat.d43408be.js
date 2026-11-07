@@ -4,7 +4,7 @@ import { tick } from '../lib/feed.c4d084b5.js';
 import { findAsset, displayPair } from '../lib/catalog.760e22b2.js';
 import { html, escape, render, $ } from '../lib/dom.700bdea1.js';
 import { money, price, pct, currency, locale, approx } from '../lib/format.bcd91d41.js';
-import { portfolio } from '../lib/trading.73b0dcdf.js';
+import { portfolio } from '../lib/trading.558dd930.js';
 import { INTERVALS, normalizeInterval } from '../lib/marketdata.d86555d2.js';
 import { markdown } from '../lib/markdown.a737a755.js';
 

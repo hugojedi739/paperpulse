@@ -7,9 +7,10 @@ import hmac
 from typing import Optional
 
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from backend.community import forum, moderation, profiles, ranking
+from backend.community import forum, moderation, profiles, pulse, ranking
 from backend.community.common import CommunityError
 from backend.config import ADMIN_API_KEY
 from backend.http import current_user, error, ok, read_json, require_admin, same_origin
@@ -133,6 +134,18 @@ async def api_leaderboard(request):
     except CommunityError as exc:
         return error(str(exc), 400)
     return await _run(ranking.leaderboard, q.get("period", "total"), 50, (page - 1) * 50)
+
+
+async def api_pulse(request):
+    """Lo que se ve en la home sin sesión: top 5 de la semana, últimos hilos y traders activos. Público y cacheable (5 min)."""
+    _, err = await _guard(request, "read", False)
+    if err:
+        return err
+    try:
+        data = await run_in_threadpool(pulse.pulse)
+    except CommunityError as exc:
+        return error(str(exc), getattr(exc, "status", 400))
+    return JSONResponse(data, headers={"Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"})
 
 
 async def api_leaderboard_refresh(request):
@@ -291,6 +304,7 @@ routes = [
     Route("/api/community/profiles/{alias}/follow", api_follow, methods=["POST", "DELETE"]),
     Route("/api/community/following", api_following, methods=["GET"]),
     Route("/api/community/feed", api_feed, methods=["GET"]),
+    Route("/api/community/pulse", api_pulse, methods=["GET"]),
     Route("/api/community/leaderboard", api_leaderboard, methods=["GET"]),
     Route("/api/community/leaderboard/refresh", api_leaderboard_refresh, methods=["POST"]),
     Route("/api/forum/categories", api_categories, methods=["GET"]),

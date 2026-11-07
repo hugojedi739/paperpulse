@@ -154,6 +154,12 @@ Hay dos modos:
 - **Moderación y promoción**: las normas prohíben señales de pago, cursos, grupos, brókeres y afiliados; se aplican ocultando mensajes (motivo «Spam o promoción…») y suspendiendo cuentas; las cuentas sin verificar no pueden publicar enlaces en sus primeras 24 h.
 - **Cookies**: solo hay cookies y almacenamiento técnicos (sesión, `pp_oauth`, `localStorage` `paperpulse_*`, `sessionStorage` y la caché del service worker); no hay analítica, publicidad ni cookies de terceros, por lo que **no hay banner** (art. 22.2 LSSI-CE). Si se añade algo no necesario, habrá que pedir consentimiento. Las imágenes de noticias se cargan desde los servidores de los medios (ven la IP): está dicho en la política de privacidad.
 
+### Home (Resumen) según la sesión
+- **Visitante sin cuenta**: hero («Empezar gratis», «Probar demo»), las tres tarjetas diferenciales y, debajo, **actividad real de la comunidad** (`GET /api/community/pulse`): top 5 de la semana (alias y rentabilidad), los 3 últimos hilos del foro (título y categoría) y cuántos traders han operado esta semana. Cada bloque solo se pinta si tiene datos y la sección entera solo si hay top o hilos: con la comunidad vacía no aparece nada (ni ceros ni esqueleto), y si la petición falla tampoco. Hasta saber si hay sesión (`auth.ready`) no se pide nada, así que quien ya ha entrado no la descarga.
+- **Visitante con cuenta local** (sin sesión): su panel personal de siempre y, debajo de los KPI, el mismo bloque público con una invitación a registrarse para guardar la cuenta.
+- **Con sesión**: sin hero ni tarjetas diferenciales ni bloque público. Saludo con el alias del perfil (o el nombre si aún no hay), patrimonio y rentabilidad, contador de notificaciones sin leer (abre la campana) y tres accesos rápidos (Operar, Comunidad, Reto del mes), seguidos del gráfico de patrimonio y los KPI. Si aún no hay cuenta de práctica, una tarjeta invita a elegir el saldo.
+- **`/api/community/pulse`** (público, sin sesión): caché de 5 minutos en memoria y `Cache-Control: public, s-maxage=300, stale-while-revalidate` para el CDN. El top solo incluye cuentas que empezaron con **al menos 500 €** (lo elegido, o el saldo en USD convertido en las anteriores) y respeta privacidad y suspensiones; los hilos excluyen los automáticos por activo y incluyen las operaciones compartidas; `activeTraders7d` solo se publica a partir de 3 (si no, `null`). No lleva emails, ids de usuario ni saldos.
+
 ### Clasificación
 - **Patrimonio** = efectivo (incluido el reservado en órdenes) + posiciones abiertas valoradas al último precio (una sola consulta de precios para todos los activos: `prices.valuation_prices`). Un activo sin precio se valora a su coste y el resultado se marca como «aproximado».
 - **Rentabilidad total** = patrimonio / saldo inicial − 1. Como no hay ingresos ni retiradas, es la rentabilidad real. **7 y 30 días** = patrimonio / patrimonio al inicio del periodo − 1, con las instantáneas diarias de `equity_snapshots`; si la cuenta se abrió dentro del periodo, la base es el saldo inicial.
@@ -193,7 +199,7 @@ Hay dos modos:
 
 ### Panel de administración (`#/admin`)
 Visible solo para administradores (el backend lo comprueba en cada petición con `require_admin`).
-- **Resumen**: usuarios, activos, sesiones, altas de 30 días, actividad de hoy (operaciones, foro, denuncias abiertas, mensajes sin leer), consumo de IA de hoy y de los últimos 14 días, integraciones y mercados. Todo sale de la base de datos salvo el relay de Binance, que es de la instancia que responde (en Vercel no hay WebSocket); por eso no se muestran uptime ni errores, que eran contadores en memoria por instancia.
+- **Resumen**: usuarios, activos, sesiones, altas de 30 días, actividad de hoy (operaciones, foro, denuncias abiertas, mensajes sin leer), consumo de IA de hoy y de los últimos 14 días, integraciones y mercados. Todo sale de la base de datos salvo el relay de Binance, que es de la instancia que responde; por eso no se muestran uptime ni errores, que eran contadores en memoria por instancia.
 - **Auditoría**: `admin_log` (migración `0012`) anota cambios de rol, activar/desactivar, eliminar cuentas y cambios de ajustes; se muestra junto con `moderation_log`. Guarda solo ids y **nombres** de ajustes, nunca valores (pueden ser secretos) ni emails. Eliminar una cuenta exige escribir su email, también en el servidor.
 - **Usuarios**: búsqueda (nombre, alias, email), filtros por rol, estado (activo, desactivado, suspendido) y email verificado, y orden por alta o último acceso. Las acciones de cada fila están en un menú «⋯»: dar/quitar admin, desactivar/activar, suspender/reactivar en la comunidad y eliminar; las no disponibles se ven atenuadas con el motivo (p. ej. «Hacer administrador» exige el email verificado). Siempre debe quedar al menos un admin activo y nadie puede degradarse a sí mismo. En móvil la tabla solo muestra usuario, rol y estado.
 - **Mensajes**: búsqueda en motivo y texto (`%` y `_` se buscan tal cual), filtro de leídos, «Marcar todo como leído» y tarjetas plegables: abrir un mensaje sin leer lo marca como leído.
@@ -237,6 +243,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | POST/DELETE | `/api/community/profiles/{alias}/follow` | Seguir · dejar de seguir |
 | GET | `/api/community/following` · `/api/community/feed?before=` | A quién sigo · feed |
 | GET | `/api/community/leaderboard?period=7d\|30d\|total&page=` | Clasificación |
+| GET | `/api/community/pulse` | Pulso público para la home sin sesión: `{topWeek[≤5], latestThreads[≤3], activeTraders7d, empty}` (caché 5 min) |
 | POST | `/api/community/leaderboard/refresh` | Recalcular (admin o `X-Admin-Key`, para un cron) |
 | GET | `/api/forum/categories` · `/api/forum/categories/{slug}?sort=top\|recent&page=` | Categorías · hilos |
 | GET | `/api/forum/assets/{symbol}` · `/api/forum/threads/{id}?sort=&page=` | Hilo de un activo · hilo con respuestas |

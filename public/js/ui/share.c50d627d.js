@@ -1,7 +1,7 @@
 // «Compartir en el foro»: publica una operación de la cuenta del servidor.
 // Solo se envía el id de la ejecución y el comentario: activo, lado, precio y resultado los pone el servidor.
-import * as C from '../lib/community.7d55d91f.js';
-import * as account from '../lib/account.21889ca7.js';
+import * as C from '../lib/community.759966c2.js';
+import * as account from '../lib/account.c9db58b4.js';
 import { isServerMode } from '../lib/store.f9db7346.js';
 import { h, svgIcon, mount } from '../lib/el.71f9edc9.js';
 import { openDialog, toast } from '../lib/dom.700bdea1.js';

@@ -4,7 +4,7 @@
 import * as store from './store.f9db7346.js';
 import { api } from './api.d1caad06.js';
 import { findAsset } from './catalog.760e22b2.js';
-import * as notifications from './notifications.edbf762b.js';
+import * as notifications from './notifications.2f6c509c.js';
 
 let active = false;
 let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)

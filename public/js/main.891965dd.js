@@ -4,26 +4,26 @@ import * as feed from './lib/feed.c4d084b5.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.760e22b2.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.700bdea1.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.bcd91d41.js';
-import { portfolio, checkTriggers } from './lib/trading.73b0dcdf.js';
+import { portfolio, checkTriggers } from './lib/trading.558dd930.js';
 import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
 import { updateLive, assetIcon } from './lib/ui.a28a6b49.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.be822aad.js';
-import * as trade from './views/trade.913a1e39.js';
+import * as dashboard from './views/dashboard.4b5dfddc.js';
+import * as trade from './views/trade.3dca3259.js';
 import * as markets from './views/markets.b08249d9.js';
-import * as newsView from './views/news.c5160973.js';
-import * as journal from './views/journal.05baaa1b.js';
-import * as community from './views/community.72ce2dd8.js';
-import * as dialogs from './ui/dialogs.d3a839b3.js';
-import * as auth from './lib/auth.1b22f87f.js';
-import * as account from './lib/account.21889ca7.js';
-import * as notifs from './lib/notifications.edbf762b.js';
+import * as newsView from './views/news.fdf57b3b.js';
+import * as journal from './views/journal.a2379e0b.js';
+import * as community from './views/community.086c8611.js';
+import * as dialogs from './ui/dialogs.a4bb6790.js';
+import * as auth from './lib/auth.71ee1dd2.js';
+import * as account from './lib/account.c9db58b4.js';
+import * as notifs from './lib/notifications.2f6c509c.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
-import * as contact from './views/contact.808f7938.js';
-import { maybeAskTerms } from './ui/terms.a8b9aba7.js';
-import { openWelcome } from './ui/welcome.0b350226.js';
+import * as contact from './views/contact.24730bfb.js';
+import { maybeAskTerms } from './ui/terms.daef0719.js';
+import { openWelcome } from './ui/welcome.8483b205.js';
 import { initPalette, openPalette } from './ui/palette.86af8dbd.js';
-import { initChat, toggleChat } from './ui/chat.07e21a89.js';
+import { initChat, toggleChat } from './ui/chat.d43408be.js';
 import { startTour } from './ui/tour.974d1a63.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
@@ -31,7 +31,7 @@ const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, c
 const LAZY = {
   learn: () => import('./views/learn.4cb6adab.js'),
   legal: () => import('./views/legal.dc79dfd8.js'),
-  admin: () => import('./views/admin.38698ee6.js'),
+  admin: () => import('./views/admin.f70e8851.js'),
 };
 const mounted = new Set();
 let active = null;

@@ -10,6 +10,10 @@ let lastSync = 0;
 const listeners = new Set();
 const OAUTH_PENDING = 'paperpulse_oauth_pending';
 
+let markReady;
+/** Se cumple cuando ya se sabe si hay sesión (tras /api/auth/me al arrancar): para no pedir datos de visitante a quien ya ha entrado. */
+export const ready = new Promise((resolve) => { markReady = resolve; });
+
 const changed = () => listeners.forEach((fn) => fn(user));
 export const currentUser = () => user;
 export const isAdmin = () => user?.role === 'admin';
@@ -64,6 +68,7 @@ export async function init(chooseAfterOAuth) {
     if (user) await reconcile(fromOAuth && chooseAfterOAuth ? chooseAfterOAuth : async (remote) => remote.updatedAt * 1000 > modifiedAt());
   } catch { user = null; }
   changed();
+  markReady();
   return { user, fromOAuth };
 }
 
