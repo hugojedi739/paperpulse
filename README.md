@@ -52,7 +52,9 @@ backend/
   migrations/                Migraciones SQL numeradas (0001_inicial.sql, 0002_...). Se aplican al arrancar
   http.py                    Utilidades HTTP: CSRF (Origin), JSON, límites, cookie de sesión, require_admin
   auth.py                    /api/auth/*: email+contraseña, Google y Okta (OIDC + PKCE), copia de datos /api/data
-  admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth
+  admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth, auditoría
+  admin_log.py               Registro de auditoría (tabla admin_log) y vista unificada con moderation_log
+  admin_stats.py             Actividad de hoy (operaciones, foro, denuncias) para el Resumen, desde la base de datos
   contact.py                 Formulario de contacto: /api/contact (público) y bandeja en /api/admin/messages
   security.py                IP real del cliente (proxies de confianza), límites por minuto en memoria (por IP y por usuario)
   ai_usage.py                Uso y límites del asistente IA en la base de datos (válidos con varias instancias)
@@ -190,7 +192,8 @@ Hay dos modos:
 
 ### Panel de administración (`#/admin`)
 Visible solo para administradores (el backend lo comprueba en cada petición con `require_admin`).
-- **Resumen**: usuarios, activos, sesiones, altas de 30 días, consumo de IA, estado del relay de Binance, integraciones y mercados.
+- **Resumen**: usuarios, activos, sesiones, altas de 30 días, actividad de hoy (operaciones, foro, denuncias abiertas, mensajes sin leer), consumo de IA de hoy y de los últimos 14 días, integraciones y mercados. Todo sale de la base de datos salvo el relay de Binance, que es de la instancia que responde (en Vercel no hay WebSocket); por eso no se muestran uptime ni errores, que eran contadores en memoria por instancia.
+- **Auditoría**: `admin_log` (migración `0012`) anota cambios de rol, activar/desactivar, eliminar cuentas y cambios de ajustes; se muestra junto con `moderation_log`. Guarda solo ids y **nombres** de ajustes, nunca valores (pueden ser secretos) ni emails. Eliminar una cuenta exige escribir su email, también en el servidor.
 - **Usuarios**: búsqueda, dar/quitar admin, desactivar/activar, eliminar. Siempre debe quedar al menos un admin activo y nadie puede degradarse a sí mismo.
 - **Inicio de sesión**: activar email+contraseña y el registro; configurar Google y Okta, con botón «Probar conexión».
 - **Integraciones**: clave, modelo y esfuerzo de Anthropic (`anthropic_effort`, por defecto `low`: razona menos y gasta menos salida; «El del modelo» no envía el parámetro); proveedor de bolsa y clave de Finnhub.
@@ -238,7 +241,8 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET · POST | `/api/admin/reports?status=` · `/api/admin/posts/{id}/hide\|restore\|dismiss` | Moderación de mensajes |
 | POST · GET | `/api/admin/users/{id}/suspend\|unsuspend` · `/api/admin/moderation-log` | Suspensiones · registro |
 | GET | `/api/admin/overview` · `/api/admin/users?q=&limit=&offset=` | Panel: métricas · usuarios |
-| PATCH/DELETE | `/api/admin/users/{id}` | `{role, disabled}` · eliminar |
+| PATCH/DELETE | `/api/admin/users/{id}` | `{role, disabled}` · eliminar `{confirmEmail}` (debe coincidir con el email de la cuenta) |
+| GET | `/api/admin/audit?before=` | Auditoría (administración + moderación), páginas de 50 con cursor `tiempo.origen.id` |
 | GET/PUT | `/api/admin/settings` | Ajustes `{values: {clave: valor\|null}}` (`null` = volver a `.env`) |
 | POST | `/api/admin/oauth/{provider}/test` | Comprueba el documento OpenID del proveedor |
 | POST | `/api/contact` | Formulario de contacto `{reason, message}` (el campo `website` es un honeypot) |

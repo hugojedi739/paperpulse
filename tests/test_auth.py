@@ -256,7 +256,8 @@ class AdminTest(Base):
         with closing(db.connect()) as conn:
             conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (bea["id"],))
         self.assertEqual(self.client.patch(f"/api/admin/users/{bea['id']}", json={"role": "admin", "disabled": False}).json()["user"]["role"], "admin")
-        self.assertEqual(self.client.request("DELETE", f"/api/admin/users/{bea['id']}").status_code, 200)
+        self.assertEqual(self.client.request("DELETE", f"/api/admin/users/{bea['id']}", json={}).status_code, 400)  # sin confirmar el email
+        self.assertEqual(self.client.request("DELETE", f"/api/admin/users/{bea['id']}", json={"confirmEmail": bea["email"]}).status_code, 200)
         self.assertEqual(self.client.get("/api/admin/users").json()["total"], 1)
         other.close()
 

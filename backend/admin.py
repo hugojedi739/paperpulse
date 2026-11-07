@@ -4,7 +4,7 @@ import time
 from starlette.concurrency import run_in_threadpool
 from starlette.routing import Route
 
-from backend import ai_usage, auth, contact, db, settings
+from backend import admin_log, admin_stats, ai_usage, auth, contact, db, settings
 from backend.config import DAILY_GLOBAL_TOKEN_LIMIT
 from backend.http import error, ok, read_json, require_admin
 from backend.market import stream
@@ -37,6 +37,8 @@ async def overview(request):
         "users": await run_in_threadpool(db.stats),
         "usage": await run_in_threadpool(usage),
         "unreadMessages": await run_in_threadpool(contact.unread_count),
+        "activity": await run_in_threadpool(admin_stats.activity),
+        "aiHistory": await run_in_threadpool(ai_usage.history, 14),
         "stream": stream.status(),
         "integrations": {
             "anthropic": {"configured": bool(settings.get("anthropic_api_key")), "model": settings.get("anthropic_model")},
@@ -73,7 +75,13 @@ async def user_detail(request):
     if request.method == "DELETE":
         if uid == admin["id"]:
             return error("No puedes eliminar tu propia cuenta desde el panel.", 400)
+        body, err = await read_json(request)
+        if err:
+            return err
+        if str(body.get("confirmEmail", "")).strip().lower() != (target["email"] or "").lower():
+            return error("Escribe el email de la cuenta para confirmar su eliminación.", 400)
         await run_in_threadpool(db.delete_user, uid)
+        await run_in_threadpool(admin_log.record, admin["id"], "user_delete", uid)
         return ok({"ok": True})
 
     body, err = await read_json(request)
@@ -90,7 +98,12 @@ async def user_detail(request):
         return error("No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.", 400)
     if target["role"] == "admin" and (role == "user" or disabled) and await run_in_threadpool(db.count_admins) <= 1:
         return error("Debe quedar al menos un administrador activo.", 400)
-    return ok({"user": await run_in_threadpool(db.update_user, uid, role, disabled)})
+    user = await run_in_threadpool(db.update_user, uid, role, disabled)
+    if role is not None and role != target["role"]:
+        await run_in_threadpool(admin_log.record, admin["id"], "user_role", uid, f"{target['role']} → {role}")
+    if disabled is not None and disabled != bool(target["disabled"]):
+        await run_in_threadpool(admin_log.record, admin["id"], "user_disable" if disabled else "user_enable", uid)
+    return ok({"user": user})
 
 
 async def settings_view(request):
@@ -108,6 +121,7 @@ async def settings_view(request):
         if problem:
             return error(problem, 400)
         await run_in_threadpool(settings.save, values, admin["id"])
+        await run_in_threadpool(admin_log.record, admin["id"], "settings_update", None, admin_log.settings_detail(values))
     return ok({
         "settings": settings.public_view(),
         "redirectUris": {pid: auth.redirect_uri(request, pid) for pid in auth.PROVIDERS},
@@ -133,7 +147,18 @@ async def oauth_test(request):
                "configured": bool(auth.provider_config(pid))})
 
 
+async def audit(request):
+    _, err = await require_admin(request)
+    if err:
+        return err
+    try:
+        return ok(await run_in_threadpool(admin_log.audit, request.query_params.get("before") or None))
+    except ValueError as exc:
+        return error(str(exc), 400)
+
+
 routes = [
+    Route("/api/admin/audit", audit, methods=["GET"]),
     Route("/api/admin/overview", overview, methods=["GET"]),
     Route("/api/admin/users", users, methods=["GET"]),
     Route("/api/admin/users/{id}", user_detail, methods=["PATCH", "DELETE"]),

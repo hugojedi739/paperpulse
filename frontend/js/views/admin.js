@@ -7,10 +7,11 @@ import * as auth from '../lib/auth.js';
 import { empty } from '../lib/ui.js';
 import * as moderation from './moderation.js';
 import * as messages from './messages.js';
+import * as audit from './audit.js';
 
 export const title = 'Administración';
 
-const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag'], ['messages', 'Mensajes', 'message-square']];
+const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag'], ['messages', 'Mensajes', 'message-square'], ['audit', 'Auditoría', 'scroll-text']];
 const PAGE = 25;
 let root, tab = 'overview';
 let usersQuery = '', usersOffset = 0;
@@ -38,7 +39,7 @@ export function show(param) {
     auth.currentUser() ? '' : html`<button class="btn btn-primary" data-action="login">${icon('log-in', 'sm')} Iniciar sesión</button>`)}</section>`);
   }
   render(body, html`<section class="card">${empty('refresh-cw', 'Cargando…')}</section>`);
-  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body), messages: () => messages.render(body) })[tab]();
+  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body), messages: () => messages.render(body), audit: () => audit.render(body) })[tab]();
 }
 
 const fail = (err) => render($('#ad-body', root), html`<section class="card">${empty('triangle-alert', 'No se pudo cargar', err.message)}</section>`);
@@ -48,7 +49,8 @@ async function renderOverview() {
   let o;
   try { o = await api('/api/admin/overview'); } catch (err) { return fail(err); }
   if (tab !== 'overview') return;
-  const u = o.users, use = o.usage, st = o.stream, int = o.integrations;
+  const u = o.users, use = o.usage, st = o.stream, int = o.integrations, act = o.activity, hist = o.aiHistory;
+  const maxTokens = Math.max(1, ...hist.map((d) => d.tokens));
   const days = Array.from({ length: 30 }, (_, i) => new Date(Date.now() - (29 - i) * 86400_000).toISOString().slice(0, 10));
   const counts = new Map(u.signups30d.map((d) => [d.date, d.count]));
   const max = Math.max(1, ...counts.values());
@@ -60,6 +62,16 @@ async function renderOverview() {
       <div class="card kpi"><span>Sesiones abiertas</span><strong>${num(u.activeSessions, 0)}</strong><small>${u.withData} con datos en la nube</small></div>
       <div class="card kpi"><span>IA hoy</span><strong>${num(use.tokensToday, 0)}</strong><small>tokens · ${use.percentUsed}% del límite · ${use.costTodayUsd} $</small></div>
     </div>
+    <div class="kpis">
+      <div class="card kpi"><span>Operaciones hoy</span><strong>${num(act.trading.fillsToday, 0)}</strong><small>${act.trading.tradersToday} cuentas · ${act.trading.ordersToday} órdenes · ${act.trading.openOrders} pendientes</small></div>
+      <div class="card kpi"><span>Foro hoy</span><strong>${num(act.community.postsToday, 0)}</strong><small>mensajes · ${act.community.threadsToday} hilos nuevos</small></div>
+      <div class="card kpi"><span>Denuncias abiertas</span><strong>${num(act.community.openReports, 0)}</strong><small>mensajes por revisar</small></div>
+      <div class="card kpi"><span>Mensajes de contacto</span><strong>${num(o.unreadMessages, 0)}</strong><small>sin leer</small></div>
+    </div>
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('sparkles')} Asistente: últimos 14 días</h2><span class="card-sub">${num(hist.reduce((a, d) => a + d.tokens, 0), 0)} tokens · ${hist.reduce((a, d) => a + d.aiRequests, 0)} con IA · ${hist.reduce((a, d) => a + d.fixedAnswers, 0)} respuestas fijas</span></div>
+      <div class="spark-bars" role="img" aria-label="Tokens de IA por día">${hist.map((d) => html`<i data-w="${Math.max(4, (d.tokens / maxTokens) * 100)}" title="${d.day}: ${num(d.tokens, 0)} tokens · ${d.aiRequests} con IA · ${d.fixedAnswers} fijas"></i>`)}</div>
+    </section>
     <div class="admin-grid">
       <section class="card">
         <div class="card-head"><h2 class="card-title">${icon('calendar')} Altas en los últimos 30 días</h2><span class="card-sub">${u.signups30d.reduce((a, d) => a + d.count, 0)} en total</span></div>
@@ -70,19 +82,17 @@ async function renderOverview() {
         </div>
       </section>
       <section class="card">
-        <div class="card-head"><h2 class="card-title">${icon('activity')} Servicios</h2><span class="card-sub">Activo desde ${timeAgo(Date.now() - use.uptimeSeconds * 1000)}</span></div>
+        <div class="card-head"><h2 class="card-title">${icon('activity')} Servicios</h2><span class="card-sub">Estado de las integraciones</span></div>
         <div class="status-list">
-          <div><span>Binance (relay en vivo)</span>${ok(st.upstreamConnected, 'Conectado', st.clients ? 'Desconectado' : 'En espera')}</div>
-          <div><span>Clientes WebSocket · streams</span><strong>${st.clients} · ${st.streams}</strong></div>
+          <div><span>Relay de Binance (solo esta instancia)</span>${st.clients ? ok(st.upstreamConnected, 'Conectado', 'Desconectado') : html`<span class="chip">Sin clientes</span>`}</div>
           <div><span>Asistente (${int.anthropic.model})</span>${ok(int.anthropic.configured, 'Configurado', 'Sin clave')}</div>
           <div><span>Bolsa</span><strong>${int.stocks.provider}</strong></div>
           <div><span>Google</span>${ok(int.oauth.google)}</div>
           <div><span>Okta</span>${ok(int.oauth.okta)}</div>
           <div><span>Wall Street</span>${ok(o.markets.us.open, 'Abierto', 'Cerrado')}</div>
           <div><span>Bolsa de Madrid</span>${ok(o.markets.es.open, 'Abierta', 'Cerrada')}</div>
-          <div><span>Chat hoy: con IA · respuestas fijas · errores</span><strong>${use.aiRequests} · ${use.fixedAnswers} · ${use.errors}</strong></div>
+          <div><span>Chat hoy: con IA · respuestas fijas</span><strong>${use.aiRequests} · ${use.fixedAnswers}</strong></div>
           <div><span>Media por pregunta con IA</span><strong>${num(use.avgTokensPerAiRequest, 0)} tokens</strong></div>
-          <div><span>Mensajes de contacto sin leer</span><strong>${o.unreadMessages}</strong></div>
         </div>
       </section>
     </div>`);
@@ -255,9 +265,9 @@ const actions = {
     patchUser(b.dataset.id, { disabled }, disabled ? 'Usuario desactivado: se han cerrado sus sesiones.' : 'Usuario activado.');
   },
   async delete(b) {
-    if (!(await confirmDialog({ title: `¿Eliminar ${b.dataset.email}?`, body: 'Se borrarán el usuario, sus sesiones, sus vínculos con Google/Okta y sus datos guardados. No se puede deshacer.', confirm: 'Eliminar', danger: true }))) return;
+    if (!(await confirmDialog({ title: `¿Eliminar ${b.dataset.email}?`, body: 'Se borrarán el usuario, sus sesiones, sus vínculos con Google/Okta y sus datos guardados. No se puede deshacer. Escribe su email para confirmar.', confirm: 'Eliminar', danger: true, requireText: b.dataset.email }))) return;
     try {
-      await api(`/api/admin/users/${b.dataset.id}`, { method: 'DELETE' });
+      await api(`/api/admin/users/${b.dataset.id}`, { method: 'DELETE', body: { confirmEmail: b.dataset.email } });
       toast('Usuario eliminado.', 'success');
     } catch (err) { toast(err.message, 'error'); }
     renderUsers();

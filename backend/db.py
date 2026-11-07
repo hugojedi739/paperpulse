@@ -300,7 +300,7 @@ def public_user(row) -> Dict:
     return {
         "id": row["id"], "email": row["email"], "name": row["name"], "createdAt": row["created_at"],
         "role": row["role"], "hasPassword": bool(row["password_hash"]), "emailVerified": bool(row["email_verified"]),
-        "termsVersion": row["terms_version"],
+        "termsVersion": row["terms_version"], "disabled": bool(row["disabled"]),
     }
 
 

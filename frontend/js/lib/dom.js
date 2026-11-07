@@ -85,12 +85,27 @@ globalThis.document?.addEventListener('click', (e) => {
 });
 
 /** Diálogo de confirmación reutilizable. Devuelve una promesa booleana. */
-export function confirmDialog({ title, body, confirm = 'Confirmar', danger = false }) {
+export function confirmDialog({ title, body, confirm = 'Confirmar', danger = false, requireText = '' }) {
   const d = document.getElementById('confirm-dialog');
   render(d.querySelector('.dlg-body'), html`<h2>${title}</h2><p class="muted">${body}</p>`);
   const ok = d.querySelector('[data-confirm]');
   ok.textContent = confirm;
   ok.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+  ok.disabled = false;
+  if (requireText) { // acciones irreversibles: el botón sigue desactivado hasta escribir el texto exacto (sin distinguir mayúsculas)
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'input';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.placeholder = requireText;
+    input.setAttribute('aria-label', `Escribe ${requireText} para confirmar`);
+    const matches = () => input.value.trim().toLowerCase() === requireText.toLowerCase();
+    ok.disabled = true;
+    input.addEventListener('input', () => { ok.disabled = !matches(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && matches()) { e.preventDefault(); ok.click(); } });
+    d.querySelector('.dlg-body').append(input);
+  }
   openDialog(d);
   return new Promise((resolve) => {
     const done = (v) => { ok.onclick = null; d.onclose = null; resolve(v); };

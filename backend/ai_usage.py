@@ -11,7 +11,7 @@ import hmac
 import sys
 import time
 from contextlib import closing
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from backend import db
 from backend.config import DAILY_GLOBAL_TOKEN_LIMIT, DAILY_USER_CHAT_REQUESTS, DAILY_USER_TOKEN_LIMIT
@@ -144,6 +144,22 @@ def summary(day: Optional[str] = None) -> Dict:
         "avgTokensPerAiRequest": round((tin + tout) / ai_requests) if ai_requests else 0,
         "costTodayUsd": round(cost, 5),
     }
+
+
+def history(days: int = 14) -> List[Dict]:
+    """Consumo por día de los últimos `days` días (incluido hoy), con ceros en los días sin actividad. Para el panel."""
+    end = datetime.datetime.now(datetime.timezone.utc).date()
+    start = end - datetime.timedelta(days=days - 1)
+    with closing(db.connect()) as conn:
+        rows = conn.execute("SELECT day, kind, COUNT(*), COALESCE(SUM(input_tokens + output_tokens), 0) FROM ai_usage "
+                            "WHERE day >= ? GROUP BY day, kind", (start.isoformat(),)).fetchall()
+    by_day = {(r[0], r[1]): (r[2], r[3]) for r in rows}
+    out = []
+    for i in range(days):
+        d = (start + datetime.timedelta(days=i)).isoformat()
+        out.append({"day": d, "aiRequests": by_day.get((d, "ai"), (0, 0))[0], "fixedAnswers": by_day.get((d, "fixed"), (0, 0))[0],
+                    "tokens": by_day.get((d, "ai"), (0, 0))[1]})
+    return out
 
 
 def cleanup() -> Dict:
