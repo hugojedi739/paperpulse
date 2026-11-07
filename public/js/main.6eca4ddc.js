@@ -9,7 +9,7 @@ import { marketsStatus, fxRates } from './lib/marketdata.d86555d2.js';
 import { updateLive, assetIcon } from './lib/ui.6fc197dc.js';
 import { current, go } from './lib/router.de30a562.js';
 import * as dashboard from './views/dashboard.d4864935.js';
-import * as trade from './views/trade.a56877cf.js';
+import * as trade from './views/trade.5fc8dfb3.js';
 import * as markets from './views/markets.54ecd537.js';
 import * as newsView from './views/news.e2453822.js';
 import * as journal from './views/journal.85bd407c.js';

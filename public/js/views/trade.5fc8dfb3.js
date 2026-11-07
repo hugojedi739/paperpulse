@@ -109,6 +109,7 @@ export function mount(el) {
     <div class="trade-bar">
       <button class="btn btn-primary btn-lg" data-t="side" data-side="buy">Comprar</button>
       <button class="btn btn-ghost btn-lg" data-t="side" data-side="sell">Vender</button>
+      <button class="btn btn-ghost btn-lg trade-bar-chat" data-action="chat" aria-label="Abrir asistente" title="Asistente">${icon('sparkles')}</button>
     </div>`);
 
   chart = createTradingChart($('#t-chart', root), $('#t-legend', root));
