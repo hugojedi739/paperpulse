@@ -34,7 +34,7 @@ export const toUsd = (amount, from) => convert(amount, from, 'USD');
 const nf = new Map();
 function numberFormat(opts) {
   const key = locale() + JSON.stringify(opts);
-  if (!nf.has(key)) nf.set(key, new Intl.NumberFormat(locale(), opts));
+  if (!nf.has(key)) nf.set(key, new Intl.NumberFormat(locale(), { useGrouping: 'always', ...opts }));
   return nf.get(key);
 }
 const digits = (v) => {

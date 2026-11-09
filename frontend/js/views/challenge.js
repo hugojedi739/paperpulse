@@ -9,7 +9,7 @@ import * as C from '../lib/community.js';
 
 let box, status = null, port = null, slug = null, lastId = 0;
 
-const usd = (cents) => (cents / 100).toLocaleString('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+const usd = (cents) => (cents / 100).toLocaleString('es-ES', { style: 'currency', currency: 'USD', useGrouping: 'always', maximumFractionDigits: 2 });
 const monthName = (s) => new Date(`${s}-15T12:00:00`).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
 function bind(el) {

@@ -46,7 +46,7 @@ function serverAccountDialog() {
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
       ${startedWith(store.initialInput()) ? html`<p class="hint">${icon('wallet', 'sm')} ${startedWith(store.initialInput())}. Tu saldo es privado; tu rentabilidad puede aparecer en la clasificación si tu perfil es público.</p>` : ''}
       <p class="hint">${icon('info', 'sm')} Los precios de ejecución los decide el servidor con cotizaciones reales.
-        Comisión: ${(cfg.feeBps / 100).toLocaleString('es-ES')} % por operación; las órdenes a mercado y stop tienen además un deslizamiento de ${(cfg.slippageBps / 100).toLocaleString('es-ES')} %.</p>
+        Comisión: ${(cfg.feeBps / 100).toLocaleString('es-ES', { useGrouping: 'always' })} % por operación; las órdenes a mercado y stop tienen además un deslizamiento de ${(cfg.slippageBps / 100).toLocaleString('es-ES')} %.</p>
       <p class="hint">${icon('shield-check', 'sm')} Esta cuenta no se puede reiniciar. Sin sesión puedes seguir practicando en modo local con el capital que quieras.</p>
     </div>
     <footer class="dlg-foot"><button class="btn btn-primary" data-close>Entendido</button></footer>`, 'dlg-sm');
