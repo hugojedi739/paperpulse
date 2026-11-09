@@ -18,6 +18,7 @@ CREATE TABLE profiles (
 );
 CREATE INDEX profiles_public ON profiles(is_private, alias);
 
+-- Seguimientos entre perfiles.
 CREATE TABLE follows (
     follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     followee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

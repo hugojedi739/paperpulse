@@ -37,6 +37,7 @@ CREATE TABLE trading_days (
     PRIMARY KEY (user_id, day)
 );
 
+-- Onboarding: solo se guarda la visita al foro y si se saltó o completó; la compra y la orden stop se comprueban con fills y orders.
 CREATE TABLE onboarding (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     forum_visited_at INTEGER,
@@ -55,6 +56,7 @@ CREATE TABLE challenges (
     finalized INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL
 );
+-- Participantes de un reto: cada uno tiene un usuario sombra (ledger_id) titular de su cuenta del reto.
 CREATE TABLE challenge_entries (
     challenge_id INTEGER NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -63,6 +65,7 @@ CREATE TABLE challenge_entries (
     PRIMARY KEY (challenge_id, user_id)
 );
 CREATE INDEX challenge_entries_ledger ON challenge_entries(ledger_id);
+-- Clasificación del reto (se recalcula y se congela al terminar el mes).
 CREATE TABLE challenge_scores (
     challenge_id INTEGER NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

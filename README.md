@@ -6,6 +6,8 @@ Nada de dinero real: no hay brokers ni órdenes reales. Todo el saldo y las oper
 
 ## Arranque rápido
 
+Requisitos: Python 3.13 y Node 22 (Node solo para los tests, `npm run vendor` y `npm run build:static`). El dev container ya los trae.
+
 ```bash
 cp .env.example .env               # opcional: ANTHROPIC_API_KEY, ADMIN_EMAILS...
 pip install -r requirements.txt
@@ -37,7 +39,7 @@ Navegador (frontend/)  ──HTTP /api/*──▶  Backend (backend/, Starlette)
 **Regla principal: el navegador solo habla con nuestro backend.** Toda llamada a un servicio de terceros (y toda clave de API) vive en `backend/`. La CSP lo impone: `connect-src 'self'`. Si añades una fuente de datos nueva, crea un endpoint en el backend y llámalo desde el frontend con `lib/api.js`.
 
 - **Backend**: Python 3.13, Starlette + Uvicorn. Sin ORM: SQL directo con el cliente `libsql` (Turso en producción, fichero libSQL compatible con SQLite en local). `server.py` es solo el punto de entrada; el código está en `backend/`.
-- **Frontend**: HTML + CSS + JavaScript con módulos ES nativos. **Sin framework y sin paso de build**: el navegador carga `frontend/js/main.js` directamente. Gráficos con TradingView Lightweight Charts 5.
+- **Frontend**: HTML + CSS + JavaScript con módulos ES nativos. **Sin framework y sin build para desarrollar**: en local y con Docker el navegador carga `frontend/js/main.js` directamente. Solo para Vercel, `npm run build:static` genera `public/` (ficheros con hash para el CDN) y `backend/templates/index.html`; ambos se versionan. Gráficos con TradingView Lightweight Charts 5.
 - El backend sirve también el frontend estático (desactivable con `SERVE_FRONTEND=false` para servirlo desde un CDN/nginx; en ese caso pon un proxy para `/api` y `/ws` en el mismo dominio o usa `<meta name="api-base">`, ver `frontend/js/lib/api.js`).
 
 ## Estructura
@@ -54,6 +56,7 @@ backend/
   auth.py                    /api/auth/*: email+contraseña, Google y Okta (OIDC + PKCE), copia de datos /api/data
   admin.py                   /api/admin/*: métricas, usuarios, ajustes, prueba de proveedores OAuth, auditoría
   admin_log.py               Registro de auditoría (tabla admin_log) y vista unificada con moderation_log
+  account.py                 Aceptación de términos, descarga de mis datos (/api/account/export) y borrado/anonimización de la cuenta
   admin_stats.py             Actividad de hoy (operaciones, foro, denuncias) para el Resumen, desde la base de datos
   contact.py                 Formulario de contacto: /api/contact (público) y bandeja en /api/admin/messages
   security.py                IP real del cliente (proxies de confianza), límites por minuto en memoria (por IP y por usuario)
@@ -62,6 +65,8 @@ backend/
                              moderation y api (/api/community, /api/forum, moderación en /api/admin)
   trading/                   Cuenta de práctica del servidor: rules (cálculo en enteros), prices (precios del servidor),
                              ledger (transacciones, idempotencia, resolución de límite/stop), api (/api/portfolio, /api/orders)
+  retention/                 Notificaciones, logros, racha, reto mensual, onboarding y cron diario (/api/notifications, /api/challenge, /api/cron/daily)
+  templates/index.html       index.html generado por `npm run build:static` (lo sirve la función de Vercel). No editar a mano
   chat.py                    /api/chat: asistente con Claude (SSE), desafío anti-bot, límites de gasto
   chat_fixed.py              Respuestas fijas (sin IA) para el texto exacto de los botones de sugerencia del chat
   news.py                    /api/news: RSS financieros con filtro positivo de temas
@@ -86,9 +91,12 @@ frontend/
   js/ui/                     Diálogos, paleta de comandos (Ctrl+K), asistente, visita guiada
   vendor/                    Generado por `npm run vendor` (Lightweight Charts, fuentes). No editar a mano
   img/icons.svg              Sprite de iconos Lucide, generado por `npm run vendor`
+scripts/build-static.mjs     Genera public/ y backend/templates/index.html con hashes en los nombres (para Vercel)
 scripts/vendor.mjs           Copia dependencias de node_modules y genera el sprite (lista ICONS)
 scripts/screenshots.mjs      Capturas de todas las vistas con Playwright (requiere el servidor)
-tests/                       frontend.test.js (node --test) y test_*.py (unittest)
+public/                      Salida de `npm run build:static` que sirve el CDN de Vercel. Versionada; no editar a mano
+tests/                       *.test.js (node --test) y test_*.py (unittest). Los tests de Python usan una base temporal
+.devcontainer/ · .vscode/    Dev container (Python 3.13 + Node) y depuración (F5)
 data/                        Base de datos local sin Turso (se crea sola; ignorada por git). Ver «Base local y dev containers»
 ```
 
@@ -259,6 +267,11 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | POST | `/api/admin/oauth/{provider}/test` | Comprueba el documento OpenID del proveedor |
 | POST | `/api/contact` | Formulario de contacto `{reason, message}` (el campo `website` es un honeypot) |
 | GET · POST · PATCH · DELETE | `/api/admin/messages?status=&q=&page=` · `/api/admin/messages/read-all` · `/api/admin/messages/{id}` | Bandeja de contacto (con búsqueda) · marcar todo como leído · `{read}` · borrar |
+| POST | `/api/account/terms` · GET `/api/account/export` | Aceptar términos y edad · descargar mis datos (JSON) |
+| GET · POST · DELETE | `/api/notifications` · `/read` · `/clear` · `/alert` · `/{id}` | Notificaciones; `/alert` registra una alerta de precio disparada en el navegador |
+| GET · POST | `/api/retention/summary` · `/api/retention/onboarding` | Logros, racha y onboarding |
+| GET · POST | `/api/challenge` · `/leaderboard` · `/join` · `/portfolio` · `/orders` | Reto mensual (mismas reglas que la cuenta normal) |
+| GET · POST | `/api/cron/daily` | Tareas diarias; exige `X-Admin-Key` o `Authorization: Bearer $CRON_SECRET` |
 | GET | `/api/health` | Estado; con sesión admin o `X-Admin-Key`, métricas |
 
 ## Convenciones del código
@@ -285,6 +298,26 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | `npm install && npm run vendor` | Actualiza Lightweight Charts, fuentes e iconos |
 | `npm run build:static` | Regenera `public/` y `backend/templates/index.html` (JS/CSS con hash para el CDN de Vercel). **Ejecútalo tras tocar `frontend/`**: un test falla si están desactualizados |
 | `npm run screenshots` | Capturas de todas las vistas (servidor en marcha y Chromium) |
+
+## Variables de entorno
+
+Plantilla completa y comentada en `.env.example`. Las imprescindibles en producción:
+
+| Variable | Para qué |
+|---|---|
+| `ENV=production` | HSTS, cookies `__Host-`/Secure, CSP sin `localhost`; fuerza `DEBUG` a falso |
+| `APP_DOMAIN` | Dominio público (canonical, Open Graph y URIs de OAuth). Sin ella la home da 500 en producción |
+| `TURSO_DATABASE_URL` · `TURSO_AUTH_TOKEN` | Base persistente. Vacías = fichero local (`DATABASE_PATH` o `data/`) |
+| `ADMIN_API_KEY` · `CRON_SECRET` | Misma clave en ambas: métricas de `/api/health` y cron diario |
+| `OAUTH_GOOGLE_*` | Inicio de sesión con Google (también configurable en el panel) |
+| `ANTHROPIC_API_KEY` | Asistente IA (opcional; sin ella hay modo demostración) |
+| `ADMIN_EMAILS` | Déjala vacía en producción; el admin se asigna con `python -m backend.db admin` |
+
+Para probar siempre con la base local, deja `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` vacías. El resto (límites de IA, comisión, saldo del reto, proveedor de bolsa...) tiene valor por defecto y se edita en el panel.
+
+## Migraciones
+
+Ficheros SQL numerados en `backend/migrations/` (`0001_inicial.sql`... `0013_saldo_inicial_elegido.sql`), solo aditivos. Se aplican al arrancar o con `python -m backend.db migrate`; `status` muestra la versión. Cada tabla lleva encima un comentario que explica para qué sirve. Nunca edites la parte SQL de una migración ya aplicada: crea la siguiente.
 
 ## Producción
 
