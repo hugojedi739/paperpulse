@@ -2,9 +2,9 @@
 // El navegador solo envía activo, lado, cantidad, tipo y, en límite/stop, el nivel de activación:
 // el precio de ejecución, la comisión y el saldo los decide siempre el servidor.
 import * as store from './store.e4b4ab28.js';
-import { api } from './api.d1caad06.js';
+import { api } from './api.d1db7328.js';
 import { findAsset } from './catalog.f1b2b586.js';
-import * as notifications from './notifications.17209f3d.js';
+import * as notifications from './notifications.c8895d7f.js';
 
 let active = false;
 let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)

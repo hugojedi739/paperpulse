@@ -12,15 +12,21 @@ export function wsUrl(path) {
 
 /** GET/POST/... con JSON. Lanza Error con el mensaje del servidor y `status`. */
 export async function api(path, { method = 'GET', body, signal } = {}) {
-  const res = await fetch(apiUrl(path), {
-    method,
-    signal,
-    credentials: 'same-origin',
-    headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl(path), {
+      method,
+      signal,
+      credentials: 'same-origin',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.'); // el mensaje del navegador sale en inglés
+  }
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(json.error || `No se pudo conectar con el servidor (HTTP ${res.status}).`), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(json.error || `Error del servidor (HTTP ${res.status}). Inténtalo de nuevo.`), { status: res.status });
   return json;
 }
 

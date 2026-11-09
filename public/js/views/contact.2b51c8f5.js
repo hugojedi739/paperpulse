@@ -1,8 +1,8 @@
 // Formulario de contacto (#/contact). Solo texto: motivo y mensaje. No usa correo ni servicios externos: lo guarda
 // nuestro backend (POST /api/contact) y lo lee la administración en Administración → Mensajes.
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
-import * as auth from '../lib/auth.e01be335.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
 
 export const title = 'Contacto';
 export const LIMITS = { reason: 100, message: 2000 };

@@ -1,16 +1,16 @@
 // Diálogos de la aplicación. Todos se pintan en el <dialog id="dlg"> compartido.
 import * as store from '../lib/store.e4b4ab28.js';
-import { priceOf } from '../lib/feed.834822a1.js';
+import { priceOf } from '../lib/feed.9684fe93.js';
 import { ASSETS, findAsset } from '../lib/catalog.f1b2b586.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.a575914e.js';
 import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.2cdb7d3b.js';
-import * as trading from '../lib/trading.7749d2fa.js';
-import * as account from '../lib/account.18aa93db.js';
-import * as auth from '../lib/auth.e01be335.js';
-import { safeUrl } from '../lib/marketdata.74c28a79.js';
-import { assetIcon, seg, pressSeg } from '../lib/ui.e378caee.js';
+import * as trading from '../lib/trading.7e6554c9.js';
+import * as account from '../lib/account.029cdc46.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
+import { safeUrl } from '../lib/marketdata.c9567489.js';
+import { assetIcon, seg, pressSeg } from '../lib/ui.d293f857.js';
 import { go } from '../lib/router.de30a562.js';
-import { openWelcome } from './welcome.36833601.js';
+import { openWelcome } from './welcome.ba1a72f0.js';
 import { startedWith, startedAmount } from '../lib/starting-balance.f588d167.js';
 
 const dlg = () => document.getElementById('dlg');

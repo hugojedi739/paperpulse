@@ -2,7 +2,7 @@
 // La cookie de sesión es HttpOnly: este módulo nunca ve el token.
 import * as store from './store.e4b4ab28.js';
 import { debounce, download } from './dom.a575914e.js';
-import { api, apiUrl } from './api.d1caad06.js';
+import { api, apiUrl } from './api.d1db7328.js';
 
 let user = null;
 let applying = false; // evita reenviar al servidor lo que acabamos de descargar

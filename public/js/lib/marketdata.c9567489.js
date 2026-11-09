@@ -1,7 +1,7 @@
 // Datos de mercado no en vivo (todos vía backend): capitalización y sparklines, histórico de velas,
 // noticias, estado de los mercados, divisas y búsqueda.
 import { CRYPTO, findAsset } from './catalog.f1b2b586.js';
-import { getJson } from './api.d1caad06.js';
+import { getJson } from './api.d1db7328.js';
 
 const cache = new Map();
 async function cached(key, ttlMs, loader) {

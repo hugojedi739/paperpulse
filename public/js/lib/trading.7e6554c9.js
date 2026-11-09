@@ -2,8 +2,8 @@
 // Sin sesión todo se ejecuta aquí, en el navegador (modo local). Con sesión, las operaciones se envían al servidor
 // (lib/account.js), que decide precio, comisión y saldo; las funciones de este módulo son asíncronas en ambos casos.
 import * as store from './store.e4b4ab28.js';
-import * as account from './account.18aa93db.js';
-import { priceOf, tick } from './feed.834822a1.js';
+import * as account from './account.029cdc46.js';
+import { priceOf, tick } from './feed.9684fe93.js';
 import { toUsd, price as fmtPrice, units } from './format.2cdb7d3b.js';
 import { findAsset } from './catalog.f1b2b586.js';
 

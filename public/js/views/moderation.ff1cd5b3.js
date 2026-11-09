@@ -2,12 +2,12 @@
 // desaparece sin volver a pedir ni redibujar la lista, así que no se pierde la posición de scroll.
 // Todo el texto de usuarios (mensajes denunciados, alias, motivos) se pinta con nodos de texto (lib/el.js).
 // La gestión de usuarios (suspender/reactivar) vive en la pestaña «Usuarios»; el registro de acciones, en «Auditoría».
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { h, svgIcon, mount, userText, emptyState, loading } from '../lib/el.71f9edc9.js';
 import { toast, openDialog } from '../lib/dom.a575914e.js';
 import { timeAgo } from '../lib/format.2cdb7d3b.js';
 import { go } from '../lib/router.de30a562.js';
-import { errorMessage, REPORT_REASONS } from '../lib/community.92fa85e9.js';
+import { errorMessage, REPORT_REASONS } from '../lib/community.35a6fda9.js';
 import { pickAllowed } from '../lib/admin-url.df7c25a4.js';
 import { PRESETS, OTHER, MAX_DETAIL, defaultPreset, buildReason, accountAgeLabel, isRepeatOffender } from '../lib/mod-helpers.04abd2eb.js';
 

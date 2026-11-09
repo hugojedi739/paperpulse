@@ -3,9 +3,9 @@ import * as store from '../lib/store.e4b4ab28.js';
 import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.a575914e.js';
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.2cdb7d3b.js';
 import { createEquityChart } from '../lib/charts.30b336ce.js';
-import { assetIcon, empty, seg, pressSeg } from '../lib/ui.e378caee.js';
-import { noteDialog } from '../ui/dialogs.d51cb492.js';
-import { shareButton, shareDialog } from '../ui/share.382b1226.js';
+import { assetIcon, empty, seg, pressSeg } from '../lib/ui.d293f857.js';
+import { noteDialog } from '../ui/dialogs.539cc4fb.js';
+import { shareButton, shareDialog } from '../ui/share.9acb8394.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];
 const DAY = 86400000;

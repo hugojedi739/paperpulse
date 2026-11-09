@@ -1,18 +1,18 @@
 // Vista Operar: gráfico con indicadores, ticket de órdenes, libro de órdenes y posiciones.
 import * as store from '../lib/store.e4b4ab28.js';
-import * as feed from '../lib/feed.834822a1.js';
+import * as feed from '../lib/feed.9684fe93.js';
 import { findAsset, displayPair } from '../lib/catalog.f1b2b586.js';
 import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.a575914e.js';
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.2cdb7d3b.js';
-import * as trading from '../lib/trading.7749d2fa.js';
-import * as account from '../lib/account.18aa93db.js';
+import * as trading from '../lib/trading.7e6554c9.js';
+import * as account from '../lib/account.029cdc46.js';
 import { createTradingChart, INDICATORS } from '../lib/charts.30b336ce.js';
-import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.74c28a79.js';
-import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.e378caee.js';
+import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.c9567489.js';
+import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.d293f857.js';
 import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
-import { closePositionDialog } from '../ui/dialogs.d51cb492.js';
-import { shareButton, shareDialog } from '../ui/share.382b1226.js';
+import { closePositionDialog } from '../ui/dialogs.539cc4fb.js';
+import { shareButton, shareDialog } from '../ui/share.9acb8394.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -473,7 +473,7 @@ const actions = {
     b.setAttribute('aria-pressed', String(added));
     toast(added ? `${asset.symbol} añadido a favoritos` : `${asset.symbol} quitado de favoritos`, 'success', 2500);
   },
-  alert() { import('../ui/dialogs.d51cb492.js').then((m) => m.alertsDialog(asset)); },
+  alert() { import('../ui/dialogs.539cc4fb.js').then((m) => m.alertsDialog(asset)); },
   fit() { chart.fit(); },
   fullscreen() {
     const card = $('#t-chart-card', root);

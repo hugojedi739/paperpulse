@@ -1,7 +1,7 @@
 // Tarjeta del Resumen: racha de días y primer reto guiado (onboarding de 2 minutos, saltable).
 // Los textos del onboarding los define el servidor; se pintan con nodos de texto.
-import * as R from '../lib/retention.475415f5.js';
-import * as auth from '../lib/auth.e01be335.js';
+import * as R from '../lib/retention.98a64bcb.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
 import { go } from '../lib/router.de30a562.js';
 

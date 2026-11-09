@@ -1,7 +1,7 @@
 // Panel de administración → Mensajes: los mensajes del formulario de contacto. Búsqueda, filtro de leídos, «marcar todo» y
 // tarjetas plegables: al abrir un mensaje sin leer se marca como leído, y todo se actualiza en línea (sin redibujar la lista).
 // El texto lo escribe cualquiera: se pinta siempre con nodos de texto (lib/el.js), nunca como HTML.
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { h, svgIcon, mount, userText, emptyState, loading } from '../lib/el.71f9edc9.js';
 import { toast, confirmDialog, debounce } from '../lib/dom.a575914e.js';
 import { timeAgo } from '../lib/format.2cdb7d3b.js';

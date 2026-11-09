@@ -1,6 +1,6 @@
 // Panel de administración → Auditoría: acciones de administración (roles, cuentas, ajustes) y de moderación, juntas.
 // Los alias y los motivos los escriben personas: se pintan siempre con nodos de texto (lib/el.js).
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { h, mount, emptyState, loading } from '../lib/el.71f9edc9.js';
 import { toast } from '../lib/dom.a575914e.js';
 import { timeAgo } from '../lib/format.2cdb7d3b.js';

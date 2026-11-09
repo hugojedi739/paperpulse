@@ -5,14 +5,14 @@
 //
 // SEGURIDAD: todo texto escrito por usuarios (alias, bio, títulos, mensajes) se pinta con h()/userText() de
 // lib/el.js, es decir, con nodos de texto. Aquí no se usa innerHTML ni la plantilla html`` para datos de usuarios.
-import * as C from '../lib/community.92fa85e9.js';
-import * as auth from '../lib/auth.e01be335.js';
-import * as R from '../lib/retention.475415f5.js';
+import * as C from '../lib/community.35a6fda9.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
+import * as R from '../lib/retention.98a64bcb.js';
 import { h, svgIcon, mount as put, userText, emptyState, loading, button } from '../lib/el.71f9edc9.js';
 import { on, toast, confirmDialog, openDialog, $ } from '../lib/dom.a575914e.js';
 import { pct, price, num, timeAgo, money } from '../lib/format.2cdb7d3b.js';
 import { go } from '../lib/router.de30a562.js';
-import { viewChallenge } from './challenge.b51d6e57.js';
+import { viewChallenge } from './challenge.7ab8ea00.js';
 import { RULES, DISCLAIMER } from '../lib/legal-content.dde43b20.js';
 
 export const title = 'Comunidad';

@@ -2,12 +2,12 @@
 // Solo visible para usuarios con rol admin; el backend vuelve a comprobarlo en cada petición.
 import { html, icon, render, on, $, $$, toast, confirmDialog, debounce } from '../lib/dom.a575914e.js';
 import { num, timeAgo } from '../lib/format.2cdb7d3b.js';
-import { api } from '../lib/api.d1caad06.js';
-import * as auth from '../lib/auth.e01be335.js';
-import { empty } from '../lib/ui.e378caee.js';
-import * as moderation from './moderation.f09ce3d2.js';
-import * as messages from './messages.a3000fb5.js';
-import * as audit from './audit.e8f428c9.js';
+import { api } from '../lib/api.d1db7328.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
+import { empty } from '../lib/ui.d293f857.js';
+import * as moderation from './moderation.ff1cd5b3.js';
+import * as messages from './messages.52833efb.js';
+import * as audit from './audit.095dc4c7.js';
 import { parseParam, buildPath, nonDefault, pickAllowed } from '../lib/admin-url.df7c25a4.js';
 
 export const title = 'Administración';

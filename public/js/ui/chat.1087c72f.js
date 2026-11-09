@@ -1,11 +1,11 @@
 // Asistente IA: panel lateral con respuestas en streaming (SSE) desde /api/chat.
 import * as store from '../lib/store.e4b4ab28.js';
-import { tick } from '../lib/feed.834822a1.js';
+import { tick } from '../lib/feed.9684fe93.js';
 import { findAsset, displayPair } from '../lib/catalog.f1b2b586.js';
 import { html, escape, render, $ } from '../lib/dom.a575914e.js';
 import { money, price, pct, currency, locale, approx } from '../lib/format.2cdb7d3b.js';
-import { portfolio } from '../lib/trading.7749d2fa.js';
-import { INTERVALS, normalizeInterval } from '../lib/marketdata.74c28a79.js';
+import { portfolio } from '../lib/trading.7e6554c9.js';
+import { INTERVALS, normalizeInterval } from '../lib/marketdata.c9567489.js';
 import { markdown } from '../lib/markdown.70f08f7e.js';
 
 // Deben coincidir con SUGGESTIONS de backend/chat_fixed.py (se responden sin IA; lo comprueba un test)

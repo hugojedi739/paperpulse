@@ -1,19 +1,19 @@
 // Vista Resumen: patrimonio, KPIs, sesiones de bolsa, favoritos, movimientos, amplitud y cartera.
 import * as store from '../lib/store.e4b4ab28.js';
-import { tick } from '../lib/feed.834822a1.js';
+import { tick } from '../lib/feed.9684fe93.js';
 import { ASSETS, findAsset } from '../lib/catalog.f1b2b586.js';
 import { html, icon, render, on, $ } from '../lib/dom.a575914e.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.2cdb7d3b.js';
-import { portfolio } from '../lib/trading.7749d2fa.js';
+import { portfolio } from '../lib/trading.7e6554c9.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.30b336ce.js';
-import { currentUser, onAuth, ready as authReady } from '../lib/auth.e01be335.js';
-import * as notifs from '../lib/notifications.17209f3d.js';
-import * as community from '../lib/community.92fa85e9.js';
+import { currentUser, onAuth, ready as authReady } from '../lib/auth.bf0ddbaf.js';
+import * as notifs from '../lib/notifications.c8895d7f.js';
+import * as community from '../lib/community.35a6fda9.js';
 import { h, mount as put } from '../lib/el.71f9edc9.js';
-import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.74c28a79.js';
-import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.e378caee.js';
+import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.c9567489.js';
+import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.d293f857.js';
 import { go } from '../lib/router.de30a562.js';
-import { mountCard } from '../ui/retention-card.78fe74ce.js';
+import { mountCard } from '../ui/retention-card.01241625.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };

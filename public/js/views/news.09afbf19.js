@@ -1,9 +1,9 @@
 // Vista Noticias: titulares reales filtrables por categoría con lector integrado.
 import { html, icon, render, on, $ } from '../lib/dom.a575914e.js';
 import { timeAgo } from '../lib/format.2cdb7d3b.js';
-import { news, safeUrl } from '../lib/marketdata.74c28a79.js';
-import { empty } from '../lib/ui.e378caee.js';
-import { newsDialog } from '../ui/dialogs.d51cb492.js';
+import { news, safeUrl } from '../lib/marketdata.c9567489.js';
+import { empty } from '../lib/ui.d293f857.js';
+import { newsDialog } from '../ui/dialogs.539cc4fb.js';
 
 const FILTERS = [['all', 'Todas'], ['crypto', 'Cripto'], ['stocks', 'Bolsa'], ['economy', 'Economía'], ['analysis', 'Análisis']];
 const CATEGORY = { crypto: ['Cripto', 'coins'], stocks: ['Bolsa', 'chart-candlestick'], economy: ['Economía', 'globe'], analysis: ['Análisis', 'chart-line'] };

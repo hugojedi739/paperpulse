@@ -3,7 +3,7 @@
 // despliegues serverless) se consultan los mismos datos por REST cada pocos segundos.
 import { CRYPTO, findAsset } from './catalog.f1b2b586.js';
 import { emit } from './store.e4b4ab28.js';
-import { getJson, wsUrl } from './api.d1caad06.js';
+import { getJson, wsUrl } from './api.d1db7328.js';
 
 const POLL_FAST_MS = 5000; // Operar: el gráfico y el libro necesitan datos frescos
 const POLL_SLOW_MS = 10000; // resto de vistas

@@ -2,7 +2,7 @@
 import { html, icon, raw } from './dom.a575914e.js';
 import { findAsset } from './catalog.f1b2b586.js';
 import { pct, trendClass, money, price } from './format.2cdb7d3b.js';
-import { tick } from './feed.834822a1.js';
+import { tick } from './feed.9684fe93.js';
 import { marketOpen } from './store.e4b4ab28.js';
 
 const hue = (s) => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 4;

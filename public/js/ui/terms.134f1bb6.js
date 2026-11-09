@@ -1,11 +1,11 @@
 // Aceptación de términos y privacidad para cuentas que aún no la han dado.
 //  · Cuenta nueva sin aceptar (alta con Google): diálogo que NO se puede cerrar hasta aceptar o cerrar sesión.
 //  · Cuenta anterior a los textos legales («legacy») o con una versión antigua: aviso que se puede cerrar (una vez por sesión).
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { LEGAL_VERSION } from '../lib/legal-content.dde43b20.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
 import { openDialog, toast } from '../lib/dom.a575914e.js';
-import * as auth from '../lib/auth.e01be335.js';
+import * as auth from '../lib/auth.bf0ddbaf.js';
 
 const SEEN = 'paperpulse_terms_prompted';
 export const needsTerms = (user) => Boolean(user) && user.termsVersion !== LEGAL_VERSION;

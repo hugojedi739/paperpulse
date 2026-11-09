@@ -1,12 +1,12 @@
 // Vista Mercados: tabla filtrable y ordenable con precios en vivo y tendencia.
 import * as store from '../lib/store.e4b4ab28.js';
-import { tick } from '../lib/feed.834822a1.js';
+import { tick } from '../lib/feed.9684fe93.js';
 import { ASSETS } from '../lib/catalog.f1b2b586.js';
 import { html, icon, render, on, $, debounce } from '../lib/dom.a575914e.js';
 import { money, price, pct, trendClass, toUsd } from '../lib/format.2cdb7d3b.js';
 import { sparkline } from '../lib/charts.30b336ce.js';
-import { cryptoMarkets, stockSpark } from '../lib/marketdata.74c28a79.js';
-import { assetCell, empty, seg, pressSeg, liveChange } from '../lib/ui.e378caee.js';
+import { cryptoMarkets, stockSpark } from '../lib/marketdata.c9567489.js';
+import { assetCell, empty, seg, pressSeg, liveChange } from '../lib/ui.d293f857.js';
 import { go } from '../lib/router.de30a562.js';
 
 const CATEGORIES = [['all', 'Todos'], ['crypto', 'Cripto'], ['es', 'España'], ['us', 'EE. UU.'], ['fav', 'Favoritos']];

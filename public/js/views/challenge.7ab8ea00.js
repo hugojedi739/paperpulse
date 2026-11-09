@@ -1,11 +1,11 @@
 // Reto del mes: cuenta de práctica aparte, mismo saldo para todos y clasificación propia.
 // Usa las mismas rutas de trading que la cuenta normal, bajo /api/challenge (ver backend/retention/challenges.py).
-import { api } from '../lib/api.d1caad06.js';
+import { api } from '../lib/api.d1db7328.js';
 import { h, svgIcon, mount as put, emptyState, loading } from '../lib/el.71f9edc9.js';
 import { toast } from '../lib/dom.a575914e.js';
 import { pct, num, price, timeAgo } from '../lib/format.2cdb7d3b.js';
 import { uuid } from '../lib/store.e4b4ab28.js';
-import * as C from '../lib/community.92fa85e9.js';
+import * as C from '../lib/community.35a6fda9.js';
 
 let box, status = null, port = null, slug = null, lastId = 0;
 
