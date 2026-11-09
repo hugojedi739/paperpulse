@@ -40,7 +40,7 @@ test('se cachea 5 minutos y después se vuelve a pedir', async () => {
 test('un fallo no se queda cacheado ni bloquea la siguiente petición', async () => {
   mock.timers.tick(6 * 60_000);
   fail = true;
-  await assert.rejects(community.pulse(), /sin red/);
+  await assert.rejects(community.pulse(), /No se pudo conectar con el servidor/);
   fail = false;
   const ok = await community.pulse();
   assert.equal(ok.empty, true);
