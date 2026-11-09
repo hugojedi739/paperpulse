@@ -17,7 +17,9 @@ from typing import Dict, Optional, Set
 import websockets
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from backend.config import REALTIME_ENABLED
+from urllib.parse import urlsplit
+
+from backend.config import ALLOWED_ORIGINS, REALTIME_ENABLED
 from backend.market.stocks import fetch_live_stock_quotes
 from backend.security import cleanup_stale_ip_data, get_client_ip
 
@@ -157,8 +159,17 @@ async def send_stock_snapshot(client: Client) -> None:
     client.push(json.dumps({"stream": STOCKS, "data": quotes}))
 
 
+def origin_allowed(websocket) -> bool:
+    """El navegador siempre envía Origin: solo se aceptan nuestra propia web y los orígenes de ALLOWED_ORIGINS. Sin Origin (herramientas) se acepta."""
+    origin = websocket.headers.get("origin")
+    return not origin or urlsplit(origin).netloc == websocket.headers.get("host", "") or origin in ALLOWED_ORIGINS
+
+
 async def ws_market(websocket: WebSocket):
     ip = get_client_ip(websocket)
+    if not origin_allowed(websocket):
+        await websocket.close(code=1008)
+        return
     if len(hub.clients) >= MAX_CLIENTS or sum(1 for c in hub.clients if c.ip == ip) >= MAX_PER_IP:
         await websocket.close(code=1008)
         return

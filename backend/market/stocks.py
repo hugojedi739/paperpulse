@@ -384,6 +384,8 @@ def fetch_stock_sparks_sync() -> Dict[str, List[float]]:
 
 async def api_stock_sparks(request):
     """Mini-series de 1 mes para las tendencias de la tabla de mercados (caché de 30 min)."""
+    if not check_ip_rate_limit(get_client_ip(request), IP_STOCK_CALLS, max_calls_per_minute=120):
+        return JSONResponse({"error": "Límite de peticiones de bolsa excedido por minuto."}, status_code=429, headers={"Retry-After": "60"})
     async with SPARKS_LOCK:
         if time.time() - SPARKS_CACHE["timestamp"] > 1800 or not SPARKS_CACHE["data"]:
             data = await asyncio.get_running_loop().run_in_executor(None, fetch_stock_sparks_sync)
