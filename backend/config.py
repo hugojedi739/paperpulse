@@ -33,8 +33,9 @@ def _csv(name: str, default: str) -> List[str]:
 
 
 PORT = int(os.getenv("PORT", "8000"))
-DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 IS_PRODUCTION = os.environ.get("ENV", "").lower() == "production"
+# Starlette con debug=True devuelve trazas al cliente: nunca en producción ni en Vercel
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1") and not IS_PRODUCTION and not os.environ.get("VERCEL")
 IS_VERCEL = bool(os.environ.get("VERCEL"))
 # Relay de mercado en vivo (/ws/market). Con REALTIME=false /api/health dice que no hay tiempo real y el navegador se queda en REST
 # (útil si un proxy o plataforma no deja pasar WebSocket). Por defecto activo en todas partes, también en Vercel.

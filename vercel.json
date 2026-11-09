@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "echo 'Sin paso de build: server.py sirve frontend/'",
+  "buildCommand": "echo 'Sin build en Vercel: public/ se genera y se versiona con npm run build:static'",
   "functions": {
     "server.py": {
       "maxDuration": 60,
@@ -14,6 +14,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
     {
       "source": "/(.*)\\.([0-9a-f]{8})\\.(js|mjs|css)",
       "headers": [

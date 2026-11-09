@@ -207,7 +207,7 @@ async def lifespan(app):
     print(f"  Bolsa: {settings.get('stock_data_provider')} · CORS: {ALLOWED_ORIGINS}")
     print("==================================================")
     USAGE_STATS["start_time"] = time.time()
-    # En serverless no hay proceso persistente ni WebSockets: el cliente usa el respaldo REST
+    # En serverless no hay proceso persistente para el difusor de bolsa: el cliente usa el respaldo REST
     worker = None if IS_VERCEL else asyncio.create_task(stream.stocks_broadcast_worker())
     yield
     if worker:
