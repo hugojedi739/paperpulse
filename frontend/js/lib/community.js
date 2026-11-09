@@ -67,8 +67,6 @@ export const threads = (slug, sort, page = 1) =>
 
 export const thread = (id, sort, page = 1) => api(`/api/forum/threads/${enc(id)}?sort=${enc(sort)}&page=${page}`);
 
-export const assetThread = (symbol) => cached(`asset:${symbol}`, 10 * 60_000, () => api(`/api/forum/assets/${enc(symbol)}`));
-
 export const profile = (alias) => cached(`profile:${alias}`, TTL.profile, () => api(`/api/community/profiles/${enc(alias)}`));
 
 export const profileThreads = (alias, page = 1) =>

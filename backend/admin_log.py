@@ -12,13 +12,6 @@ from backend import db
 
 log = logging.getLogger("paperpulse.admin_log")
 
-ACTIONS = {
-    "user_role": "Cambió el rol de un usuario",
-    "user_disable": "Desactivó una cuenta",
-    "user_enable": "Activó una cuenta",
-    "user_delete": "Eliminó una cuenta",
-    "settings_update": "Cambió ajustes",
-}
 PAGE = 50
 
 

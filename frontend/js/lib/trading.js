@@ -4,7 +4,7 @@
 import * as store from './store.js';
 import * as account from './account.js';
 import { priceOf, tick } from './feed.js';
-import { toUsd, convert, price as fmtPrice, units } from './format.js';
+import { toUsd, price as fmtPrice, units } from './format.js';
 import { findAsset } from './catalog.js';
 
 export const MIN_ORDER_USD = 5;
@@ -187,8 +187,3 @@ export function checkTriggers(symbols, onEvent) {
   }
 }
 
-/** Unidades que se obtienen con un importe en la divisa de la cuenta. */
-export function unitsFor(amountAccount, accountCurrency, asset) {
-  const px = priceOf(asset.symbol);
-  return px > 0 ? convert(amountAccount, accountCurrency, asset.quote) / px : 0;
-}

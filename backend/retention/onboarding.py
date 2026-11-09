@@ -4,10 +4,8 @@ Cada paso se comprueba con datos del servidor (fills, orders) salvo la visita al
 Es saltable y se puede reabrir.
 """
 import time
-from contextlib import closing
 from typing import Dict
 
-from backend import db
 from backend.db import transaction
 from backend.retention import achievements
 

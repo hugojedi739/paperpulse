@@ -71,7 +71,6 @@ export function openDialog(id) {
   if (d && !d.open) d.showModal();
   return d;
 }
-export const closeDialog = (id) => document.getElementById(id)?.close();
 
 // Cierre por botones [data-close] y por clic en el fondo
 globalThis.document?.addEventListener('click', (e) => {

@@ -3,7 +3,7 @@ import * as store from '../lib/store.js';
 import { priceOf } from '../lib/feed.js';
 import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.js';
-import { money, price, units, pct, currency, convert, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.js';
+import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
 import * as auth from '../lib/auth.js';
@@ -388,18 +388,6 @@ export function guideDialog() {
   };
   d.querySelector('.guide').addEventListener('input', calc);
   calc();
-}
-
-export function legalDialog() {
-  show(html`${head('Aviso legal y privacidad')}
-    <div class="dlg-body legal">
-      <h3>Simulación educativa</h3><p>PaperPulse es un simulador con fines formativos. Nada de lo que muestra —cotizaciones, gráficos, órdenes o respuestas del asistente— constituye asesoramiento financiero ni una recomendación de inversión.</p>
-      <h3>Fuentes de datos</h3><p>Cripto: canales públicos de Binance en tiempo real. Bolsa: proveedores de datos que pueden llevar hasta 15 minutos de retraso. Noticias: titulares y resúmenes de los medios citados, con enlace a la fuente.</p>
-      <h3>Privacidad</h3><p>No hay registro, cookies publicitarias ni rastreadores. Sin cuenta, tu saldo virtual, operaciones y ajustes se guardan solo en este navegador (localStorage) y puedes exportarlos o borrarlos desde Ajustes. Si inicias sesión (con email, Google u Okta) se guardan también en nuestro servidor y puedes eliminar tu cuenta en cualquier momento. Las cotizaciones, noticias y respuestas del asistente las obtiene nuestro servidor: tu navegador no contacta con servicios de terceros. Las preguntas al asistente no se almacenan.</p>
-      <h3>Riesgo en mercados reales</h3><p>Operar con dinero real conlleva un riesgo elevado de pérdida. No inviertas dinero que no puedas permitirte perder.</p>
-      <h3>Créditos</h3><p>Gráficos: TradingView Lightweight Charts™ (Apache 2.0). Iconos: Lucide (ISC). Tipografías: Inter y JetBrains Mono (OFL).</p>
-    </div>
-    <footer class="dlg-foot"><button class="btn btn-primary" data-close>Entendido</button></footer>`);
 }
 
 export function shortcutsDialog() {

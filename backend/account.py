@@ -46,8 +46,6 @@ def export_data(user_id: int) -> Dict:
             return {}
         one = lambda sql, *a: conn.execute(sql, a).fetchone()
         pd = one("SELECT payload, updated_at FROM practice_data WHERE user_id = ?", user_id)
-        ledgers = [r["id"] for r in conn.execute("SELECT id FROM users WHERE owner_id = ?", (user_id,))]
-        ledger_ids = [user_id, *ledgers]
 
         def trading(lid):
             return {"account": _rows(conn, "SELECT * FROM accounts WHERE user_id = ?", lid), "positions": _rows(conn, "SELECT * FROM positions WHERE user_id = ?", lid),

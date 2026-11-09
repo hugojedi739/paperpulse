@@ -35,7 +35,6 @@ export const ASSETS = [
 ];
 
 export const CRYPTO = ASSETS.filter((a) => a.type === 'crypto');
-export const STOCKS = ASSETS.filter((a) => a.type === 'stock');
 export const DEFAULT_WATCHLIST = ['BTC', 'ETH', 'SOL', 'NVDA', 'AAPL', 'SAN'];
 
 const ALIASES = { MATIC: 'POL', IBEX35: 'IBEX', '^IBEX': 'IBEX', BTCUSDT: 'BTC' };
@@ -73,5 +72,4 @@ export function toAsset(item) {
   return { ...crypto(symbol.toLowerCase(), symbol, String(item.name || symbol).slice(0, 60)), dynamic: true };
 }
 
-export const isStock = (a) => a?.type === 'stock';
 export const displayPair = (a) => `${a.symbol}/${a.quote}`;

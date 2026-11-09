@@ -7,10 +7,8 @@ const SUPPORTED = ['EUR', 'USD', 'GBP'];
 export function setRates(next) {
   for (const c of SUPPORTED) if (Number(next?.[c]) > 0) rates[c] = Number(next[c]);
 }
-export const getRates = () => ({ ...rates });
 
 export function setCurrencyPreference(pref) { preference = pref || 'auto'; }
-export const getCurrencyPreference = () => preference;
 
 export function currency() {
   if (SUPPORTED.includes(preference)) return preference;

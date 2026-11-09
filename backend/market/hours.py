@@ -34,7 +34,7 @@ def is_market_open(market: str = "US") -> Tuple[bool, str]:
         if weekday >= 5:
             return False, "Wall Street cerrado (Fin de semana). Próxima apertura: Lunes 09:30 ET"
         if (month, day) in US_HOLIDAYS_FIXED:
-            return False, f"Wall Street cerrado por festivo bursátil. Próxima apertura: Mañana 09:30 ET"
+            return False, "Wall Street cerrado por festivo bursátil. Próxima apertura: Mañana 09:30 ET"
 
         t = now_local.time()
         open_time = datetime.time(9, 30)
@@ -56,7 +56,7 @@ def is_market_open(market: str = "US") -> Tuple[bool, str]:
         if weekday >= 5:
             return False, "Bolsa de Madrid cerrada (Fin de semana). Próxima apertura: Lunes 09:00 CET"
         if (month, day) in ES_HOLIDAYS_FIXED:
-            return False, f"Bolsa de Madrid cerrada por festivo BME. Próxima apertura: Mañana 09:00 CET"
+            return False, "Bolsa de Madrid cerrada por festivo BME. Próxima apertura: Mañana 09:00 CET"
 
         t = now_local.time()
         open_time = datetime.time(9, 0)
@@ -66,7 +66,7 @@ def is_market_open(market: str = "US") -> Tuple[bool, str]:
         if is_open:
             return True, "Bolsa de Madrid abierta (09:00 - 17:30 CET)"
         elif t < open_time:
-            return False, f"Bolsa de Madrid abre hoy a las 09:00 CET"
+            return False, "Bolsa de Madrid abre hoy a las 09:00 CET"
         else:
             return False, "Bolsa de Madrid cerrada. Próxima sesión mañana a las 09:00 CET"
 
@@ -106,7 +106,7 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
                 days = 7 - weekday_ny
             next_date = now_ny.date() + datetime.timedelta(days=days)
             next_dt = datetime.datetime.combine(next_date, open_us, tzinfo=TZ_NY)
-            next_event_text = f"Abre el próximo día hábil 09:30 ET"
+            next_event_text = "Abre el próximo día hábil 09:30 ET"
     next_event_utc_us = next_dt.astimezone(datetime.timezone.utc).isoformat()
 
     markets.append({

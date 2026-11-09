@@ -23,8 +23,6 @@ export function changeChip(value) {
   return html`<span class="chip ${cls}">${icon(value >= 0 ? 'arrow-up-right' : 'arrow-down-right', 'sm')}${pct(value)}</span>`;
 }
 
-export const changeText = (value) => html`<span class="${trendClass(value)}">${pct(value)}</span>`;
-
 /** Importe en divisa de la cuenta, difuminable con el modo privacidad. */
 export const moneyHtml = (usd, opts) => html`<span class="money">${money(usd, opts)}</span>`;
 

@@ -281,7 +281,6 @@ export function setFallbackPrice(symbol, price) {
 
 export const tick = (symbol) => ticks.get(findAsset(symbol)?.symbol ?? String(symbol).toUpperCase()) ?? null;
 export const priceOf = (symbol) => tick(symbol)?.price ?? null;
-export const allTicks = () => ticks;
 export const getStatus = () => status;
 
 function updateStatus() {
