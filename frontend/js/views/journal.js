@@ -36,7 +36,7 @@ export function show() {
   chart?.destroy();
   chart = null;
   if (!trades.length) {
-    return render(root, html`<section class="card">${empty('book-open', 'Tu diario está vacío',
+    return render(root, html`<section class="card">${empty('book-open', 'Tu diario está en blanco… por ahora',
       'Cada vez que vendas una posición se registrará aquí con su resultado, duración y tus notas. Así detectarás qué estrategias te funcionan.',
       html`<a class="btn btn-primary" href="#/trade">${icon('chart-candlestick', 'sm')} Ir a operar</a>`)}</section>`);
   }
@@ -133,7 +133,7 @@ function drawTable() {
   const list = filtered();
   const box = $('#j-table', root);
   if (!box) return;
-  if (!list.length) return render(box, empty('list-filter', 'Ninguna operación coincide con el filtro'));
+  if (!list.length) return render(box, empty('list-filter', 'Ninguna operación encaja con ese filtro'));
   render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada → Salida</th><th class="r">Duración</th><th class="r">Resultado</th><th>Estrategia</th><th>Notas</th></tr></thead>
     <tbody>${list.map((t) => html`<tr>
       <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td>

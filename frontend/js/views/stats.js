@@ -26,7 +26,7 @@ const signedMoney = (v) => html`<span class="money delta ${trendClass(v)}">${mon
 export function show() {
   const trades = store.trades();
   if (!trades.length) {
-    return render(root, html`${goalsCard()}<section class="card">${empty('chart-column', 'Aún no hay estadísticas',
+    return render(root, html`${goalsCard()}<section class="card">${empty('chart-column', 'Tus estadísticas empiezan con tu primera venta',
       'Se calculan con tus operaciones cerradas: cuando vendas tu primera posición verás aquí tus aciertos, tu pérdida máxima y cómo te va cada semana.',
       html`<a class="btn btn-primary" href="#/trade">${icon('chart-candlestick', 'sm')} Ir a operar</a>`)}</section>`);
   }

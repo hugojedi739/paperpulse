@@ -16,6 +16,7 @@ import { go } from '../lib/router.js';
 import { mountCard } from '../ui/retention-card.js';
 import { whatIfParts } from '../lib/starting-balance.js';
 import { goalsCard } from '../ui/goals-card.js';
+import { countTo } from '../lib/motion.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -30,6 +31,7 @@ const SESSIONS = {
 let root, equity, range = '1M', movers = 'gainers', timer;
 let minis = []; // minigráficos de las tarjetas de cotización
 let alias = null; // alias del perfil de comunidad para el saludo (null = aún no se sabe o no hay perfil)
+let lastEquity; // último patrimonio pintado, para animar la cifra desde ahí
 let pulseData = null; // última respuesta de /api/community/pulse (para repintar sin parpadeo)
 
 /** Precio en vivo que parpadea al cambiar (data-flash); vacío = esqueleto hasta la primera cotización. */
@@ -185,7 +187,7 @@ function drawEquity() {
   if (points.length < 2) points = store.equityHistory();
   box.querySelector('.empty')?.remove();
   if (points.length < 2) {
-    box.insertAdjacentHTML('beforeend', String(empty('chart-area', 'Tu curva aparecerá aquí', 'Se registra un punto cada minuto mientras la app está abierta.')));
+    box.insertAdjacentHTML('beforeend', String(empty('chart-area', 'Tu curva está por dibujar', 'Se añade un punto cada minuto mientras tienes la app abierta.')));
   }
   equity.setData(points, store.initialCapital());
 }
@@ -195,7 +197,8 @@ function renderSummary() {
     const p = portfolio();
     const total = p.equityUsd - store.initialCapital();
     if (!$('#d-equity', root)) return; // la cuenta se acaba de activar y la vista aún no se ha repintado (lo hace el evento de cuenta)
-    render($('#d-equity', root), money(p.equityUsd));
+    countTo($('#d-equity', root), lastEquity, p.equityUsd, (v) => money(v)); // la cifra cuenta hasta su nuevo valor
+    lastEquity = p.equityUsd;
     render($('#d-delta', root), html`${changeChip(p.returnPct)}
       <span class="money delta ${trendClass(total)}">${money(total, { signed: true })}</span> desde el inicio
       ${p.rows.length ? html`· <span class="money delta ${trendClass(p.change24hUsd)}">${money(p.change24hUsd, { signed: true })}</span> hoy` : ''}`);
@@ -320,7 +323,7 @@ async function renderWatchlist() {
   const box = $('#d-watch', root);
   if (!box) return;
   const list = store.watchlist().map(findAsset).filter(Boolean);
-  if (!list.length) return render(box, empty('star', 'Sin favoritos', 'Pulsa + o la estrella de cualquier activo para seguirlo aquí.'));
+  if (!list.length) return render(box, empty('star', 'Aún no sigues ningún activo', 'Pulsa + o la estrella de cualquier activo y lo tendrás aquí, a un vistazo.'));
   const row = (a, spark) => html`<button class="row" data-asset="${a.symbol}">
       ${assetIcon(a)}
       <div class="asset-cell"><div><strong>${a.symbol}</strong><small>${a.name}</small></div><span class="hide-sm">${spark ?? ''}</span></div>
@@ -423,7 +426,7 @@ async function renderNews() {
     const list = (await news()).slice(0, 5);
     if (!box.isConnected) return;
     render(box, list.length ? list.map((n) => html`<a href="${safeUrl(n.url) ?? '#/news'}" target="_blank" rel="noopener noreferrer">
-      <strong>${n.title}</strong><small>${n.source} · ${timeAgo(n.date)}</small></a>`) : empty('newspaper', 'Sin noticias por ahora', 'Las fuentes no han publicado titulares financieros recientes.'));
+      <strong>${n.title}</strong><small>${n.source} · ${timeAgo(n.date)}</small></a>`) : empty('newspaper', 'Los mercados están callados', 'Las fuentes no han publicado titulares financieros recientes.'));
   } catch {
     render(box, empty('wifi-off', 'No hay noticias ahora mismo', 'No se pudo conectar con las fuentes. Vuelve a abrir el Resumen en unos minutos.'));
   }

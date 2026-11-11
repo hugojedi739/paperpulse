@@ -13,6 +13,7 @@ import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
 import { closePositionDialog } from '../ui/dialogs.c6e755f4.js';
 import { shareButton, shareDialog } from '../ui/share.d68fcc5b.js';
+import { afterBuy } from '../ui/celebrate.c16acb3e.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -520,6 +521,7 @@ async function submitBuy() {
     if (orderType === 'market') {
       const r = await trading.buyMarket(asset, qty);
       toast(`Has comprado ${units(r.amount, asset.symbol)} a ${price(r.price, asset.quote)}`, 'success');
+      afterBuy();
     } else {
       const r = await trading.placeOrder(asset, { type: orderType, amount: qty, limitPrice, stopPrice });
       toast(r.filled ? `Orden ejecutada al instante: ${units(qty, asset.symbol)}` : 'Orden colocada. Se ejecutará cuando el precio alcance tu nivel.', 'success');
@@ -596,10 +598,10 @@ function renderDock() {
     .map(([id, label, n]) => html`<button role="tab" data-t="tab" data-tab="${id}" aria-selected="${dockTab === id}">${label}${n != null ? html`<span class="count">${n}</span>` : ''}</button>`));
   const box = $('#t-dock', root);
   if (!store.hasPractice() && dockTab !== 'history') {
-    return render(box, empty('wallet', 'Sin cuenta de práctica', 'Tus posiciones y órdenes aparecerán aquí cuando empieces a practicar.'));
+    return render(box, empty('wallet', 'Aún no tienes cuenta de práctica', 'Elige tu saldo virtual y tus posiciones y órdenes aparecerán aquí.'));
   }
   if (dockTab === 'positions') {
-    if (!positions.length) return render(box, empty('layers', 'Sin posiciones abiertas', 'Usa el panel de órdenes para hacer tu primera compra.'));
+    if (!positions.length) return render(box, empty('layers', 'Tu cartera está en blanco', 'Usa el panel de órdenes para hacer tu primera compra: es dinero virtual, puedes equivocarte tranquilo.'));
     render(box, html`<table class="table"><thead><tr><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada</th><th class="r">Actual</th><th class="r">Valor</th><th class="r">P&amp;L</th><th></th></tr></thead>
       <tbody>${positions.map((p) => html`<tr data-href="/trade/${p.symbol}">
         <td>${assetCell(p, displayPair(p))}</td>
@@ -611,7 +613,7 @@ function renderDock() {
         <td class="r"><button class="btn btn-ghost btn-sm" data-t="close" data-id="${p.id}">Cerrar</button></td></tr>`)}</tbody></table>`);
     updateDockValues();
   } else if (dockTab === 'orders') {
-    if (!orders.length) return render(box, empty('clock', 'Sin órdenes pendientes', 'Las órdenes límite y stop reservan saldo hasta ejecutarse o cancelarse.'));
+    if (!orders.length) return render(box, empty('clock', 'Nada en la cola', 'Las órdenes límite y stop esperan aquí, con su saldo reservado, hasta ejecutarse o cancelarse.'));
     render(box, html`<table class="table"><thead><tr><th>Activo</th><th>Tipo</th><th class="r">Cantidad</th><th class="r">Precio</th><th class="r">Stop</th><th class="r">Reservado</th><th>Creada</th><th></th></tr></thead>
       <tbody>${orders.map((o) => html`<tr data-href="/trade/${o.symbol}">
         <td><strong>${o.symbol}</strong></td><td><span class="chip">${orderLabel(o)}</span></td>
@@ -620,7 +622,7 @@ function renderDock() {
         <td class="r"><button class="btn btn-ghost btn-sm" data-t="cancel" data-id="${o.id}">Cancelar</button></td></tr>`)}</tbody></table>`);
   } else {
     const trades = store.trades().slice(0, 25);
-    if (!trades.length) return render(box, empty('history', 'Sin operaciones todavía', 'Cuando vendas una posición aparecerá aquí con su resultado.'));
+    if (!trades.length) return render(box, empty('history', 'Tu historial empieza con tu primera venta', 'Cuando cierres una posición aparecerá aquí con su resultado.'));
     render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada</th><th class="r">Salida</th><th class="r">Resultado</th><th></th></tr></thead>
       <tbody>${trades.map((t) => html`<tr data-href="/trade/${t.symbol}">
         <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td><td><strong>${t.symbol}</strong></td>

@@ -25,6 +25,7 @@ import { openWelcome } from './ui/welcome.js';
 import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
+import { checkGoals } from './ui/celebrate.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
@@ -291,6 +292,7 @@ store.on('prices', (symbols) => {
   chipTimer ??= setTimeout(() => { chipTimer = null; renderAccountChip(); }, 1000);
 });
 store.on('account', renderAccountChip);
+store.on('trades', () => checkGoals()); // celebra un reto de la semana recién cumplido
 store.on('notifications', renderNotifications);
 store.on('feed', renderFeedStatus);
 

@@ -40,7 +40,7 @@ export async function show() {
 
 function draw() {
   const list = articles.map((a, i) => ({ a, i })).filter(({ a }) => filter === 'all' || a.category === filter);
-  if (!list.length) return render($('#n-grid', root), html`<div class="card">${empty('newspaper', 'Sin noticias en esta categoría')}</div>`);
+  if (!list.length) return render($('#n-grid', root), html`<div class="card">${empty('newspaper', 'Hoy no hay titulares de esta categoría', 'Prueba con otra o vuelve en un rato.')}</div>`);
   render($('#n-grid', root), list.map(({ a, i }, pos) => {
     const [label, ico] = CATEGORY[a.category] ?? ['General', 'newspaper'];
     const img = safeUrl(a.imageUrl);

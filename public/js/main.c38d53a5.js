@@ -8,11 +8,11 @@ import { portfolio, checkTriggers } from './lib/trading.5637d759.js';
 import { marketsStatus, fxRates } from './lib/marketdata.c9567489.js';
 import { updateLive, assetIcon } from './lib/ui.0a736068.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.c9616f39.js';
-import * as trade from './views/trade.c9098155.js';
+import * as dashboard from './views/dashboard.3d934f47.js';
+import * as trade from './views/trade.8f76da91.js';
 import * as markets from './views/markets.f3d1c7f1.js';
-import * as newsView from './views/news.f11af2f1.js';
-import * as journal from './views/journal.a33b59c6.js';
+import * as newsView from './views/news.7b8a8ca7.js';
+import * as journal from './views/journal.bc95cf19.js';
 import * as community from './views/community.3a77b3ac.js';
 import * as dialogs from './ui/dialogs.c6e755f4.js';
 import * as auth from './lib/auth.17a9e375.js';
@@ -25,11 +25,12 @@ import { openWelcome } from './ui/welcome.1aaa7efb.js';
 import { initPalette, openPalette } from './ui/palette.0a62e642.js';
 import { initChat, toggleChat } from './ui/chat.a1779993.js';
 import { startTour } from './ui/tour.a9aeef58.js';
+import { checkGoals } from './ui/celebrate.c16acb3e.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
 const LAZY = {
-  stats: () => import('./views/stats.c574af2d.js'),
+  stats: () => import('./views/stats.1b75ac57.js'),
   learn: () => import('./views/learn.6ab9f161.js'),
   legal: () => import('./views/legal.c8d5cc6f.js'),
   admin: () => import('./views/admin.3f65c2b4.js'),
@@ -291,6 +292,7 @@ store.on('prices', (symbols) => {
   chipTimer ??= setTimeout(() => { chipTimer = null; renderAccountChip(); }, 1000);
 });
 store.on('account', renderAccountChip);
+store.on('trades', () => checkGoals()); // celebra un reto de la semana recién cumplido
 store.on('notifications', renderNotifications);
 store.on('feed', renderFeedStatus);
 

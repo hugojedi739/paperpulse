@@ -88,7 +88,7 @@ frontend/
                              admin y moderation (sección Moderación del panel)
   js/lib/el.js               Construcción de DOM con nodos de texto: TODO texto de usuarios de la comunidad pasa por aquí
   js/lib/community.js        Cliente de /api/community y /api/forum con caché en memoria y mensajes de error
-  js/ui/                     Diálogos, paleta de comandos (Ctrl+K), asistente, visita guiada
+  js/ui/                     Diálogos, paleta de comandos (Ctrl+K), asistente, visita guiada, tarjeta de retos, celebración
   vendor/                    Generado por `npm run vendor` (Lightweight Charts, fuentes). No editar a mano
   img/icons.svg              Sprite de iconos Lucide, generado por `npm run vendor`
 scripts/build-static.mjs     Genera public/ y backend/templates/index.html con hashes en los nombres (para Vercel)
@@ -275,6 +275,16 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET · POST | `/api/challenge` · `/leaderboard` · `/join` · `/portfolio` · `/orders` | Reto mensual (mismas reglas que la cuenta normal) |
 | GET · POST | `/api/cron/daily` | Tareas diarias; exige `X-Admin-Key` o `Authorization: Bearer $CRON_SECRET` |
 | GET | `/api/health` | Estado; con sesión admin o `X-Admin-Key`, métricas |
+
+## Diseño: Aurora
+
+La identidad visual (rama `feat/rediseno-aurora`) está al final de `frontend/css/app.css`, en el bloque «AURORA», **sin capa** para que gane a las capas de arriba. Solo cambia color, forma, sombra y movimiento; la maquetación sigue en las capas.
+
+- **Fondo**: una única capa fija (`body::before`) con tres degradados que se mueve despacio con `transform`. **Tarjetas**: translúcidas con borde de luz, **sin `backdrop-filter`** (detrás solo hay un degradado suave; desenfocarlo es lo más caro en móviles modestos). El desenfoque real queda para lo que flota sobre contenido: cabecera, barra inferior del móvil, diálogos, menús y avisos. Si añades una superficie nueva, sigue esa regla.
+- **Colores**: acento violeta → cian (`--grad`); verde y rojo solo para subidas y bajadas. El rojo (`--down`) tira a frambuesa para no confundirse con el violeta ni con el ámbar de los avisos. Tema claro y oscuro con los mismos tokens.
+- **Tipografía**: Sora (`--display`) en titulares y cifras grandes; Inter en el resto y en todo número que cambie en vivo (cifras tabulares).
+- **Botones táctiles**: tienen canto (`box-shadow: 0 3px 0 var(--btn-edge)`) y se hunden al pulsar.
+- **Movimiento**: entrada de cada vista, cifra del patrimonio que cuenta hasta su valor (`lib/motion.js`), destello al cambiar un precio y celebración breve en la primera compra y al cumplir un reto de la semana (`ui/celebrate.js`: un aviso y un destello, sin monedas ni premios; solo salta si se acaba de operar). Todo respeta `prefers-reduced-motion`.
 
 ## Convenciones del código
 

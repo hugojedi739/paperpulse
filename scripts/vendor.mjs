@@ -33,6 +33,7 @@ for (const [pkg, file] of [
   ['inter', 'inter-latin-ext-wght-normal.woff2'],
   ['jetbrains-mono', 'jetbrains-mono-latin-wght-normal.woff2'],
   ['jetbrains-mono', 'jetbrains-mono-latin-ext-wght-normal.woff2'],
+  ['sora', 'sora-latin-wght-normal.woff2'], // titulares y cifras grandes (rediseño Aurora)
 ]) {
   cpSync(join(nm, `@fontsource-variable/${pkg}/files/${file}`), join(out, 'fonts', file));
 }
