@@ -45,7 +45,7 @@ function draw() {
     const [label, ico] = CATEGORY[a.category] ?? ['General', 'newspaper'];
     const img = safeUrl(a.imageUrl);
     return html`<button type="button" class="news-card ${pos === 0 ? 'feature' : ''}" data-article="${i}">
-      ${img ? html`<div class="news-media"><img src="${img}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`
+      ${img ? html`<div class="news-media"><img src="${img}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div>`
         : html`<div class="news-media placeholder">${icon(ico)}</div>`}
       <div class="news-body">
         <div class="news-meta"><span class="chip">${label}</span><span>${a.source}</span><span>·</span><span>${timeAgo(a.date)}</span></div>

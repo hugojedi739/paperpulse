@@ -16,6 +16,7 @@ from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
@@ -182,6 +183,8 @@ class SecurityHeadersMiddleware:
 
 middleware = [
     Middleware(SecurityHeadersMiddleware),
+    # Comprime JS, CSS y JSON (el SSE del asistente queda excluido). En Vercel los estáticos ya los comprime el CDN
+    Middleware(GZipMiddleware, minimum_size=1024),
     Middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,

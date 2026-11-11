@@ -29,7 +29,7 @@ def _sdk():
     return anthropic
 
 # ==============================================================================
-# 8. Chat con Claude AI (Streaming SSE, Historial, Seguridad y Control de Gasto)
+# Chat con Claude AI (Streaming SSE, Historial, Seguridad y Control de Gasto)
 # ==============================================================================
 # Texto fijo del prompt: idéntico en todas las peticiones (los datos de cada conversación van detrás, en context_block).
 SYSTEM_PROMPT = """Eres el asistente de PaperPulse, un simulador educativo de trading con dinero virtual y cotizaciones reales. Ayudas a entender el mercado, el análisis técnico, los tipos de orden y la gestión del riesgo. Respondes en español claro.

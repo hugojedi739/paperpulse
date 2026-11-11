@@ -30,7 +30,7 @@ def get_yfinance():
     return _YF["module"]
 
 # ==============================================================================
-# 5. Proveedor de Datos de Bolsa: Arquitectura Desacoplada y Política Cero Mock
+# Proveedor de Datos de Bolsa: Arquitectura Desacoplada y Política Cero Mock
 # ==============================================================================
 # Catálogo sin precios base estáticos (cero datos inventados)
 STOCK_SYMBOLS = {
@@ -333,7 +333,7 @@ async def api_stock_quotes(request):
     if not check_ip_rate_limit(client_ip, IP_STOCK_CALLS, max_calls_per_minute=120):
         return JSONResponse({"error": "Límite de peticiones de bolsa excedido por minuto."}, status_code=429, headers={"Retry-After": "60"})
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     quotes = await loop.run_in_executor(None, fetch_live_stock_quotes, SHARED_TTL)
     return JSONResponse({
         "status": "success",

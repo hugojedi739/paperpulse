@@ -1,5 +1,5 @@
 # ==============================================================================
-# PaperPulse Terminal — Imagen de Producción
+# PaperPulse — Imagen de Producción
 # ==============================================================================
 #   docker build -t paperpulse .
 #   docker run --env-file .env -p 8000:8000 paperpulse

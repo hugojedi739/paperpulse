@@ -15,8 +15,9 @@ from starlette.responses import JSONResponse
 from backend.security import IP_STOCK_CALLS, check_ip_rate_limit, get_client_ip
 
 # ==============================================================================
-# 7.5 Feed de Noticias Financieras Reales (CoinDesk + Google News Economía/Bolsa)
+# Feed de Noticias Financieras Reales (CoinDesk + Google News Economía/Bolsa)
 # ==============================================================================
+MAX_FEED_BYTES = 3_000_000  # un feed mayor se corta (y el XML truncado se descarta): acota memoria ante un origen anómalo
 NEWS_CACHE = {
     "timestamp": 0,
     "articles": []
@@ -47,7 +48,7 @@ def parse_rss_datetime(date_str: str) -> str:
         return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 # ==============================================================================
-# 7.5 Filtro de Noticias Financieras y Clasificación por Temas Reales
+# Filtro de Noticias Financieras y Clasificación por Temas Reales
 # ==============================================================================
 FINANCIAL_TOPICS = {
     "crypto": [
@@ -130,7 +131,7 @@ def fetch_real_news_sync() -> List[Dict[str, Any]]:
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PaperPulseTerminal/2.4"}
         )
         with urllib.request.urlopen(req, timeout=6) as resp:
-            root = ET.fromstring(resp.read())
+            root = ET.fromstring(resp.read(MAX_FEED_BYTES))
             items = root.findall(".//item")
             for item in items[:20]:
                 title = clean_html_text(item.findtext("title", ""))
@@ -168,7 +169,7 @@ def fetch_real_news_sync() -> List[Dict[str, Any]]:
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PaperPulseTerminal/2.4"}
         )
         with urllib.request.urlopen(req, timeout=6) as resp:
-            root = ET.fromstring(resp.read())
+            root = ET.fromstring(resp.read(MAX_FEED_BYTES))
             items = root.findall(".//item")
             for item in items[:25]:
                 raw_title = clean_html_text(item.findtext("title", ""))
@@ -227,7 +228,7 @@ async def api_news(request):
     if now - NEWS_CACHE["timestamp"] < 900 and NEWS_CACHE["articles"]:
         articles = NEWS_CACHE["articles"]
     else:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         fresh_articles = await loop.run_in_executor(None, fetch_real_news_sync)
         if fresh_articles:
             NEWS_CACHE["articles"] = fresh_articles

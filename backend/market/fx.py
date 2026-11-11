@@ -7,7 +7,7 @@ import requests
 from starlette.responses import JSONResponse
 
 # ==============================================================================
-# 3. Tipos de Cambio (FX) con Caché (Frankfurter / BCE)
+# Tipos de Cambio (FX) con Caché (Frankfurter / BCE)
 # ==============================================================================
 FX_CACHE = {
     "timestamp": 0,
@@ -60,7 +60,7 @@ async def get_exchange_rates(request):
         })
 
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         new_rates = await loop.run_in_executor(None, _fetch_rates)
         if new_rates:
             FX_CACHE["rates"] = new_rates

@@ -11,7 +11,7 @@ import { current, go } from './lib/router.de30a562.js';
 import * as dashboard from './views/dashboard.9060da26.js';
 import * as trade from './views/trade.230d6822.js';
 import * as markets from './views/markets.f0efa1bd.js';
-import * as newsView from './views/news.e49a0bb2.js';
+import * as newsView from './views/news.d145baf0.js';
 import * as journal from './views/journal.faf2ad42.js';
 import * as community from './views/community.bc93ae4d.js';
 import * as dialogs from './ui/dialogs.b2671a40.js';

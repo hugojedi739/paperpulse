@@ -17,7 +17,7 @@ if __name__ == "__main__":
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         sock.bind(("::", PORT))
-        uvicorn.Server(uvicorn.Config(app, log_level="info", proxy_headers=True)).run(sockets=[sock])
+        uvicorn.Server(uvicorn.Config(app, log_level="info", proxy_headers=True, server_header=False)).run(sockets=[sock])
     except OSError as e:
         print(f"[Server] Socket dual-stack no disponible ({e}); usando IPv4", file=sys.stderr)
-        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info", server_header=False)

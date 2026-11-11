@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Tuple
 from starlette.responses import JSONResponse
 
 # ==============================================================================
-# 4. Horarios de Mercado Reales con Zonas Horarias y Detección de Festivos
+# Horarios de Mercado Reales con Zonas Horarias y Detección de Festivos
 # ==============================================================================
 TZ_NY = zoneinfo.ZoneInfo("America/New_York")
 TZ_MADRID = zoneinfo.ZoneInfo("Europe/Madrid")
@@ -259,7 +259,7 @@ async def api_markets(request):
             "markets": MARKETS_CACHE["data"]
         })
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     markets_data = await loop.run_in_executor(None, build_markets_data_sync)
     MARKETS_CACHE["data"] = markets_data
     MARKETS_CACHE["timestamp"] = now

@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "PaperPulse Terminal — simulador de trading con datos de mercado en vivo",
+  "description": "PaperPulse — simulador de trading con datos de mercado en vivo",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
     "build:static": "node scripts/build-static.mjs",

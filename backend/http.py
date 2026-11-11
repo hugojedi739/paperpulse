@@ -22,8 +22,11 @@ def allow(key: str, per_minute: int) -> bool:
     if ok:
         calls.append(now)
     _LIMITS[key] = calls
-    if len(_LIMITS) > 10000:  # acota memoria
-        _LIMITS.clear()
+    if len(_LIMITS) > 10000:  # acota memoria: primero las claves caducadas, para que una avalancha de claves no borre los contadores vivos
+        for stale in [k for k, v in _LIMITS.items() if not v or now - v[-1] >= 60]:
+            del _LIMITS[stale]
+        if len(_LIMITS) > 10000:
+            _LIMITS.clear()
     return ok
 
 

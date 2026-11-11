@@ -13,7 +13,7 @@ from backend.market.stocks import STOCK_SYMBOLS, get_yfinance
 from backend.security import IP_STOCK_CALLS, check_ip_rate_limit, get_client_ip
 
 # ==============================================================================
-# 7. Búsqueda Real Multimercado (Binance 750+ Pares USDT + Bolsa US/IBEX/Global)
+# Búsqueda Real Multimercado (Binance 750+ Pares USDT + Bolsa US/IBEX/Global)
 # ==============================================================================
 BINANCE_CACHE = {
     "timestamp": 0,
@@ -25,7 +25,7 @@ async def get_binance_pairs() -> List[Dict[str, Any]]:
     if now - BINANCE_CACHE["timestamp"] < 30 and BINANCE_CACHE["pairs"]:
         return BINANCE_CACHE["pairs"]
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     def fetch():
         try:
             data = binance_get("/api/v3/ticker/24hr", {}, timeout=5)
@@ -66,7 +66,7 @@ async def get_binance_pairs() -> List[Dict[str, Any]]:
     return BINANCE_CACHE["pairs"]
 
 async def search_stocks_yahoo(query: str) -> List[Dict[str, Any]]:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     def fetch():
         try:
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -171,7 +171,7 @@ async def api_search(request):
     yf = get_yfinance() if stocks_needing_price else None  # solo se carga yfinance si hace falta
     if yf:
         if stocks_needing_price:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             def fetch_missing_prices():
                 for s in stocks_needing_price:
                     try:
