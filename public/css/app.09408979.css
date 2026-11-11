@@ -1411,7 +1411,7 @@
   --series-7: #b39bff;
   --shadow-pop: 0 24px 60px -18px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.1);
   --backdrop: rgb(4 6 18 / 0.7);
-  --glass: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  --glass: color-mix(in srgb, var(--surface-1) 88%, transparent); /* bastante opaco: lo de detrás se intuye, pero el texto de encima se lee */
   --glass-blur: blur(18px) saturate(1.5);
   --card-bg: linear-gradient(145deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03));
   --card-border: rgb(255 255 255 / 0.11);
@@ -1454,7 +1454,7 @@
   --series-7: #6250d6;
   --shadow-pop: 0 24px 54px -20px rgb(60 50 140 / 0.35), 0 0 0 1px rgb(80 70 160 / 0.1);
   --backdrop: rgb(30 26 70 / 0.3);
-  --glass: color-mix(in srgb, #ffffff 78%, transparent);
+  --glass: color-mix(in srgb, #ffffff 90%, transparent);
   --card-bg: linear-gradient(145deg, rgb(255 255 255 / 0.94), rgb(255 255 255 / 0.7));
   --card-border: rgb(255 255 255 / 0.95);
   --card-shadow: 0 0 0 1px rgb(80 70 160 / 0.08), 0 20px 36px -28px rgb(70 60 150 / 0.5);
@@ -1564,6 +1564,20 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 .tabs button[aria-selected='true'] { border-image: var(--grad) 1; }
 .input, .field input, .field select, .field textarea, .input-group { border-radius: var(--r-md); background: color-mix(in srgb, var(--surface-1) 70%, transparent); }
 .input:focus, .field input:focus, .field select:focus, .field textarea:focus, .input-group:focus-within { box-shadow: 0 0 0 4px var(--accent-fill); }
+.dlg .seg, .view[data-view='admin'] .seg { width: fit-content; max-width: 100%; }
+input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
+/* Comprar / Vender: la pestaña elegida es la clara (en oscuro la superficie 1 es más oscura que su contenedor) */
+.side-tabs, .side-tabs button { border-radius: 999px; }
+.side-tabs { background: color-mix(in srgb, var(--surface-2) 60%, transparent); border: 1px solid var(--card-border); }
+.side-tabs button { transition: transform 0.12s var(--ease), background 0.2s, color 0.2s; }
+.side-tabs button:active { transform: scale(0.96); }
+:root:not([data-theme='light']) .side-tabs [aria-pressed='true'] { background: color-mix(in srgb, var(--text-1) 14%, var(--surface-2)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 1px var(--border-strong); }
+/* Selectores sueltos (mes del reto): con la forma del resto de controles */
+select[data-ch] {
+  appearance: none; height: 34px; padding: 0 30px 0 14px; border-radius: 999px; border: 1px solid var(--card-border); font-weight: 600; color: var(--text-1);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa0c6' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
 .option { border-radius: var(--r-md); transition: transform 0.12s var(--ease), border-color 0.2s, background 0.2s; }
 .option[aria-pressed='true'] { box-shadow: 0 0 0 1px var(--accent), 0 10px 22px -14px var(--accent); }
 .chip { border-radius: 999px; }
@@ -1599,10 +1613,15 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 .skeleton, [data-px]:empty::before { border-radius: var(--r-sm); }
 
 /* ---- Pantallas vacías con personalidad: el icono va en un orbe que respira ---- */
-.empty { padding: 44px 16px; }
+/* Dentro de un panel (pestañas de Operar, favoritos, gráficos, tablas) el orbe es pequeño y quieto; a toda tarjeta, grande y vivo */
 .empty > .icon {
-  box-sizing: content-box; width: 30px; height: 30px; padding: 18px; margin-bottom: 10px; border-radius: 50%; color: #fff;
-  background: var(--grad); box-shadow: 0 0 0 10px var(--accent-fill), 0 18px 36px -12px var(--accent);
+  box-sizing: content-box; width: 20px; height: 20px; padding: 12px; margin-bottom: 6px; border-radius: 50%; color: #fff;
+  background: var(--grad); box-shadow: 0 0 0 6px var(--accent-fill);
+}
+.view > .card > .empty, .view > .card > div > .empty { padding: 44px 16px; }
+.view > .card > .empty > .icon, .view > .card > div > .empty > .icon {
+  width: 30px; height: 30px; padding: 18px; margin-bottom: 10px;
+  box-shadow: 0 0 0 10px var(--accent-fill), 0 18px 36px -12px var(--accent);
   animation: breathe 3.6s ease-in-out infinite;
 }
 @keyframes breathe { 50% { transform: translateY(-4px); box-shadow: 0 0 0 16px transparent, 0 24px 40px -14px var(--accent); } }

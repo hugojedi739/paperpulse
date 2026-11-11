@@ -2,8 +2,8 @@
 // conocido. NUNCA se guardan respuestas de /api ni del WebSocket (datos de mercado, sesión, cuenta): siempre red.
 // Estrategia para ficheros estáticos propios: red primero y, si no hay red, la copia guardada (así un despliegue
 // nuevo se ve al instante y no se mezclan módulos de versiones distintas).
-const CACHE = 'paperpulse-shell-932689fe';
-const SHELL = ['/', '/manifest.json', '/css/app.8ed1af93.css', '/js/main.c38d53a5.js', '/img/icons.svg', '/img/icon-192.png'];
+const CACHE = 'paperpulse-shell-56bf4345';
+const SHELL = ['/', '/manifest.json', '/css/app.09408979.css', '/js/main.c38d53a5.js', '/img/icons.svg', '/img/icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
