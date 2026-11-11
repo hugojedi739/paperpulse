@@ -26,6 +26,7 @@ import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
+import { initTabbar } from './ui/tabbar.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
@@ -267,6 +268,7 @@ initPalette([
   { label: 'Manual de operativa', icon: 'graduation-cap', keywords: 'guia ayuda', run: ACTIONS.guide },
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
+initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {
