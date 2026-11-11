@@ -13,7 +13,7 @@ export function weekStart(ms) {
 }
 
 /** `start` más `days` días de calendario. Con fechas, no sumando milisegundos: un día con cambio de hora no dura 24 h. */
-function addDays(start, days) {
+export function addDays(start, days) {
   const d = new Date(start);
   d.setDate(d.getDate() + days);
   return d.getTime();

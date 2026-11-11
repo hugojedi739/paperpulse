@@ -15,6 +15,7 @@ import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } fr
 import { go } from '../lib/router.js';
 import { mountCard } from '../ui/retention-card.js';
 import { whatIfParts } from '../lib/starting-balance.js';
+import { goalsCard } from '../ui/goals-card.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -47,6 +48,7 @@ export function mount(el) {
   let seenUser = currentUser()?.id ?? null; // la home cambia con la sesión: se repinta cuando entra o sale alguien (onAuth también salta en cada sincronización)
   onAuth((user) => { const id = user?.id ?? null; if (id === seenUser) return; seenUser = id; alias = null; if (root.isConnected && !root.hidden) renderAll(); });
   notifs.onChange(() => root.isConnected && !root.hidden && renderNotifCount());
+  store.on('trades', () => { const box = $('#d-goals', root); if (box && !root.hidden) render(box, goalsCard({ compact: true })); });
   store.on('watchlist', () => !root.hidden && renderWatchlist());
   store.on('markets', () => !root.hidden && renderSessions());
 }
@@ -85,6 +87,7 @@ function renderAll() {
             <div class="hero-chart" id="d-chart"></div>
           </section>
           <div class="kpis" id="d-kpis"></div>
+          <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
           <section class="card" aria-labelledby="d-start-title">
             <h2 class="card-title" id="d-start-title">${icon('wallet')} Crea tu cuenta de práctica</h2>

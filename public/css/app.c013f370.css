@@ -925,6 +925,28 @@
   .week-bar.down > i { background: var(--down); }
   .week-value { text-align: right; white-space: nowrap; }
   .week-value small { margin-left: 4px; }
+  /* Retos de la semana */
+  .goals { display: grid; gap: var(--s-3); }
+  .goals .card-head { margin-bottom: 0; }
+  .goals-intro { color: var(--text-2); font-size: var(--fs-md); max-width: 70ch; }
+  .goals-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: var(--s-3); }
+  .goal { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
+  .goal-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-3); color: var(--text-2); }
+  .goal-main { display: grid; gap: 6px; min-width: 0; }
+  .goal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .goal-head strong { font-weight: 600; text-wrap: balance; }
+  .goal-chip { flex: none; }
+  .goal-bar { height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+  .goal-bar > i { display: block; height: 100%; width: var(--w, 0%); border-radius: 999px; background: var(--accent); transition: width 0.4s var(--ease); }
+  .goal-detail { color: var(--text-2); font-size: var(--fs-sm); }
+  .goal-progress { color: var(--text-1); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .goal.done { border-color: color-mix(in srgb, var(--up) 40%, var(--border)); }
+  .goal.done .goal-icon, .goal.done .goal-chip { background: var(--up-fill); color: var(--up); }
+  .goal.done .goal-bar > i { background: var(--up); }
+  .goal.ontrack .goal-icon, .goal.ontrack .goal-chip { background: var(--accent-fill); color: var(--accent-text); }
+  .goal.missed .goal-icon, .goal.missed .goal-chip { background: var(--warn-fill); color: var(--warn); }
+  .goal.missed .goal-bar > i { background: var(--warn); }
+  .goals .link { justify-self: start; display: inline-flex; align-items: center; gap: 4px; }
   .journal-charts { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 20px; }
   .journal-charts > .card { display: flex; flex-direction: column; }
   .equity-box { flex: 1; min-height: 240px; position: relative; }
@@ -1341,5 +1363,5 @@
   .ticker { overflow-x: auto; }
 }
 @media (forced-colors: active) {
-  .bar > i, .alloc-bar i, .breadth-bar i, .track i, .week-bar > i { forced-color-adjust: none; }
+  .bar > i, .alloc-bar i, .breadth-bar i, .track i, .week-bar > i, .goal-bar > i { forced-color-adjust: none; }
 }

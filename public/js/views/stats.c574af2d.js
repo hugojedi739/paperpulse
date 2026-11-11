@@ -3,7 +3,8 @@ import * as store from '../lib/store.e5cc93e9.js';
 import { html, icon, render } from '../lib/dom.a575914e.js';
 import { money, pct, trendClass } from '../lib/format.df74909c.js';
 import { assetIcon, empty } from '../lib/ui.0a736068.js';
-import { summary, weekLabel, WEEKS } from '../lib/stats.40181388.js';
+import { summary, weekLabel, WEEKS } from '../lib/stats.f991e639.js';
+import { goalsCard } from '../ui/goals-card.73704d16.js';
 
 const SERVER_TRADES = 500; // el servidor envía como mucho las últimas 500 operaciones cerradas
 
@@ -25,7 +26,7 @@ const signedMoney = (v) => html`<span class="money delta ${trendClass(v)}">${mon
 export function show() {
   const trades = store.trades();
   if (!trades.length) {
-    return render(root, html`<section class="card">${empty('chart-column', 'Aún no hay estadísticas',
+    return render(root, html`${goalsCard()}<section class="card">${empty('chart-column', 'Aún no hay estadísticas',
       'Se calculan con tus operaciones cerradas: cuando vendas tu primera posición verás aquí tus aciertos, tu pérdida máxima y cómo te va cada semana.',
       html`<a class="btn btn-primary" href="#/trade">${icon('chart-candlestick', 'sm')} Ir a operar</a>`)}</section>`);
   }
@@ -36,6 +37,8 @@ export function show() {
       <p class="muted">Con tus ${plural(trades.length, 'operación cerrada', 'operaciones cerradas')}${store.isServerMode() && trades.length >= SERVER_TRADES ? ' más recientes' : ''}. Las posiciones abiertas no cuentan hasta que las vendes.</p>
       <span class="gap-8"><a class="btn btn-ghost btn-sm" href="#/journal">${icon('book-open', 'sm')} Ver el diario</a></span>
     </div>
+
+    ${goalsCard()}
 
     <div class="stats-grid">
       <section class="card stat" aria-labelledby="st-hit">
