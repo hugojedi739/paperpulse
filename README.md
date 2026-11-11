@@ -345,6 +345,7 @@ docker compose up --build
 ### Base local y dev containers
 SQLite **no funciona en carpetas compartidas con el anfitrión, de red o de máquina virtual**. En un dev container sobre Windows o macOS, `/workspaces` es virtiofs: el número de inodo de un fichero cambia tras el primer `fsync`, y SQLite corrompe la base (modo WAL: «database disk image is malformed») o la trata como movida (modo DELETE: «attempt to write a readonly database»). Por eso:
 - Sin `DATABASE_PATH`, si `data/` está en uno de esos sistemas de ficheros, la base se crea en el disco del contenedor: `~/.local/share/paperpulse/paperpulse.db`.
+- **Un candado por proceso** (`_LOCAL_LOCK` en `backend/db.py`) serializa el acceso a la base local. El cliente libsql espera los bloqueos de SQLite sin soltar el GIL, así que dos hilos que escribían a la vez dejaban el servidor congelado 5 s y la petición acababa en 500 («database is locked»). Con Turso no se usa.
 - Con un `DATABASE_PATH` en uno de ellos, el servidor no arranca y lo explica. Usa una ruta del contenedor, p. ej. `DATABASE_PATH=~/paperpulse/prueba.db`.
 - `python -m backend.db status` muestra también la integridad de la base local.
 

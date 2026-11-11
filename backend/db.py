@@ -19,8 +19,9 @@ import json
 import os
 import secrets
 import sys
+import threading
 import time
-from contextlib import closing, contextmanager
+from contextlib import closing, contextmanager, nullcontext
 from typing import Dict, List, Optional
 
 import libsql
@@ -165,16 +166,27 @@ class Cursor:
         return iter(self.fetchall())
 
 
+# Base local: un único candado para todo el proceso. El cliente libsql espera un bloqueo de SQLite (busy_timeout) SIN soltar el
+# GIL, así que el hilo que espera impedía avanzar al hilo que tenía el bloqueo: el servidor entero se congelaba 5 s y la petición
+# acababa en «database is locked» (500). Con el candado, los hilos esperan su turno en Python (que sí suelta el GIL) y nunca
+# llegan a competir dentro de SQLite. busy_timeout sigue sirviendo entre procesos distintos (varios workers, la CLI).
+# Con Turso no se usa: allí la concurrencia la resuelve el servidor.
+_LOCAL_LOCK = threading.RLock()
+
+
 class Connection:
-    def __init__(self, conn):
+    def __init__(self, conn, lock=None):
         self._conn = conn
+        self._lock = lock or nullcontext()
 
     def execute(self, sql: str, params=()) -> Cursor:
-        return Cursor(self._conn.execute(sql, tuple(params)))
+        with self._lock:
+            return Cursor(self._conn.execute(sql, tuple(params)))
 
     def executemany(self, sql: str, seq) -> None:
-        for params in seq:
-            self._conn.execute(sql, tuple(params))
+        with self._lock:
+            for params in seq:
+                self._conn.execute(sql, tuple(params))
 
     def close(self) -> None:
         self._conn.close()
@@ -193,14 +205,15 @@ def connect() -> Connection:
     conn = libsql.connect(DB_PATH, isolation_level=None)  # autocommit; transacciones explícitas
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA busy_timeout = 5000")
-    return Connection(conn)
+    return Connection(conn, _LOCAL_LOCK)
 
 
 @contextmanager
 def transaction():
     """BEGIN IMMEDIATE toma el bloqueo de escritura al empezar: dos peticiones simultáneas del mismo usuario
     se ejecutan una detrás de otra y la segunda ve el saldo ya actualizado por la primera."""
-    with closing(connect()) as conn:
+    # En local la transacción entera se hace con el candado tomado (es reentrante: las sentencias de dentro pasan)
+    with (nullcontext() if USE_TURSO else _LOCAL_LOCK), closing(connect()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         try:
             yield conn
