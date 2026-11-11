@@ -11,7 +11,7 @@ import { safeUrl } from '../lib/marketdata.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { openWelcome } from './welcome.js';
-import { startedWith, startedAmount } from '../lib/starting-balance.js';
+import { startedWith, startedAmount, whatIfParts } from '../lib/starting-balance.js';
 
 const dlg = () => document.getElementById('dlg');
 
@@ -31,6 +31,13 @@ export const EMOTIONS = ['Disciplinado', 'Confiado', 'Dudoso', 'Impaciente', 'FO
 const options = (list, current) => list.map((x) => html`<option ${x === current ? 'selected' : ''}>${x}</option>`);
 
 /* ---------- Cuenta de práctica ---------- */
+/** «Si hubieras invertido tus X € de verdad…» (solo si se eligió el saldo; sin operaciones aún no dice nada aquí). */
+function whatIfHint(p) {
+  const w = whatIfParts(store.initialInput(), p.returnPct, p.rows.length > 0 || store.trades().length > 0);
+  if (!w || w.intro) return '';
+  return html`<p class="whatif">${icon('wallet', 'sm')} ${w.lead} <span class="money">${w.start}</span> ${w.mid} <strong class="money">${w.now}</strong>
+    <span class="money delta ${trendClass(w.trend)}">(${w.diff})</span>.</p>`;
+}
 /** Con sesión la cuenta vive en el servidor: no se puede reiniciar ni cambiar el capital (sería trampa en las clasificaciones). */
 function serverAccountDialog() {
   const p = trading.portfolio();
@@ -44,6 +51,7 @@ function serverAccountDialog() {
         <div><dt>Reservado en órdenes</dt><dd class="money">${money(p.reservedUsd)}</dd></div>
         <div><dt>Capital inicial</dt><dd class="money">${startedAmount(store.initialInput()) || money(store.initialCapital())}</dd></div>
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
+      ${whatIfHint(p)}
       ${startedWith(store.initialInput()) ? html`<p class="hint">${icon('wallet', 'sm')} ${startedWith(store.initialInput())}. Tu saldo es privado; tu rentabilidad puede aparecer en la clasificación si tu perfil es público.</p>` : ''}
       <p class="hint">${icon('info', 'sm')} Los precios de ejecución los decide el servidor con cotizaciones reales.
         Comisión: ${(cfg.feeBps / 100).toLocaleString('es-ES', { useGrouping: 'always' })} % por operación; las órdenes a mercado y stop tienen además un deslizamiento de ${(cfg.slippageBps / 100).toLocaleString('es-ES')} %.</p>
@@ -64,6 +72,7 @@ export function accountDialog() {
         <div><dt>Efectivo</dt><dd class="money">${money(p.cashUsd)}</dd></div>
         <div><dt>Capital inicial</dt><dd class="money">${startedAmount(store.initialInput()) || money(store.initialCapital())}</dd></div>
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
+      ${whatIfHint(p)}
       <p class="hint">${icon('info', 'sm')} Reiniciar cierra posiciones y órdenes y te deja elegir otro saldo. Tu diario, favoritos y alertas se conservan.</p>
     </div>
     <footer class="dlg-foot">

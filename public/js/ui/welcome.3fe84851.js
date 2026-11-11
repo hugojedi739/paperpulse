@@ -5,7 +5,7 @@ import { openDialog, toast, confirmDialog } from '../lib/dom.a575914e.js';
 import { convert } from '../lib/format.ede94c05.js';
 import * as store from '../lib/store.0a662702.js';
 import * as account from '../lib/account.91455ade.js';
-import { PRESETS, DEFAULT_AMOUNT, START_MIN, START_MAX, formatEuro, parseAmount, smallBalanceNote, summaryLine } from '../lib/starting-balance.f588d167.js';
+import { PRESETS, DEFAULT_AMOUNT, START_MIN, START_MAX, formatEuro, parseAmount, smallBalanceNote, summaryLine } from '../lib/starting-balance.4c6d23aa.js';
 
 /** @param {{ reset?: boolean }} options reset: ya hay una cuenta local y se reinicia con otro saldo */
 export function openWelcome({ reset = false } = {}) {

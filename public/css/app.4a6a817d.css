@@ -684,6 +684,10 @@
   .hero-label { color: var(--text-2); font-weight: 500; display: flex; align-items: center; gap: 8px; }
   .hero-value { font-size: clamp(30px, 4vw, 40px); font-weight: 650; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; margin: 4px 0; }
   .hero-delta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-md); color: var(--text-2); }
+  /* «Si hubieras invertido tus X € de verdad…» */
+  .whatif { margin-top: var(--s-2); max-width: 62ch; font-size: var(--fs-md); color: var(--text-2); text-wrap: pretty; }
+  .whatif .icon { vertical-align: -3px; color: var(--text-3); }
+  .whatif strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
   .hero-chart { height: 260px; margin: 16px -8px -8px; position: relative; }
   .hero-chart .empty { position: absolute; inset: 0; align-content: center; }
   .cta { padding: var(--s-6); }

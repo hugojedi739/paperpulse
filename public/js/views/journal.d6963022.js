@@ -4,7 +4,7 @@ import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toas
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.ede94c05.js';
 import { createEquityChart } from '../lib/charts.237b0f40.js';
 import { assetIcon, empty, seg, pressSeg } from '../lib/ui.13a5e1da.js';
-import { noteDialog } from '../ui/dialogs.b2671a40.js';
+import { noteDialog } from '../ui/dialogs.3a3f261e.js';
 import { shareButton, shareDialog } from '../ui/share.36551d57.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];

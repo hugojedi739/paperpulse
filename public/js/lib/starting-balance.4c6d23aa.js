@@ -3,7 +3,7 @@
 
 export const START_MIN = 50;
 export const START_MAX = 1_000_000;
-export const PRESETS = [50, 100, 500, 1000, 5000, 10000];
+export const PRESETS = [100, 500, 1000, 5000, 10000, 25000]; // menos de 100 € (hasta START_MIN) solo con «Otra cantidad»
 export const DEFAULT_AMOUNT = 1000;
 export const SMALL_BELOW = 100; // por debajo de esto se avisa de que caben pocas posiciones
 
@@ -44,3 +44,29 @@ export const startedWith = (input) => (startedAmount(input) ? `Empezaste con ${s
 
 /** Solo el importe elegido («1.000 €»), o cadena vacía si no hay dato (cuentas anteriores o de los retos). */
 export const startedAmount = (input) => (input?.amount > 0 && input.currency === 'EUR' ? formatEuro(input.amount) : '');
+
+/**
+ * «Si hubieras invertido tus X € de verdad…»: lo elegido al empezar llevado a hoy con la rentabilidad de la cuenta de práctica.
+ * Devuelve { start, now, diff } en euros (céntimos redondeados) o null si no hay importe elegido (cuentas anteriores, retos).
+ * No hay tipo de cambio de por medio: es el mismo porcentaje que se ve como «Rentabilidad», aplicado a los euros elegidos.
+ */
+export function whatIf(input, returnPct) {
+  const start = input?.amount > 0 && input.currency === 'EUR' ? input.amount : 0;
+  if (!start || !Number.isFinite(returnPct)) return null;
+  const now = Math.max(0, Math.round(start * (1 + returnPct / 100) * 100) / 100);
+  return { start, now, diff: Math.round((now - start) * 100) / 100 };
+}
+
+/** «+43,20 €», «−12 €», «0 €» (mismo signo menos tipográfico que el resto de importes). */
+export const formatEuroSigned = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${formatEuro(Math.abs(n))}`;
+
+/**
+ * Textos del resumen, por partes para que la vista marque los importes como ocultables. `traded`: ya hay alguna operación.
+ * Sin operaciones todavía no hay nada que contar: se explica qué aparecerá.
+ */
+export function whatIfParts(input, returnPct, traded) {
+  const w = whatIf(input, returnPct);
+  if (!w) return null;
+  if (!traded) return { intro: `Cuando hagas tu primera operación verás aquí cuánto tendrías hoy si hubieras invertido tus ${formatEuro(w.start)} de verdad.` };
+  return { lead: 'Si hubieras invertido tus', start: formatEuro(w.start), mid: 'de verdad con estas mismas operaciones, hoy tendrías', now: formatEuro(w.now), diff: formatEuroSigned(w.diff), trend: Math.sign(w.diff) };
+}

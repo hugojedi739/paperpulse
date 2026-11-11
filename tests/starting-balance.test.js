@@ -1,11 +1,12 @@
 // Pruebas de la elección del saldo inicial: límites, lectura del importe y textos.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { START_MIN, START_MAX, PRESETS, DEFAULT_AMOUNT, formatEuro, parseAmount, smallBalanceNote, summaryLine, startedWith, startedAmount } from '../frontend/js/lib/starting-balance.js';
+import { START_MIN, START_MAX, PRESETS, DEFAULT_AMOUNT, formatEuro, parseAmount, smallBalanceNote, summaryLine, startedWith, startedAmount, whatIf, whatIfParts, formatEuroSigned } from '../frontend/js/lib/starting-balance.js';
 
 test('límites, importes rápidos y valor por defecto', () => {
   assert.deepEqual([START_MIN, START_MAX], [50, 1_000_000]);
-  assert.deepEqual(PRESETS, [50, 100, 500, 1000, 5000, 10000]);
+  assert.deepEqual(PRESETS, [100, 500, 1000, 5000, 10000, 25000]);
+  assert.ok(Math.min(...PRESETS) >= 100, 'las opciones rápidas empiezan en 100 €');
   assert.equal(DEFAULT_AMOUNT, 1000);
   assert.ok(PRESETS.includes(DEFAULT_AMOUNT));
   assert.ok(PRESETS.every((v) => parseAmount(v).ok), 'todos los importes rápidos son válidos');
@@ -67,4 +68,32 @@ test('textos: línea dinámica y «Empezaste con»', () => {
 
 test('el texto de la interfaz no lleva exclamaciones', () => {
   for (const text of [summaryLine(500), smallBalanceNote(60), parseAmount('1').error, startedWith({ amount: 5, currency: 'EUR' })]) assert.ok(!/[!¡]/.test(text), text);
+});
+
+test('«si hubieras invertido tus X €»: lo elegido llevado a hoy con la rentabilidad de la cuenta', () => {
+  const eur = (amount) => ({ amount, currency: 'EUR' });
+  assert.deepEqual(whatIf(eur(1000), 4.32), { start: 1000, now: 1043.2, diff: 43.2 });
+  assert.deepEqual(whatIf(eur(1000), -5), { start: 1000, now: 950, diff: -50 });
+  assert.deepEqual(whatIf(eur(250), 0), { start: 250, now: 250, diff: 0 });
+  assert.deepEqual(whatIf(eur(123.45), 10), { start: 123.45, now: 135.8, diff: 12.35 }, 'redondea a céntimos');
+  assert.deepEqual(whatIf(eur(100), -150), { start: 100, now: 0, diff: -100 }, 'nunca menos de cero');
+});
+
+test('sin importe elegido no hay resumen (cuentas anteriores y datos raros)', () => {
+  for (const input of [null, undefined, {}, { amount: 0, currency: 'EUR' }, { amount: -5, currency: 'EUR' }, { amount: 1000, currency: 'USD' }]) {
+    assert.equal(whatIf(input, 5), null);
+    assert.equal(whatIfParts(input, 5, true), null);
+  }
+  assert.equal(whatIf({ amount: 1000, currency: 'EUR' }, NaN), null);
+});
+
+test('textos del resumen: antes de operar se explica; después, importes con signo', () => {
+  const input = { amount: 1000, currency: 'EUR' };
+  assert.match(whatIfParts(input, 0, false).intro, /primera operación.*1\.000 €/);
+  const up = whatIfParts(input, 4.32, true);
+  assert.deepEqual([up.start, up.now, up.diff, up.trend], ['1.000 €', '1.043,20 €', '+43,20 €', 1]);
+  const down = whatIfParts(input, -5, true);
+  assert.deepEqual([down.now, down.diff, down.trend], ['950 €', '−50 €', -1]);
+  assert.equal(whatIfParts(input, 0, true).diff, '0 €');
+  assert.deepEqual([formatEuroSigned(12.5), formatEuroSigned(-0.01), formatEuroSigned(0)], ['+12,50 €', '−0,01 €', '0 €']);
 });

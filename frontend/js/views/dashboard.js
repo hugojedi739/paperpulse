@@ -14,6 +14,7 @@ import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.js';
 import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { mountCard } from '../ui/retention-card.js';
+import { whatIfParts } from '../lib/starting-balance.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -77,6 +78,7 @@ function renderAll() {
                 <span class="hero-label">${icon('wallet', 'sm')} Patrimonio total</span>
                 <div class="hero-value money" id="d-equity"></div>
                 <div class="hero-delta" id="d-delta"></div>
+                <p class="whatif" id="d-whatif" hidden></p>
               </div>`}
               ${seg('range', RANGES, range)}
             </div>
@@ -195,6 +197,7 @@ function renderSummary() {
       <span class="money delta ${trendClass(total)}">${money(total, { signed: true })}</span> desde el inicio
       ${p.rows.length ? html`· <span class="money delta ${trendClass(p.change24hUsd)}">${money(p.change24hUsd, { signed: true })}</span> hoy` : ''}`);
     const t = store.trades();
+    renderWhatIf(p, t.length > 0);
     const wins = t.filter((x) => x.pnl > 0).length;
     render($('#d-kpis', root), html`
       ${kpi('Efectivo disponible', moneyHtml(p.cashUsd), p.reservedUsd ? html`<span class="money">${money(p.reservedUsd)}</span> en órdenes` : 'Listo para operar')}
@@ -204,13 +207,25 @@ function renderSummary() {
   }
 }
 
+/** «Si hubieras invertido tus X € de verdad…»: solo si la persona eligió su saldo (las cuentas anteriores no lo tienen). */
+function renderWhatIf(p, hasTrades) {
+  const box = $('#d-whatif', root);
+  if (!box) return;
+  const w = whatIfParts(store.initialInput(), p.returnPct, hasTrades || p.rows.length > 0);
+  box.hidden = !w;
+  if (!w) return;
+  render(box, w.intro ? html`${icon('wallet', 'sm')} ${w.intro}`
+    : html`${icon('wallet', 'sm')} ${w.lead} <span class="money">${w.start}</span> ${w.mid} <strong class="money">${w.now}</strong>
+      <span class="money delta ${trendClass(w.trend)}">(${w.diff})</span>.`);
+}
+
 /* ---------- Con sesión: saludo, patrimonio, notificaciones y accesos rápidos ---------- */
 function greeting(user, practice) {
   return html`<section class="card greet" aria-labelledby="d-hello">
     <div class="hero-top">
       <div>
         <h2 class="hero-label" id="d-hello">${icon('user', 'sm')} <span>Hola, ${user.name}</span></h2>
-        ${practice ? html`<div class="hero-value money" id="d-equity"></div><div class="hero-delta" id="d-delta"></div>` : ''}
+        ${practice ? html`<div class="hero-value money" id="d-equity"></div><div class="hero-delta" id="d-delta"></div><p class="whatif" id="d-whatif" hidden></p>` : ''}
       </div>
       <div id="d-notif"></div>
     </div>

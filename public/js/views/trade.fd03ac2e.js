@@ -11,7 +11,7 @@ import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.13a5e1da.js';
 import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
-import { closePositionDialog } from '../ui/dialogs.b2671a40.js';
+import { closePositionDialog } from '../ui/dialogs.3a3f261e.js';
 import { shareButton, shareDialog } from '../ui/share.36551d57.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
@@ -473,7 +473,7 @@ const actions = {
     b.setAttribute('aria-pressed', String(added));
     toast(added ? `${asset.symbol} añadido a favoritos` : `${asset.symbol} quitado de favoritos`, 'success', 2500);
   },
-  alert() { import('../ui/dialogs.b2671a40.js').then((m) => m.alertsDialog(asset)); },
+  alert() { import('../ui/dialogs.3a3f261e.js').then((m) => m.alertsDialog(asset)); },
   fit() { chart.fit(); },
   fullscreen() {
     const card = $('#t-chart-card', root);
