@@ -4,8 +4,18 @@ const rates = { USD: 1, EUR: 0.92, GBP: 0.79 };
 let preference = 'auto';
 const SUPPORTED = ['EUR', 'USD', 'GBP'];
 
+// Últimos tipos conocidos: al recargar se pinta con ellos desde el primer momento (sin esto el patrimonio en euros
+// aparecía un instante con los tipos de arriba y saltaba al llegar los reales). Los del servidor los sustituyen enseguida.
+const RATES_KEY = 'paperpulse_fx_rates';
+const apply = (next) => { for (const c of SUPPORTED) if (Number(next?.[c]) > 0) rates[c] = Number(next[c]); };
+try { apply(JSON.parse(globalThis.localStorage?.getItem(RATES_KEY) ?? 'null')); } catch { /* sin almacenamiento o dato roto: tipos por defecto */ }
+
+/** Aplica y guarda los tipos nuevos. Devuelve true si alguno cambió (para repintar lo que ya estaba en pantalla). */
 export function setRates(next) {
-  for (const c of SUPPORTED) if (Number(next?.[c]) > 0) rates[c] = Number(next[c]);
+  const before = `${rates.EUR}|${rates.GBP}`;
+  apply(next);
+  try { globalThis.localStorage?.setItem(RATES_KEY, JSON.stringify({ EUR: rates.EUR, GBP: rates.GBP })); } catch { /* modo privado o cuota llena */ }
+  return before !== `${rates.EUR}|${rates.GBP}`;
 }
 
 export function setCurrencyPreference(pref) { preference = pref || 'auto'; }
