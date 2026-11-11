@@ -1418,8 +1418,8 @@
   --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 22px 40px -32px rgb(0 0 0 / 0.95);
   --edge: #05071a; /* canto de los botones neutros */
   --aurora-1: rgb(124 92 255 / 0.4);
-  --aurora-2: rgb(25 200 230 / 0.26);
-  --aurora-3: rgb(255 92 160 / 0.14);
+  --aurora-2: rgb(25 200 230 / 0.15);
+  --aurora-3: rgb(255 92 160 / 0.12);
   --grad: linear-gradient(120deg, #8a6bff, #4f7dff 55%, #19c8e6);
   --display: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
   --r-sm: 8px;
@@ -1460,7 +1460,7 @@
   --card-shadow: 0 0 0 1px rgb(80 70 160 / 0.08), 0 20px 36px -28px rgb(70 60 150 / 0.5);
   --edge: #cfcbe6;
   --aurora-1: rgb(124 92 255 / 0.24);
-  --aurora-2: rgb(25 200 230 / 0.22);
+  --aurora-2: rgb(25 200 230 / 0.16);
   --aurora-3: rgb(255 130 185 / 0.2);
   --grad: linear-gradient(120deg, #6a4bff, #3f6df0 55%, #0aa5c2);
 }
@@ -1469,9 +1469,9 @@
 body::before {
   content: ''; position: fixed; z-index: -1; inset: -18%; pointer-events: none;
   background:
-    radial-gradient(42% 38% at 16% 12%, var(--aurora-1), transparent 70%),
-    radial-gradient(40% 36% at 88% 34%, var(--aurora-2), transparent 70%),
-    radial-gradient(46% 34% at 46% 96%, var(--aurora-3), transparent 70%);
+    radial-gradient(46% 40% at 14% 10%, var(--aurora-1), transparent 72%),
+    radial-gradient(52% 46% at 78% 52%, var(--aurora-2), transparent 72%), /* lejos del borde y muy difusa: no deja una franja a la derecha */
+    radial-gradient(46% 34% at 40% 98%, var(--aurora-3), transparent 72%);
   animation: aurora 30s ease-in-out infinite alternate;
   will-change: transform;
 }
@@ -1491,8 +1491,12 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 .nav a[aria-current='page'] { background: linear-gradient(90deg, var(--accent-fill), transparent); color: var(--text-1); }
 .nav a[aria-current='page'] .icon { color: var(--accent-text); }
 .nav a[aria-current='page']::before { background: var(--grad); box-shadow: 0 0 12px var(--accent); }
-.view { animation: view-in 0.42s var(--ease) both; }
+/* Sin `both`/`forwards`: una animación de transform que se queda aplicada convierte la vista en el marco de sus hijos
+   `position: fixed`, y la barra Comprar/Vender del móvil dejaba de estar pegada abajo. Operar, que tiene esa barra, solo se funde. */
+.view { animation: view-in 0.42s var(--ease); }
+.view[data-view='trade'] { animation-name: view-fade; }
 @keyframes view-in { from { opacity: 0; transform: translateY(14px) scale(0.99); } }
+@keyframes view-fade { from { opacity: 0; } }
 
 /* ---- Tarjetas con profundidad ---- */
 .card, .news-card, .goal, .cm-cat, .learn-card, .md-card {
@@ -1649,6 +1653,13 @@ select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
 .toast.celebrate { border: 1px solid color-mix(in srgb, var(--accent-2) 50%, transparent); box-shadow: var(--shadow-pop), 0 0 30px -6px var(--accent-2); }
 .toast.celebrate > .icon { color: var(--accent-2); }
 
+/* ---- Foco: el aro solo para quien navega con teclado (main.js pone data-input). Los campos de texto conservan el suyo ---- */
+:root:not([data-input='keyboard']) :is(a, button, summary, [role='button'], [tabindex]):focus-visible { outline: none; }
+:root[data-input='keyboard'] :is(a, button):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+
+/* ---- Pie: enlaces separados por espacio (sin puntos sueltos al partir la línea) ---- */
+.footer .footer-links { gap: 2px 16px; }
+
 /* ---- Móvil: barra inferior flotante de cristal ---- */
 @media (max-width: 767px) {
   .tabbar {
@@ -1657,12 +1668,22 @@ select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
   }
   .tabbar a { border-radius: 20px; transition: transform 0.12s var(--ease), background 0.2s, color 0.2s; }
   .tabbar a:active { transform: scale(0.92); }
-  .tabbar a[aria-current='page'] { background: var(--accent-fill); color: var(--text-1); }
+  .tabbar a { position: relative; }
+  .tabbar a[aria-current='page'] { background: linear-gradient(180deg, var(--accent-fill), transparent 85%); color: var(--text-1); }
   .tabbar a[aria-current='page'] .icon { color: var(--accent-text); }
+  .tabbar a[aria-current='page']::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 18px; height: 3px; margin-left: -9px; border-radius: 3px; background: var(--grad); }
+  :root[data-input='keyboard'] .tabbar a:focus-visible { outline-offset: -3px; }
   .card { border-radius: 18px; }
-  .trade-bar { bottom: calc(80px + env(safe-area-inset-bottom)); }
-  .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
-  .trade-bar .btn { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 3px 0 var(--btn-edge, var(--edge)), 0 14px 26px -12px rgb(0 0 0 / 0.7); }
+  /* Comprar / Vender: un panel casi opaco, para que la tabla de detrás no se lea a través de los botones */
+  .trade-bar {
+    left: 8px; right: 8px; bottom: calc(74px + env(safe-area-inset-bottom)); padding: 8px 8px 11px; border-radius: 24px; border: 1px solid var(--card-border);
+    background: color-mix(in srgb, var(--surface-1) 95%, transparent); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: 0 -10px 30px -18px rgb(0 0 0 / 0.7);
+  }
+  .trade-bar-chat { background: var(--surface-3); }
+  /* En Operar hay dos barras fijas abajo (Comprar/Vender y la de navegación): el final de la página, pie incluido, queda por encima */
+  main:has(.view[data-view='trade']:not([hidden])) { padding-bottom: calc(168px + env(safe-area-inset-bottom)); }
+  .fab { right: calc(20px + env(safe-area-inset-right)); bottom: calc(88px + env(safe-area-inset-bottom)); }
   body::before { animation-duration: 44s; } /* más lento en el teléfono: mismo efecto, menos trabajo por segundo */
 }
 @media (prefers-reduced-motion: reduce) {

@@ -38,6 +38,12 @@ const LAZY = {
 const mounted = new Set();
 let active = null;
 
+/* ---------- Teclado o puntero ---------- */
+// El aro de foco de enlaces y botones solo se enseña a quien navega con teclado (css: :root[data-input='keyboard']).
+// Al tocar o hacer clic no aparece: en el móvil la pestaña recién pulsada se quedaba con un contorno grueso.
+addEventListener('keydown', (e) => { if (e.key === 'Tab' || e.key.startsWith('Arrow')) document.documentElement.dataset.input = 'keyboard'; }, true);
+addEventListener('pointerdown', () => { delete document.documentElement.dataset.input; }, true);
+
 /* ---------- Estado inicial ---------- */
 store.load();
 setCurrencyPreference(store.settings().currency);
