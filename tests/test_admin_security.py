@@ -10,7 +10,7 @@ import _local_db  # noqa: F401,E402  (antes que backend)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend import db  # noqa: E402
 
-ME = "admin@example.com"
+ME = "propietaria@example.com"  # cualquier correo: el test no depende de uno real
 
 
 class AdminSecurityTest(unittest.TestCase):
