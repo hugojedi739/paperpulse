@@ -52,7 +52,7 @@ test('index.html, service worker y manifest apuntan a ficheros publicados', () =
 
 test('el arranque no descarga admin, moderación, aprender ni la vista legal', () => {
   const html = readFileSync(indexOut, 'utf8');
-  for (const lazy of ['views/admin', 'views/moderation', 'views/messages', 'views/learn', 'views/legal.', 'learn-content']) {
+  for (const lazy of ['views/admin', 'views/moderation', 'views/messages', 'views/learn', 'views/legal.', 'views/stats', 'learn-content']) {
     assert.ok(!html.includes(`/js/${lazy.startsWith('learn-') ? 'lib/' : ''}${lazy}`), `${lazy} se precarga en el arranque`);
   }
 });

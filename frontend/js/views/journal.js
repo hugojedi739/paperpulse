@@ -45,6 +45,7 @@ export function show() {
     <div class="toolbar-row">
       <p class="muted">${trades.length} ${trades.length === 1 ? 'operación cerrada' : 'operaciones cerradas'}</p>
       <span class="gap-8">
+        <a class="btn btn-ghost btn-sm" href="#/stats">${icon('chart-column', 'sm')} Estadísticas</a>
         <button class="btn btn-ghost btn-sm" data-act="csv">${icon('download', 'sm')} Exportar CSV</button>
         <button class="btn btn-danger btn-sm" data-act="reset">${icon('trash-2', 'sm')} Vaciar</button>
       </span>

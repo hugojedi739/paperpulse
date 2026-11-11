@@ -84,7 +84,7 @@ frontend/
   js/main.js                 Arranque, enrutado por hash (#/vista/param), cabecera, atajos, errores de OAuth
   js/lib/                    Lógica sin UI: api (cliente HTTP), feed (en vivo), marketdata, store (localStorage),
                              trading (órdenes simuladas), auth, charts, catalog (activos), format, dom
-  js/views/                  dashboard, trade (Operar), markets, news, journal (Diario), community (Comunidad),
+  js/views/                  dashboard, trade (Operar), markets, news, journal (Diario), stats (Estadísticas), community (Comunidad),
                              admin y moderation (sección Moderación del panel)
   js/lib/el.js               Construcción de DOM con nodos de texto: TODO texto de usuarios de la comunidad pasa por aquí
   js/lib/community.js        Cliente de /api/community y /api/forum con caché en memoria y mensajes de error
@@ -144,6 +144,7 @@ Hay dos modos:
 - **Racha** de días operando por fecha de **Madrid** (`trading_days`). La racha vigente no se pierde hasta que pasa un día entero sin operar.
 - **Reto mensual** (`challenges.py`, `#/community/challenge`): mes natural en hora de Madrid, cuenta aparte con el mismo saldo inicial para todos (ajuste `challenge_initial_balance_usd`) y clasificación propia. No se duplica la lógica de trading: cada participante tiene un *usuario sombra* (`users.owner_id`, desactivado y oculto en listados) titular de la cuenta del reto, y `/api/challenge/*` llama a las mismas funciones de `trading/ledger.py`. Al terminar el mes la clasificación se congela en el siguiente recálculo (el cron diario).
 - **Onboarding**: tarjeta en el Resumen con 3 pasos (primera compra, primera orden stop, visita al foro) comprobados con datos del servidor; se puede saltar y retomar.
+- **Estadísticas** (`#/stats`, `views/stats.js` con la lógica en `lib/stats.js`; carga diferida): aciertos (tasa, ganancia y pérdida medias), pérdida máxima (peor operación y mayor caída acumulada desde un máximo) y resultado de las últimas 8 semanas (lunes a domingo, hora local, en porcentaje sobre el saldo inicial). Se calcula en el navegador con las operaciones cerradas, así que vale igual en modo local y con la cuenta del servidor (que envía las últimas 500); las posiciones abiertas no cuentan. Se entra desde el menú lateral, el botón «Estadísticas» del Diario o la paleta.
 - **Aprender** (`#/learn`): 10 mini-lecciones y un glosario (`frontend/js/lib/learn-content.js`), neutrales y sin recomendar activos; el foro enlaza al glosario.
 - **Cron diario** (`vercel.json`, 04:00 UTC, plan gratuito): `GET /api/cron/daily` recalcula clasificaciones y retos, y limpia notificaciones, sesiones y estados OAuth caducados. Exige `ADMIN_API_KEY` (cabecera `X-Admin-Key`) o `CRON_SECRET` (cabecera `Authorization: Bearer`, que es lo que envía Vercel Cron). **Define `CRON_SECRET` con el mismo valor que `ADMIN_API_KEY`.** Sin ninguna de las dos claves el endpoint rechaza siempre.
 - **PWA**: `manifest.json` (iconos 192/512 *any* y *maskable* por separado, accesos directos) y `sw.js` (solo estáticos propios con red primero; nunca guarda `/api` ni `/ws`). La CSP permite únicamente `worker-src 'self'`.

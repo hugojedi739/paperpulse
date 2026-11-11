@@ -29,6 +29,7 @@ import { startTour } from './ui/tour.js';
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
 const LAZY = {
+  stats: () => import('./views/stats.js'),
   learn: () => import('./views/learn.js'),
   legal: () => import('./views/legal.js'),
   admin: () => import('./views/admin.js'),
@@ -249,6 +250,7 @@ initPalette([
   { label: 'Ir a Mercados', icon: 'coins', keywords: 'tabla', run: () => go('/markets') },
   { label: 'Ir a Noticias', icon: 'newspaper', run: () => go('/news') },
   { label: 'Ir al Diario', icon: 'book-open', keywords: 'journal historial', run: () => go('/journal') },
+  { label: 'Ir a Estadísticas', icon: 'chart-column', keywords: 'aciertos perdida maxima rendimiento semanal drawdown', run: () => go('/stats') },
   { label: 'Cuenta de práctica', icon: 'wallet', keywords: 'saldo capital reiniciar', run: ACTIONS.account },
   { label: 'Alertas de precio', icon: 'bell-ring', run: ACTIONS.alerts },
   { label: 'Cambiar tema claro/oscuro', icon: 'sun', keywords: 'theme modo', run: ACTIONS.theme },
@@ -302,7 +304,12 @@ async function refreshMarkets() {
 async function refreshRates() {
   if (document.hidden) return;
   ratesAt = Date.now();
-  try { setRates(await fxRates()); renderAccountChip(); } catch { /* se usan tipos por defecto */ }
+  try {
+    const changed = setRates(await fxRates());
+    renderAccountChip();
+    // Diario y Estadísticas no se repintan solos: si el tipo de cambio era otro, sus importes se quedarían con el antiguo
+    if (changed && (active === 'journal' || active === 'stats')) VIEWS[active].show(current().param);
+  } catch { /* se usan tipos por defecto */ }
 }
 
 // Curva de patrimonio: un punto por minuto mientras la app está abierta

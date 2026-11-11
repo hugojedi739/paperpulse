@@ -903,6 +903,28 @@
   .reader-img { border-radius: var(--r-md); aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
 
   /* Diario */
+  /* Estadísticas personales */
+  .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .stat { display: grid; gap: var(--s-3); align-content: start; }
+  .stat-wide { grid-column: 1 / -1; }
+  .stat .card-head { margin-bottom: 0; }
+  .stat-value { font-size: var(--fs-3xl); font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .stat-sub { color: var(--text-2); font-size: var(--fs-md); }
+  .stat-asset { display: flex; align-items: center; gap: 8px; }
+  .stat-asset > span { min-width: 0; }
+  .stat .summary small { font-weight: 400; margin-left: 4px; }
+  .stat-week { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4) var(--s-5); align-items: center; }
+  .weeks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .week { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(150px, auto); align-items: center; gap: var(--s-3); padding: 6px 8px; border-radius: var(--r-md); font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+  .week.now { background: var(--surface-2); }
+  .week.now .week-label { color: var(--text-1); font-weight: 600; }
+  .week-label { color: var(--text-2); white-space: nowrap; }
+  .week-bar { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+  .week-bar > i { display: block; height: 100%; width: var(--w, 0%); min-width: 0; border-radius: 999px; background: var(--text-3); transition: width 0.4s var(--ease); }
+  .week-bar.up > i { background: var(--up); }
+  .week-bar.down > i { background: var(--down); }
+  .week-value { text-align: right; white-space: nowrap; }
+  .week-value small { margin-left: 4px; }
   .journal-charts { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 20px; }
   .journal-charts > .card { display: flex; flex-direction: column; }
   .equity-box { flex: 1; min-height: 240px; position: relative; }
@@ -1204,7 +1226,7 @@
   .trade { grid-template-columns: minmax(0, 1fr) 300px; }
 }
 @media (max-width: 1080px) {
-  .dash, .trade, .journal-charts, .admin-grid { grid-template-columns: minmax(0, 1fr); }
+  .dash, .trade, .journal-charts, .admin-grid, .stats-grid { grid-template-columns: minmax(0, 1fr); }
   .side { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
   .news-card.feature { grid-column: auto; }
 }
@@ -1294,6 +1316,10 @@
   [popover].menu { right: 8px; left: 8px; width: auto; }
 }
 @media (max-width: 520px) {
+  .stat-week { grid-template-columns: minmax(0, 1fr); }
+  .stat-value { font-size: var(--fs-2xl); }
+  .week { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .week-bar { grid-column: 1 / -1; order: 3; }
   .admin-form .row-2 { grid-template-columns: minmax(0, 1fr); }
   .range-bar small { display: none; }
   .search-trigger { flex: 0 0 var(--tap); padding: 0; justify-content: center; }
@@ -1315,5 +1341,5 @@
   .ticker { overflow-x: auto; }
 }
 @media (forced-colors: active) {
-  .bar > i, .alloc-bar i, .breadth-bar i, .track i { forced-color-adjust: none; }
+  .bar > i, .alloc-bar i, .breadth-bar i, .track i, .week-bar > i { forced-color-adjust: none; }
 }
