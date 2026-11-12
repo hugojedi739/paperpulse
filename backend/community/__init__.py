@@ -1,1 +1,1 @@
-"""Comunidad: perfiles, foro, seguidores, clasificación y moderación (fase 2)."""
+"""Comunidad: perfiles, foro, seguidores, clasificación, pulso público y moderación."""

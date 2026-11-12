@@ -1,4 +1,5 @@
-"""IP real del cliente, límites por IP y contadores de uso de la IA."""
+"""IP real del cliente (respetando proxies de confianza), límites por minuto en memoria (por IP y por usuario)
+y contadores de diagnóstico de esta instancia. El uso del asistente IA va aparte, en la base de datos (ai_usage.py)."""
 import time
 from typing import Dict, List
 

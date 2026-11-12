@@ -5,7 +5,8 @@ from typing import Dict, Optional
 
 NEW_ACCOUNT_SECONDS = 24 * 3600
 # Cuotas por 24 h (se cuentan en la base de datos, así que valen aunque haya varias instancias serverless).
-# Las cuentas de menos de 24 h tienen cuotas mucho menores: aún no hay verificación de email (llegará en la fase 3).
+# Las cuentas sin verificar de menos de 24 h tienen cuotas mucho menores (y no pueden publicar enlaces);
+# las verificadas (Google/Okta) y los administradores están exentos.
 QUOTAS = {
     "new": {"posts": 10, "threads": 3},
     "regular": {"posts": 100, "threads": 20},

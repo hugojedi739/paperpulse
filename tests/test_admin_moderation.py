@@ -6,7 +6,7 @@ from contextlib import closing
 
 import _local_db  # noqa: F401,E402  (antes que backend)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from backend import admin, contact, db, http  # noqa: E402
+from backend import admin, db, http  # noqa: E402
 from backend.community import forum, moderation  # noqa: E402
 from test_community import Base  # noqa: E402
 

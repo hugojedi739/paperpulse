@@ -7,8 +7,8 @@ from unittest import mock
 
 import _local_db  # noqa: F401,E402  (antes que backend)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from backend import db, settings  # noqa: E402
-from backend.community import api as community_api, forum, moderation, profiles, pulse, ranking  # noqa: E402
+from backend import db  # noqa: E402
+from backend.community import api as community_api, forum, moderation, pulse, ranking  # noqa: E402
 from backend.trading import ledger  # noqa: E402
 from test_community import Base, DAY  # noqa: E402
 
