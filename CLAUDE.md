@@ -1,6 +1,9 @@
 # PaperPulse — guía para asistentes de IA
 
 @README.md
+@docs/arquitectura.md
+@docs/flujo-git.md
+@docs/referencia.md
 
 Antes de terminar un cambio:
 - `python -m unittest discover -s tests` y `npm test` deben pasar.

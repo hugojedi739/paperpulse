@@ -1,1 +1,1 @@
-"""Retención: notificaciones, logros, racha de días, onboarding y retos mensuales (fase 3)."""
+"""Retención: notificaciones, logros, racha de días, onboarding, retos mensuales y cron diario."""

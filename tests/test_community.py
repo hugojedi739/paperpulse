@@ -498,9 +498,9 @@ class LimitsTest(Base):
     def test_cuentas_sin_verificar_nuevas_no_publican_enlaces(self):
         nueva, veterana = self.user("Nueva", days_old=0), self.user("Veterana", days_old=5)
         tid = forum.asset_thread("ADA")["threadId"]
-        for text in ("https://estafa.example", "visita www.estafa.es hoy", "mi canal t.me/senales", "ofertas.com/vip"):
+        for body in ("https://estafa.example", "visita www.estafa.es hoy", "mi canal t.me/senales", "ofertas.com/vip"):
             with self.assertRaisesRegex(Forbidden, "enlaces"):
-                forum.reply(nueva, tid, text)
+                forum.reply(nueva, tid, body)
         forum.reply(nueva, tid, "Sin enlaces, solo una duda sobre el stop")
         forum.reply(veterana, tid, "Mira https://ejemplo.com")
 

@@ -142,7 +142,7 @@ class OAuthTest(Base):
             self.assertEqual(params["code_challenge_method"], "S256")
             self.assertEqual(params["redirect_uri"], "http://testserver/api/auth/oauth/google/callback")
             claims = {"iss": GOOGLE_DOC["issuer"], "aud": "cid.apps.googleusercontent.com", "exp": time.time() + 300,
-                      "nonce": params["nonce"], "sub": "google-123", "email": "luis@gmail.com", "email_verified": True, "name": "Luis"}
+                      "nonce": params["nonce"], "sub": "google-123", "email": "luis@example.com", "email_verified": True, "name": "Luis"}
             claims.update(claims_override or {})
             with mock.patch.object(auth, "exchange_code", return_value={"id_token": fake_id_token(claims)}) as ex:
                 state = params["state"] + ("x" if tamper_state else "")
@@ -164,7 +164,7 @@ class OAuthTest(Base):
         self.assertEqual(cb.status_code, 302)
         self.assertEqual(cb.headers["location"], "/#/dashboard")
         me = self.client.get("/api/auth/me").json()["user"]
-        self.assertEqual((me["email"], me["hasPassword"]), ("luis@gmail.com", False))
+        self.assertEqual((me["email"], me["hasPassword"]), ("luis@example.com", False))
         self.client.post("/api/auth/logout")
         self.login_with_google()
         self.assertEqual(self.client.get("/api/auth/me").json()["user"]["id"], me["id"])
@@ -173,7 +173,7 @@ class OAuthTest(Base):
         self.assertEqual(self.client.request("DELETE", "/api/auth/me", json={"confirm": "eliminar"}).status_code, 200)
 
     def test_google_links_existing_password_account(self):
-        self.register(email="luis@gmail.com")
+        self.register(email="luis@example.com")
         self.client.post("/api/auth/logout")
         self.configure_google()
         self.login_with_google()
@@ -182,7 +182,7 @@ class OAuthTest(Base):
         # Pre-registro: la cuenta de email y contraseña sin verificar pierde la contraseña al vincular Google
         self.assertEqual(users[0]["providers"], ["google"])
         self.assertTrue(db.get_user(users[0]["id"])["emailVerified"])
-        self.assertEqual(self.client.post("/api/auth/login", json={"email": "luis@gmail.com", "password": "secreto123"}).status_code, 401)
+        self.assertEqual(self.client.post("/api/auth/login", json={"email": "luis@example.com", "password": "secreto123"}).status_code, 401)
 
     def test_rejects_bad_state_nonce_and_unverified_email(self):
         self.configure_google()

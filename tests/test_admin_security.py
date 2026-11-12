@@ -45,7 +45,7 @@ class AdminSecurityTest(unittest.TestCase):
 
     def test_google_nuevo_con_email_verificado_en_admin_emails_es_admin_otro_no(self):
         self.assertEqual(self.google()["user"]["role"], "admin")
-        self.assertEqual(self.google("otra@gmail.com", "g-2")["user"]["role"], "user")
+        self.assertEqual(self.google("otra@example.com", "g-2")["user"]["role"], "user")
 
     def test_email_no_verificado_del_proveedor_no_crea_ni_vincula(self):
         self.assertEqual(self.google(verified=False), {"error": "email_unverified"})
@@ -65,9 +65,9 @@ class AdminSecurityTest(unittest.TestCase):
         self.assertIn("verificado", msg)
         self.assertEqual(db.list_admins(), [])
         self.assertTrue(db.promote_admin("pass@example.com", force=True)[0])  # solo desarrollo
-        owner = db.oauth_user("google", "g-9", "otro@gmail.com", "Otro", True, True)["user"]
-        self.assertTrue(db.promote_admin("otro@gmail.com")[0])
-        self.assertEqual([a["email"] for a in db.list_admins()], ["pass@example.com", "otro@gmail.com"])
+        owner = db.oauth_user("google", "g-9", "otro@example.com", "Otro", True, True)["user"]
+        self.assertTrue(db.promote_admin("otro@example.com")[0])
+        self.assertEqual([a["email"] for a in db.list_admins()], ["pass@example.com", "otro@example.com"])
         self.assertEqual(db.count_admins(), 2)
         self.assertEqual(db.get_user(owner["id"])["role"], "admin")
 
@@ -87,13 +87,13 @@ class AdminSecurityTest(unittest.TestCase):
                 for stmt in db.split_statements(sql):
                     conn.execute(stmt)
             conn.execute("PRAGMA user_version = 5")
-            conn.execute("INSERT INTO users (id, email, name, password_hash, created_at, role) VALUES (1, 'g@gmail.com', 'G', '', 1, 'user')")
+            conn.execute("INSERT INTO users (id, email, name, password_hash, created_at, role) VALUES (1, 'g@example.com', 'G', '', 1, 'user')")
             conn.execute("INSERT INTO users (id, email, name, password_hash, created_at, role) VALUES (2, 'p@example.com', 'P', 'x', 1, 'user')")
-            conn.execute("INSERT INTO identities VALUES ('google', 's1', 1, 'g@gmail.com', 1)")
+            conn.execute("INSERT INTO identities VALUES ('google', 's1', 1, 'g@example.com', 1)")
         db.init_db()
         with closing(db.connect()) as conn:
             rows = {r["email"]: (r["email_verified"], r["disabled"]) for r in conn.execute("SELECT * FROM users")}
-        self.assertEqual(rows, {"g@gmail.com": (1, 0), "p@example.com": (0, 0)})
+        self.assertEqual(rows, {"g@example.com": (1, 0), "p@example.com": (0, 0)})
 
 
 if __name__ == "__main__":
