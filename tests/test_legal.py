@@ -8,10 +8,10 @@ from contextlib import closing
 import _local_db  # noqa: F401,E402  (antes que backend)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend import account, auth, db, http  # noqa: E402
-from backend.community import api as community_api, forum, moderation, profiles  # noqa: E402
+from backend.community import api as community_api, forum, profiles  # noqa: E402
 from backend.community.common import Forbidden  # noqa: E402
 from backend.retention import api as retention_api, notifications  # noqa: E402
-from backend.trading import api as trading_api, ledger  # noqa: E402
+from backend.trading import api as trading_api  # noqa: E402
 from test_community import Base as CommunityBase  # noqa: E402
 
 from starlette.applications import Starlette  # noqa: E402
@@ -32,7 +32,7 @@ class Base(CommunityBase):
             r = conn.execute(sql, args).fetchone()
             return dict(r) if r else None
 
-    def google_user(self, email="nuevo@gmail.com"):
+    def google_user(self, email="nuevo@example.com"):
         """Cuenta creada al entrar con Google: email verificado y términos SIN aceptar."""
         return db.oauth_user("google", f"sub-{email}", email, "Nuevo", True, True)["user"]
 
