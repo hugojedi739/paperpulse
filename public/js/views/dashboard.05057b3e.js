@@ -5,7 +5,7 @@ import { ASSETS, findAsset } from '../lib/catalog.f1b2b586.js';
 import { html, icon, render, on, $ } from '../lib/dom.a575914e.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.df74909c.js';
 import { portfolio } from '../lib/trading.5637d759.js';
-import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.5c845f92.js';
+import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.b3988be4.js';
 import { currentUser, onAuth, ready as authReady } from '../lib/auth.17a9e375.js';
 import * as notifs from '../lib/notifications.49bec9ff.js';
 import * as community from '../lib/community.243af2e6.js';

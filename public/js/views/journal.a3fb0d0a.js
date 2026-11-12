@@ -2,7 +2,7 @@
 import * as store from '../lib/store.e5cc93e9.js';
 import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toast } from '../lib/dom.a575914e.js';
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.df74909c.js';
-import { createEquityChart } from '../lib/charts.5c845f92.js';
+import { createEquityChart } from '../lib/charts.b3988be4.js';
 import { assetIcon, empty, seg, pressSeg } from '../lib/ui.0a736068.js';
 import { noteDialog } from '../ui/dialogs.c6e755f4.js';
 import { shareButton, shareDialog } from '../ui/share.d68fcc5b.js';

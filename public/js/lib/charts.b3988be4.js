@@ -1,11 +1,14 @@
 // Gráficos sobre TradingView Lightweight Charts v5: gráfico de trading con paneles, curvas de patrimonio
 // y sparklines SVG. Los colores salen de las variables CSS para seguir el tema activo.
+// La luz del estilo Aurora (brillo de las velas, halos y resplandor) está en chart-fx.js y se dibuja con primitivas.
 import {
   createChart, CandlestickSeries, BarSeries, AreaSeries, LineSeries, HistogramSeries, BaselineSeries,
   createSeriesMarkers, createTextWatermark, CrosshairMode, LineStyle, LastPriceAnimationMode,
 } from '/vendor/lightweight-charts.7d001f7d.mjs';
 import { html, raw } from './dom.a575914e.js';
 import { num, pct, volume, trendClass } from './format.df74909c.js';
+import { alpha, sheenTones, drawCandleSheen, drawHalo, drawGlowLine, SHEEN_MAX_BARS } from './chart-fx.b6989451.js';
+import { reducedMotion } from './motion.d917c017.js';
 
 /* ---------- Tema ---------- */
 export function palette() {
@@ -16,13 +19,18 @@ export function palette() {
     up: v('--up'), down: v('--down'), accent: v('--accent'), surface: v('--surface-1'),
     upFill: v('--up-fill'), downFill: v('--down-fill'), accentFill: v('--accent-fill'),
     s1: v('--series-1'), s2: v('--series-2'), s7: v('--series-7'),
+    accent2: v('--accent-2') || v('--accent'), light: document.documentElement.dataset.theme === 'light',
   };
 }
 
-const alpha = (hex, a) => {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+/** Primitiva de Lightweight Charts: `draw(scope)` se llama en cada pintado, por debajo (`bottom`) o por encima de la serie. */
+const lightLayer = (zOrder, draw) => {
+  const renderer = { draw: (target) => target.useBitmapCoordinateSpace(draw) };
+  const view = { zOrder: () => zOrder, renderer: () => renderer };
+  return { paneViews: () => [view] };
 };
+/** Con «reducir movimiento» el punto del último precio no late. */
+const lastPriceAnimation = () => (reducedMotion() ? LastPriceAnimationMode.Disabled : LastPriceAnimationMode.OnDataUpdate);
 
 function baseOptions(c, extra = {}) {
   return {
@@ -128,16 +136,43 @@ export function createTradingChart(container, legendEl) {
 
   function createMain() {
     if (main) chart.removeSeries(main);
-    const common = { priceLineStyle: LineStyle.Dotted, lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate };
+    const common = { priceLineStyle: LineStyle.Dotted, lastPriceAnimation: lastPriceAnimation() };
     main = type === 'candles'
       ? chart.addSeries(CandlestickSeries, { ...common, upColor: c.up, downColor: c.down, borderVisible: false, wickUpColor: c.up, wickDownColor: c.down })
       : type === 'bars'
         ? chart.addSeries(BarSeries, { ...common, upColor: c.up, downColor: c.down, thinBars: false })
         : type === 'area'
-          ? chart.addSeries(AreaSeries, { ...common, lineColor: c.accent, lineWidth: 2, topColor: alpha(c.accent, 0.28), bottomColor: alpha(c.accent, 0) })
+          ? chart.addSeries(AreaSeries, { ...common, lineColor: c.accent, lineWidth: 2, topColor: alpha(c.accent, c.light ? 0.3 : 0.4), bottomColor: alpha(c.accent2, 0) })
           : chart.addSeries(LineSeries, { ...common, color: c.accent, lineWidth: 2 });
     main.setData(data.map(mainPoint));
     markers = createSeriesMarkers(main, []);
+    main.attachPrimitive(lightLayer('bottom', drawLastGlow));
+    if (type === 'candles') main.attachPrimitive(lightLayer('normal', drawSheen));
+  }
+
+  /* Luz Aurora (ver chart-fx.js). Las coordenadas se piden a la librería en cada pintado: siguen el zoom y el desplazamiento. */
+  function drawLastGlow(scope) {
+    const last = data.at(-1);
+    if (!last || !main) return;
+    const x = chart.timeScale().timeToCoordinate(last.time);
+    if (x == null) return; // la última vela no está en pantalla
+    const color = type === 'candles' || type === 'bars' ? (last.close >= last.open ? c.up : c.down) : c.accent;
+    drawHalo(scope, x, main.priceToCoordinate(last.close), color, 26, c.light ? 0.22 : 0.36);
+  }
+  function drawSheen(scope) {
+    const ts = chart.timeScale();
+    const range = ts.getVisibleLogicalRange();
+    if (!range || !main) return;
+    const from = Math.max(0, Math.floor(range.from)), to = Math.min(data.length - 1, Math.ceil(range.to));
+    if (to <= from || to - from > SHEEN_MAX_BARS) return;
+    const x0 = ts.logicalToCoordinate(from);
+    const spacing = (ts.logicalToCoordinate(to) - x0) / (to - from);
+    const bars = [];
+    for (let i = from; i <= to; i++) {
+      const d = data[i];
+      bars.push({ x: x0 + (i - from) * spacing, openY: main.priceToCoordinate(d.open), closeY: main.priceToCoordinate(d.close) });
+    }
+    drawCandleSheen(scope, bars, spacing, sheenTones(c.light));
   }
 
   function syncIndicators() {
@@ -324,15 +359,30 @@ export function createEquityChart(container, { formatter }) {
   const chart = createChart(container, opts());
   const seriesOpts = (base) => ({
     baseValue: { type: 'price', price: base },
-    topLineColor: c.up, topFillColor1: alpha(c.up, 0.22), topFillColor2: alpha(c.up, 0.02),
-    bottomLineColor: c.down, bottomFillColor1: alpha(c.down, 0.02), bottomFillColor2: alpha(c.down, 0.22),
+    topLineColor: c.up, topFillColor1: alpha(c.up, c.light ? 0.26 : 0.34), topFillColor2: alpha(c.up, 0),
+    bottomLineColor: c.down, bottomFillColor1: alpha(c.down, 0), bottomFillColor2: alpha(c.down, c.light ? 0.26 : 0.34),
     lineWidth: 2, priceLineVisible: false, lastValueVisible: true,
   });
   let base = 0;
-  let series = chart.addSeries(BaselineSeries, seriesOpts(0));
+  let pts = [];
+  const series = chart.addSeries(BaselineSeries, seriesOpts(0));
+  // Resplandor bajo la línea y punto de luz en el último valor (chart-fx.js)
+  series.attachPrimitive(lightLayer('bottom', (scope) => {
+    if (pts.length < 2) return;
+    const ts = chart.timeScale();
+    const xy = [];
+    for (const p of pts) {
+      const x = ts.timeToCoordinate(p.time), y = series.priceToCoordinate(p.value);
+      if (x != null && y != null) xy.push({ x, y });
+    }
+    drawGlowLine(scope, xy, series.priceToCoordinate(base), c.up, c.down, c.light ? 0.8 : 1);
+    const last = xy.at(-1);
+    if (last) drawHalo(scope, last.x, last.y, pts.at(-1).value >= base ? c.up : c.down, 24, c.light ? 0.2 : 0.34);
+  }));
   return {
     setData(points, baseValue) {
       base = baseValue;
+      pts = points;
       series.applyOptions(seriesOpts(base));
       series.setData(points);
       chart.timeScale().fitContent();
@@ -342,7 +392,7 @@ export function createEquityChart(container, { formatter }) {
   };
 }
 
-/* ---------- Minigráfico de línea (tarjetas del Resumen): sin ejes, rejilla ni etiquetas; verde si sube y rojo si baja ---------- */
+/* ---------- Minigráfico (tarjetas del Resumen): línea con relleno en degradado, sin ejes, rejilla ni etiquetas; verde si sube y rojo si baja ---------- */
 export function createMiniChart(container) {
   let c = palette();
   let up = true;
@@ -356,8 +406,11 @@ export function createMiniChart(container) {
     timeScale: { visible: false, fixLeftEdge: true, fixRightEdge: true },
     handleScroll: false, handleScale: false,
   });
-  const series = chart.addSeries(LineSeries, { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-  const paint = () => series.applyOptions({ color: up ? c.up : c.down });
+  const series = chart.addSeries(AreaSeries, { lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  const paint = () => {
+    const color = up ? c.up : c.down;
+    series.applyOptions({ lineColor: color, topColor: alpha(color, c.light ? 0.22 : 0.3), bottomColor: alpha(color, 0) });
+  };
   return {
     /** `values`: serie de precios en orden cronológico (sin fechas: se reparten de forma uniforme). */
     setData(values) {

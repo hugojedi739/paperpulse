@@ -19,12 +19,13 @@
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
   <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/app.aa344bec.css">
+  <link rel="stylesheet" href="/css/app.7e47671b.css">
   <link rel="modulepreload" href="/js/lib/account.31a8bf12.js">
   <link rel="modulepreload" href="/js/lib/api.d1db7328.js">
   <link rel="modulepreload" href="/js/lib/auth.17a9e375.js">
   <link rel="modulepreload" href="/js/lib/catalog.f1b2b586.js">
-  <link rel="modulepreload" href="/js/lib/charts.5c845f92.js">
+  <link rel="modulepreload" href="/js/lib/chart-fx.b6989451.js">
+  <link rel="modulepreload" href="/js/lib/charts.b3988be4.js">
   <link rel="modulepreload" href="/js/lib/community.243af2e6.js">
   <link rel="modulepreload" href="/js/lib/dom.a575914e.js">
   <link rel="modulepreload" href="/js/lib/el.71f9edc9.js">
@@ -59,14 +60,14 @@
   <link rel="modulepreload" href="/js/views/challenge.d4e359fe.js">
   <link rel="modulepreload" href="/js/views/community.3a77b3ac.js">
   <link rel="modulepreload" href="/js/views/contact.db055b66.js">
-  <link rel="modulepreload" href="/js/views/dashboard.3d934f47.js">
-  <link rel="modulepreload" href="/js/views/journal.bc95cf19.js">
-  <link rel="modulepreload" href="/js/views/markets.f3d1c7f1.js">
+  <link rel="modulepreload" href="/js/views/dashboard.05057b3e.js">
+  <link rel="modulepreload" href="/js/views/journal.a3fb0d0a.js">
+  <link rel="modulepreload" href="/js/views/markets.1542973f.js">
   <link rel="modulepreload" href="/js/views/news.7b8a8ca7.js">
-  <link rel="modulepreload" href="/js/views/trade.8f76da91.js">
+  <link rel="modulepreload" href="/js/views/trade.38fbf511.js">
   <link rel="modulepreload" href="/vendor/lightweight-charts.7d001f7d.mjs">
   <script src="/js/theme-init.f6dbcac7.js"></script>
-  <script type="module" src="/js/main.1f2b2fe3.js"></script>
+  <script type="module" src="/js/main.4dd44961.js"></script>
   <script type="module" src="/js/ui/status.a7bf18a4.js"></script>
 </head>
 <body>
@@ -234,6 +235,11 @@
   </div>
 
   <div class="toasts" id="toasts"></div>
+  <!-- Degradados compartidos por las sparklines SVG (los colores los pone el CSS según el tema) -->
+  <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>
+    <linearGradient id="spark-up" x1="0" y1="0" x2="0" y2="1"><stop class="sg-up sg-0" offset="0"/><stop class="sg-up sg-1" offset="1"/></linearGradient>
+    <linearGradient id="spark-down" x1="0" y1="0" x2="0" y2="1"><stop class="sg-down sg-0" offset="0"/><stop class="sg-down sg-1" offset="1"/></linearGradient>
+  </defs></svg>
   <div class="sr-only" id="sr-live" aria-live="polite"></div>
 </body>
 </html>
