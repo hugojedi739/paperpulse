@@ -6,7 +6,7 @@ import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, ap
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.df74909c.js';
 import * as trading from '../lib/trading.5637d759.js';
 import * as account from '../lib/account.31a8bf12.js';
-import { createTradingChart, INDICATORS } from '../lib/charts.5c845f92.js';
+import { createTradingChart, INDICATORS } from '../lib/charts.b3988be4.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.c9567489.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.0a736068.js';
 import { go } from '../lib/router.de30a562.js';

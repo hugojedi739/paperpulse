@@ -1708,6 +1708,32 @@ select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
   .fab { right: calc(20px + env(safe-area-inset-right)); bottom: calc(88px + env(safe-area-inset-bottom)); }
   body::before { animation-duration: 44s; } /* más lento en el teléfono: mismo efecto, menos trabajo por segundo */
 }
+/* ---- Gráficos: luz Aurora ----
+   El resplandor de detrás es un fondo CSS del contenedor (el lienzo del gráfico es transparente): es estático, lo compone
+   la GPU y no cuesta nada por fotograma. El brillo de las velas y los halos se dibujan en el propio lienzo (lib/chart-fx.js). */
+:root {
+  --chart-glow-1: rgb(124 92 255 / 0.13);
+  --chart-glow-2: rgb(25 200 230 / 0.08);
+}
+:root[data-theme='light'] {
+  --chart-glow-1: rgb(124 92 255 / 0.06);
+  --chart-glow-2: rgb(25 200 230 / 0.07);
+}
+.chart-box, .hero-chart, .equity-box {
+  background:
+    radial-gradient(ellipse 48% 70% at 66% 38%, var(--chart-glow-1), transparent),
+    radial-gradient(ellipse 42% 60% at 20% 78%, var(--chart-glow-2), transparent);
+}
+/* Sparklines SVG: relleno en degradado (definido una vez en index.html); si el navegador no resuelve la referencia, queda el relleno plano */
+.svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sg-up { stop-color: var(--up); } .sg-down { stop-color: var(--down); }
+.sg-0 { stop-opacity: 0.34; } .sg-1 { stop-opacity: 0; }
+:root[data-theme='light'] .sg-0 { stop-opacity: 0.26; }
+.spark.up .spark-fill { fill: url(#spark-up) var(--up-fill); }
+.spark.down .spark-fill { fill: url(#spark-down) var(--down-fill); }
+@media (forced-colors: active) {
+  .chart-box, .hero-chart, .equity-box { background: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   body::before, .empty > .icon { animation: none !important; }
   .btn:active, .quick-link:active, .fab:active { transform: none; }
