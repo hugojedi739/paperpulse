@@ -112,6 +112,7 @@ class RecordTest(Base):
 class PortadaTest(Base):
     def setUp(self):
         super().setUp()
+        settings.save({"visits_enabled": True}, None)  # desactivado por defecto: aquí se prueba encendido
         self.client = TestClient(app_module.app, headers={"user-agent": BROWSER})
 
     def test_solo_cuenta_get_de_la_portada(self):
@@ -159,6 +160,26 @@ class PortadaTest(Base):
         self.assertEqual(self.days(), {"user": (1, 1)})
 
 
+class DefaultOffTest(Base):
+    def test_por_defecto_la_portada_no_cuenta_ni_escribe(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("VISITS_ENABLED", None)
+            settings._cache.update(time=0.0, values={})
+            self.assertFalse(settings.get("visits_enabled"))
+            with mock.patch.object(visits, "record", side_effect=AssertionError("no debe contar")) as rec:
+                res = TestClient(app_module.app, headers={"user-agent": BROWSER}).get("/")
+            self.assertEqual(res.status_code, 200)
+            rec.assert_not_called()
+        self.assertEqual(self.days(), {})
+        self.assertFalse(visits.summary()["enabled"])
+
+    def test_un_valor_guardado_en_el_panel_tiene_prioridad(self):
+        settings.save({"visits_enabled": True}, None)
+        self.assertTrue(settings.get("visits_enabled"))
+        settings.save({"visits_enabled": None}, None)  # None = volver a .env / defecto
+        self.assertFalse(settings.get("visits_enabled"))
+
+
 class SummaryCleanupTest(Base):
     def put_day(self, day, kind, visitors, views):
         with db.transaction() as conn:
@@ -177,7 +198,7 @@ class SummaryCleanupTest(Base):
         self.assertEqual(len(s["history"]), 14)
         self.assertEqual(s["history"][-4]["anon"], 5)
         self.assertEqual(sum(d["anon"] for d in s["history"]), 6)
-        self.assertTrue(s["enabled"])
+        self.assertFalse(s["enabled"])  # desactivado por defecto (fix/contador-apagado)
 
     def test_cron_borra_hashes_pasados_y_agregados_de_mas_de_90_dias(self):
         today = datetime.date.fromisoformat(visits.today())
@@ -211,9 +232,9 @@ class AdminOverviewTest(Base):
 
 class SettingTest(unittest.TestCase):
     def test_ajuste_documentado(self):
-        self.assertEqual(settings.SCHEMA["visits_enabled"][:3], ("VISITS_ENABLED", True, bool))
+        self.assertEqual(settings.SCHEMA["visits_enabled"][:3], ("VISITS_ENABLED", False, bool))
         with open(os.path.join(os.path.dirname(__file__), "..", ".env.example"), encoding="utf-8") as f:
-            self.assertIn("VISITS_ENABLED=", f.read())
+            self.assertIn("VISITS_ENABLED=false\n", f.read())
 
 
 if __name__ == "__main__":
