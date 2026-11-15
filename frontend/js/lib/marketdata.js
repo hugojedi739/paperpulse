@@ -95,8 +95,9 @@ export function news() {
   return cached('news', 5 * 60_000, async () => (await getJson('/api/news')).articles ?? []);
 }
 
-export function marketsStatus() {
-  return getJson('/api/markets').then((j) => j.markets ?? []);
+/** Estado de las bolsas y reglas de la luz roja de la cabecera (lib/market-alert.js), en una sola petición. */
+export function marketsInfo() {
+  return getJson('/api/markets').then((j) => ({ markets: j.markets ?? [], alertRules: j.alertRules ?? [] }));
 }
 
 export function fxRates() {

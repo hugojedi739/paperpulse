@@ -5,7 +5,9 @@ import { ASSETS, findAsset, toAsset, register } from './lib/catalog.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.js';
 import { portfolio, checkTriggers } from './lib/trading.js';
-import { marketsStatus, fxRates } from './lib/marketdata.js';
+import { marketsInfo, fxRates } from './lib/marketdata.js';
+import { setRules as setAlertRules } from './lib/market-alert.js';
+import { initMarketAlert } from './ui/market-alert.js';
 import { updateLive, assetIcon } from './lib/ui.js';
 import { current, go } from './lib/router.js';
 import * as dashboard from './views/dashboard.js';
@@ -309,7 +311,11 @@ let ratesAt = 0;
 async function refreshMarkets() {
   if (document.hidden) return; // sin pestaña visible no se pide nada; al volver se actualiza si hace falta
   marketsAt = Date.now();
-  try { store.setMarkets(await marketsStatus()); } catch { /* sin servidor: el estado de bolsa queda desconocido */ }
+  try {
+    const info = await marketsInfo();
+    store.setMarkets(info.markets);
+    setAlertRules(info.alertRules); // umbrales de la luz roja (ajustes del panel)
+  } catch { /* sin servidor: el estado de bolsa queda desconocido y no hay luz roja */ }
 }
 async function refreshRates() {
   if (document.hidden) return;
@@ -347,6 +353,7 @@ auth.init(dialogs.chooseCloudData).then(({ user, fromOAuth }) => {
 renderFeedStatus(feed.getStatus());
 feed.start();
 renderTape(); // la cinta se pintó antes de que el feed sembrara los últimos precios conocidos (caché local)
+initMarketAlert();
 refreshMarkets();
 refreshRates();
 setInterval(refreshMarkets, 60_000);
