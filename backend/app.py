@@ -27,7 +27,7 @@ from backend.config import (
     ADMIN_API_KEY, ALLOWED_ORIGINS, DEBUG, FRONTEND_DIR, IS_PRODUCTION, IS_VERCEL, PORT, app_domain,
 )
 from backend.http import current_user
-from backend.market import benchmark, stream
+from backend.market import benchmark, dividends, stream
 from backend.market.candles import api_candles
 from backend.market.crypto import api_crypto_depth, api_crypto_markets, api_crypto_tickers
 from backend.market.fx import get_exchange_rates
@@ -96,6 +96,7 @@ routes = [
     Route("/api/rates", get_exchange_rates, methods=["GET"]),
     Route("/api/news", api_news, methods=["GET"]),
     *benchmark.routes,  # S&P 500 para el comparador del Resumen
+    *dividends.routes,  # próximos dividendos (ficha de Operar y Resumen)
     # Asistente
     Route("/api/chat/challenge", api_chat_challenge, methods=["GET"]),
     Route("/api/chat", api_chat_stream, methods=["POST"]),
