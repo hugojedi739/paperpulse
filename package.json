@@ -2,6 +2,7 @@
   "name": "paperpulse-terminal",
   "version": "3.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "description": "PaperPulse — simulador de trading con datos de mercado en vivo",
   "scripts": {
