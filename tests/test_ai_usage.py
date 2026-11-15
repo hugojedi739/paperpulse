@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import closing
 from types import SimpleNamespace
@@ -18,6 +19,17 @@ from backend import ai_usage, chat, chat_fixed, db, settings  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
 from starlette.routing import Route  # noqa: E402
 from starlette.testclient import TestClient  # noqa: E402
+
+
+def frozen_minute():
+    """Reloj fijo en mitad del minuto actual, solo para backend.ai_usage.
+
+    El límite por minuto cuenta por minuto de reloj (time.time() // 60): si las peticiones de un test caen a
+    ambos lados de un cambio de minuto, la última entra en un minuto nuevo y el test falla de vez en cuando.
+    Se sustituye la referencia a `time` del módulo (no time.time global), así que el desafío HMAC del chat sigue
+    con la hora real."""
+    now = (int(time.time()) // 60) * 60 + 30
+    return mock.patch.object(ai_usage, "time", SimpleNamespace(time=lambda: now))
 
 
 def usage(inp=0, out=0, thinking=0, cache_read=0):
@@ -56,12 +68,13 @@ class Base(unittest.TestCase):
 
 class LimitsTest(Base):
     def test_el_limite_por_minuto_es_comun_a_todas_las_instancias(self):
-        for i in range(ai_usage.CHAT_CALLS_PER_MINUTE):
-            if i == 10:
-                ai_usage._secret_cache.clear()  # «otra instancia»: sin memoria propia, el contador sigue en la base
-            self.assertIsNone(ai_usage.admit("203.0.113.7", uses_ai=False))
-        self.assertIn("por minuto", ai_usage.admit("203.0.113.7", uses_ai=False))
-        self.assertIsNone(ai_usage.admit("203.0.113.8", uses_ai=False))  # otra IP, su propio contador
+        with frozen_minute():
+            for i in range(ai_usage.CHAT_CALLS_PER_MINUTE):
+                if i == 10:
+                    ai_usage._secret_cache.clear()  # «otra instancia»: sin memoria propia, el contador sigue en la base
+                self.assertIsNone(ai_usage.admit("203.0.113.7", uses_ai=False))
+            self.assertIn("por minuto", ai_usage.admit("203.0.113.7", uses_ai=False))
+            self.assertIsNone(ai_usage.admit("203.0.113.8", uses_ai=False))  # otra IP, su propio contador
 
     def test_no_se_guarda_la_ip_y_el_identificador_cambia_cada_dia(self):
         ai_usage.admit("203.0.113.7", uses_ai=True)
@@ -133,10 +146,11 @@ class ChatEndpointTest(Base):
 
     def test_el_limite_por_minuto_responde_429(self):
         c = self.client()
-        with mock.patch.object(ai_usage, "CHAT_CALLS_PER_MINUTE", 1):
+        with mock.patch.object(ai_usage, "CHAT_CALLS_PER_MINUTE", 1), frozen_minute():
             self.assertEqual(self.ask(c)[0].status_code, 200)
             r, _ = self.ask(c)
         self.assertEqual(r.status_code, 429)
+
 
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
