@@ -1,0 +1,46 @@
+# Dependabot: actualizaciones semanales de dependencias (los lunes).
+# Las menores y de parche de cada ecosistema llegan juntas en un solo PR;
+# las mayores, cada una en su PR, porque pueden romper algo y hay que revisarlas.
+# Los avisos de seguridad (dependabot_security_updates) abren su PR al momento,
+# sin esperar al lunes.
+version: 2
+
+updates:
+  # Backend: requirements.txt
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      pip-menores:
+        update-types: [minor, patch]
+
+  # Herramientas del frontend (package.json): vendor, fuentes, gráficos y capturas
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      npm-menores:
+        update-types: [minor, patch]
+
+  # Acciones de .github/workflows/ (también las fijadas a un commit)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      actions-menores:
+        update-types: [minor, patch]
