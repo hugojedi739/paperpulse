@@ -5,6 +5,8 @@
 @docs/flujo-git.md
 @docs/referencia.md
 
+**Ramas y pull requests**: cada cambio va en su propia rama (`feat/…`, `fix/…`, `docs/…`, `chore/…`, `refactor/…`, `test/…` o `style/…`, creada desde `main`) y llega a `main` solo mediante un pull request, que fusiona la persona tras revisarlo y ver la vista previa de Vercel; nunca hagas push a `main`, ni fusiones, ni uses `--force`, ni borres ramas remotas, ni cambies la visibilidad del repositorio. `.claude/settings.json` permite sin preguntar crear ramas, `git add`, `git commit`, `git push` de ramas con esos prefijos y `gh pr create`, y prohíbe lo demás (por eso una rama no puede llevar `main` en el nombre). El workflow `.github/workflows/tests.yml` ejecuta los tests en cada pull request y en cada push a `main`.
+
 Antes de terminar un cambio:
 - `python -m unittest discover -s tests` y `npm test` deben pasar.
 - Si cambias algo en `frontend/`, ejecuta `npm run build:static` y versiona `public/` y `backend/templates/index.html` (un test lo comprueba).

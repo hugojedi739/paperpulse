@@ -70,3 +70,6 @@ screenshots/
 Thumbs.db
 *.swp
 .idea/
+
+# Claude Code: ajustes personales (los compartidos van en .claude/settings.json)
+.claude/settings.local.json

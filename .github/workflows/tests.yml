@@ -1,0 +1,46 @@
+# Tests del backend (unittest) y del frontend (node --test) en cada pull request
+# y en cada push a main. Usa siempre la base local temporal: Turso vacío.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Solo lectura: el workflow no necesita escribir en el repositorio.
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la ejecución anterior.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURSO_DATABASE_URL: ""
+      TURSO_AUTH_TOKEN: ""
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Dependencias de Python
+        run: pip install -r requirements.txt
+
+      # Los tests de JavaScript no usan node_modules: no hace falta npm ci.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Tests del backend
+        run: python -m unittest discover -s tests
+
+      - name: Tests del frontend
+        run: npm test
