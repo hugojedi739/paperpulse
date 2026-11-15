@@ -61,7 +61,7 @@ test('fecha de apertura en español', () => {
 
 test('la tarjeta solo existe con sesión, avisa del rendimiento pasado y no usa innerHTML', () => {
   const src = readFileSync(new URL('../frontend/js/views/dashboard.js', import.meta.url), 'utf8');
-  assert.match(src, /\$\{user \? html`<div id="d-compare"><\/div>` : ''\}/);
+  assert.match(src, /\$\{user \? html`<div id="d-compare"><\/div>[^`]*` : ''\}/);
   assert.match(src, /¿Te ha compensado operar\?/);
   assert.match(src, /El rendimiento pasado no garantiza resultados futuros\./);
   const fn = src.slice(src.indexOf('async function renderCompare'), src.indexOf('/* ---------- Con sesión'));

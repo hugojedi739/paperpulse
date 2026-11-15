@@ -358,6 +358,13 @@ async function renderIntegrations() {
         ${save()}
       </form></section>
       <section class="card"><form class="admin-form" data-form>
+        <div class="card-head"><h2 class="card-title">${icon('triangle-alert')} Luz roja de mercado</h2></div>
+        ${text('market_alert_btc_drop_bps', 'Caída de BTC en 24 h que la enciende (puntos básicos; 1000 = 10 %)', '1000', 'number')}
+        ${text('market_alert_index_drop_bps', 'Caída del IBEX 35 en la sesión que la enciende (puntos básicos; 400 = 4 %)', '400', 'number')}
+        <p class="hint">Aviso de la cabecera con reglas fijas sobre las cotizaciones en vivo, sin IA ni predicciones. El del IBEX 35 solo cuenta con la bolsa abierta. 0 desactiva la regla. Los cambios llegan a los navegadores en un minuto.</p>
+        ${save()}
+      </form></section>
+      <section class="card"><form class="admin-form" data-form>
         <div class="card-head"><h2 class="card-title">${icon('users')} Contador de visitas</h2></div>
         ${toggle('visits_enabled', 'Contar las visitas de la portada', 'Anónimo y agregado: sin cookies, sin guardar IP ni user-agent. Se ve en el Resumen.')}
         ${save()}

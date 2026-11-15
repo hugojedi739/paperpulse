@@ -7,13 +7,15 @@ import { money, price, units, pct, volume, num, currency, convert, approx, trend
 import * as trading from '../lib/trading.ea5e09ad.js';
 import * as account from '../lib/account.a3e68072.js';
 import { createTradingChart, INDICATORS } from '../lib/charts.b3988be4.js';
-import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.c9567489.js';
+import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.9debd77d.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.0a736068.js';
 import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
-import { closePositionDialog } from '../ui/dialogs.f04c89f6.js';
+import { closePositionDialog } from '../ui/dialogs.fa95f246.js';
 import { shareButton, shareDialog } from '../ui/share.0569d040.js';
 import { afterBuy } from '../ui/celebrate.c16acb3e.js';
+import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.85dac25e.js';
+import { h, mount as put } from '../lib/el.71f9edc9.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -220,8 +222,22 @@ function renderHead() {
     <div class="sym-actions">
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
       <button class="icon-btn" data-t="alert" aria-label="Crear alerta de precio" title="Alerta de precio">${icon('bell-ring')}</button>
-    </div>`);
+    </div>
+    <p class="sym-div" id="t-div" hidden></p>`);
   renderStats();
+  renderDividend();
+}
+
+/** «Próximo dividendo: ex-dividendo el … · importe» en las acciones que lo tienen; sin dato no se pinta nada. */
+async function renderDividend() {
+  const shown = asset;
+  if (shown.type !== 'stock') return;
+  const d = (await upcomingDividends())[shown.symbol];
+  const box = $('#t-div', root);
+  if (!box || asset !== shown || !d) return; // otra acción, la vista se repintó o no hay dividendo próximo
+  put(box, h('span', { class: 'sym-div-line' }, dividendLine(d)), ' ',
+    h('small', { class: 'muted' }, `${EX_DATE_NOTE} ${SIMULATION_NOTE}`));
+  box.hidden = false;
 }
 
 function renderStats() {
@@ -474,7 +490,7 @@ const actions = {
     b.setAttribute('aria-pressed', String(added));
     toast(added ? `${asset.symbol} añadido a favoritos` : `${asset.symbol} quitado de favoritos`, 'success', 2500);
   },
-  alert() { import('../ui/dialogs.f04c89f6.js').then((m) => m.alertsDialog(asset)); },
+  alert() { import('../ui/dialogs.fa95f246.js').then((m) => m.alertsDialog(asset)); },
   fit() { chart.fit(); },
   fullscreen() {
     const card = $('#t-chart-card', root);

@@ -19,6 +19,7 @@ import { goalsCard } from '../ui/goals-card.js';
 import { countTo } from '../lib/motion.js';
 import * as account from '../lib/account.js';
 import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.js';
+import { upcomingDividends, forPositions, exDateLabel, amountText, daysUntil, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -91,7 +92,7 @@ function renderAll() {
             <div class="hero-chart" id="d-chart"></div>
           </section>
           <div class="kpis" id="d-kpis"></div>
-          ${user ? html`<div id="d-compare"></div>` : ''}
+          ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
           <section class="card" aria-labelledby="d-start-title">
@@ -174,6 +175,7 @@ function renderAll() {
   if (!practice) renderTiles();
   renderSummary();
   renderCompare();
+  renderDividends();
   renderWatchlist();
   renderMovers();
   renderBreadth();
@@ -251,6 +253,27 @@ async function renderCompare() {
     <p class="muted compare-note">${icon('info', 'sm')} Desde el día en que abriste la cuenta, en dólares. El S&amp;P 500 se mide por su precio, sin dividendos.
       El rendimiento pasado no garantiza resultados futuros.</p>
   </section>`);
+}
+
+/* ---------- Con la cuenta del servidor: próximos dividendos de mis posiciones ---------- */
+/** Solo posiciones abiertas con fecha ex-dividendo conocida; si no hay ninguna, no se pinta nada. */
+async function renderDividends() {
+  const box = $('#d-divs', root);
+  if (!box) return;
+  if (!account.openedAt() || !store.isServerMode()) return box.replaceChildren();
+  const data = await upcomingDividends();
+  const now = $('#d-divs', root);
+  if (!now || !account.openedAt()) return;
+  const list = forPositions(store.positions(), data);
+  if (!list.length) return now.replaceChildren();
+  const when = (d) => { const n = daysUntil(d.exDate); return n <= 0 ? 'hoy' : n === 1 ? 'mañana' : `en ${n} días`; };
+  put(now, h('section', { class: 'card divs', 'aria-labelledby': 'd-divs-title' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'card-title', id: 'd-divs-title' }, 'Próximos dividendos'),
+      h('span', { class: 'card-sub' }, 'De tus posiciones abiertas')),
+    h('ul', { class: 'divs-rows' }, list.map((d) => h('li', {},
+      h('a', { href: `#/trade/${d.symbol}` }, h('strong', {}, d.symbol), h('small', {}, d.name)),
+      h('div', {}, h('span', {}, `Ex-dividendo el ${exDateLabel(d.exDate)} (${when(d)})`), h('small', {}, amountText(d)))))),
+    h('p', { class: 'muted divs-note' }, `${EX_DATE_NOTE} ${SIMULATION_NOTE}`)));
 }
 
 /* ---------- Con sesión: saludo, patrimonio, notificaciones y accesos rápidos ---------- */

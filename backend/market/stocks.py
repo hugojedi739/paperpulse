@@ -63,6 +63,11 @@ class BaseStockProvider:
     def fetch_history(self, ticker: str, interval: str, start: int, end: int) -> List[Dict[str, Any]]:
         raise NotImplementedError
 
+    def fetch_dividends(self, tickers: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Próximo dividendo conocido de cada ticker: {ticker: {exDate, amount|None, lastAmount|None, currency}}.
+        Por defecto ninguno: el plan gratuito de Finnhub no ofrece el calendario de dividendos."""
+        return {}
+
 class YFinanceStockProvider(BaseStockProvider):
     def fetch_quotes(self, symbols: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         yf = get_yfinance()
@@ -149,6 +154,36 @@ class YFinanceStockProvider(BaseStockProvider):
         except Exception as e:
             print(f"[StockProvider YFinance History] Error: {e}", file=sys.stderr)
             return []
+
+    def fetch_dividends(self, tickers: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Fecha ex-dividendo e importe desde `Ticker.info` (una petición por ticker, 4 en paralelo).
+        El importe solo se da si ya está anunciado (`lastDividendDate` = fecha ex-dividendo); si no, solo el último pagado."""
+        yf = get_yfinance()
+        if not yf or not tickers:
+            return {}
+
+        def one(ticker: str):
+            try:
+                info = yf.Ticker(ticker).get_info() or {}
+            except Exception as e:  # 404 en índices, límites de Yahoo, red...
+                print(f"[StockProvider YFinance Dividends] {ticker}: {str(e)[:120]}", file=sys.stderr)
+                return ticker, None
+            ex = info.get("exDividendDate")
+            if not isinstance(ex, (int, float)) or ex <= 0:
+                return ticker, None
+            last = info.get("lastDividendValue")
+            last = float(last) if isinstance(last, (int, float)) and last > 0 else None
+            announced = last is not None and info.get("lastDividendDate") == ex
+            return ticker, {
+                "exDate": datetime.datetime.fromtimestamp(int(ex), datetime.timezone.utc).strftime("%Y-%m-%d"),
+                "amount": round(last, 6) if announced else None,
+                "lastAmount": round(last, 6) if last is not None else None,
+                "currency": str(info.get("currency") or "")[:3].upper() or None,
+            }
+
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            return {t: d for t, d in pool.map(one, tickers) if d}
 
 class FinnhubStockProvider(BaseStockProvider):
     def __init__(self, api_key: str):

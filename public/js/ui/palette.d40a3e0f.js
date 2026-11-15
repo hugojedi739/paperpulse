@@ -4,7 +4,7 @@ import { tick } from '../lib/feed.34c660aa.js';
 import { ASSETS, findAsset, toAsset, register } from '../lib/catalog.f1b2b586.js';
 import { html, icon, render, openDialog, debounce, $ } from '../lib/dom.a575914e.js';
 import { price, pct, trendClass } from '../lib/format.df74909c.js';
-import { search } from '../lib/marketdata.c9567489.js';
+import { search } from '../lib/marketdata.9debd77d.js';
 import { assetIcon } from '../lib/ui.0a736068.js';
 import { go } from '../lib/router.de30a562.js';
 

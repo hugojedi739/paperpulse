@@ -19,7 +19,7 @@
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
   <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/app.76a8c39a.css">
+  <link rel="stylesheet" href="/css/app.b2e3a38c.css">
   <link rel="modulepreload" href="/js/lib/account.a3e68072.js">
   <link rel="modulepreload" href="/js/lib/api.d1db7328.js">
   <link rel="modulepreload" href="/js/lib/auth.17a9e375.js">
@@ -28,6 +28,7 @@
   <link rel="modulepreload" href="/js/lib/chart-fx.b6989451.js">
   <link rel="modulepreload" href="/js/lib/charts.b3988be4.js">
   <link rel="modulepreload" href="/js/lib/community.243af2e6.js">
+  <link rel="modulepreload" href="/js/lib/dividends.85dac25e.js">
   <link rel="modulepreload" href="/js/lib/dom.a575914e.js">
   <link rel="modulepreload" href="/js/lib/el.71f9edc9.js">
   <link rel="modulepreload" href="/js/lib/feed.34c660aa.js">
@@ -35,7 +36,8 @@
   <link rel="modulepreload" href="/js/lib/goals.558164c8.js">
   <link rel="modulepreload" href="/js/lib/legal-content.6fbd330f.js">
   <link rel="modulepreload" href="/js/lib/markdown.70f08f7e.js">
-  <link rel="modulepreload" href="/js/lib/marketdata.c9567489.js">
+  <link rel="modulepreload" href="/js/lib/market-alert.9ca18474.js">
+  <link rel="modulepreload" href="/js/lib/marketdata.9debd77d.js">
   <link rel="modulepreload" href="/js/lib/motion.d917c017.js">
   <link rel="modulepreload" href="/js/lib/notifications.49bec9ff.js">
   <link rel="modulepreload" href="/js/lib/retention.9041458c.js">
@@ -48,10 +50,11 @@
   <link rel="modulepreload" href="/js/lib/trading.ea5e09ad.js">
   <link rel="modulepreload" href="/js/lib/ui.0a736068.js">
   <link rel="modulepreload" href="/js/ui/celebrate.c16acb3e.js">
-  <link rel="modulepreload" href="/js/ui/chat.4c771585.js">
-  <link rel="modulepreload" href="/js/ui/dialogs.f04c89f6.js">
+  <link rel="modulepreload" href="/js/ui/chat.534d3c5f.js">
+  <link rel="modulepreload" href="/js/ui/dialogs.fa95f246.js">
   <link rel="modulepreload" href="/js/ui/goals-card.73704d16.js">
-  <link rel="modulepreload" href="/js/ui/palette.0a62e642.js">
+  <link rel="modulepreload" href="/js/ui/market-alert.2d925b44.js">
+  <link rel="modulepreload" href="/js/ui/palette.d40a3e0f.js">
   <link rel="modulepreload" href="/js/ui/retention-card.1534b890.js">
   <link rel="modulepreload" href="/js/ui/share.0569d040.js">
   <link rel="modulepreload" href="/js/ui/tabbar.052b7f59.js">
@@ -61,14 +64,14 @@
   <link rel="modulepreload" href="/js/views/challenge.d4e359fe.js">
   <link rel="modulepreload" href="/js/views/community.383ebc01.js">
   <link rel="modulepreload" href="/js/views/contact.db055b66.js">
-  <link rel="modulepreload" href="/js/views/dashboard.a2ea069c.js">
-  <link rel="modulepreload" href="/js/views/journal.7495ed8f.js">
-  <link rel="modulepreload" href="/js/views/markets.1542973f.js">
-  <link rel="modulepreload" href="/js/views/news.a51ed8cc.js">
-  <link rel="modulepreload" href="/js/views/trade.c80f2875.js">
+  <link rel="modulepreload" href="/js/views/dashboard.ec3a1bfe.js">
+  <link rel="modulepreload" href="/js/views/journal.e02e240e.js">
+  <link rel="modulepreload" href="/js/views/markets.b0010e75.js">
+  <link rel="modulepreload" href="/js/views/news.72fa799f.js">
+  <link rel="modulepreload" href="/js/views/trade.13e3b189.js">
   <link rel="modulepreload" href="/vendor/lightweight-charts.7d001f7d.mjs">
   <script src="/js/theme-init.f6dbcac7.js"></script>
-  <script type="module" src="/js/main.c37827b3.js"></script>
+  <script type="module" src="/js/main.b69e07c2.js"></script>
   <script type="module" src="/js/ui/status.a7bf18a4.js"></script>
 </head>
 <body>
@@ -109,6 +112,7 @@
           <kbd>Ctrl K</kbd>
         </button>
         <div class="topbar-actions">
+          <button type="button" class="market-alert" id="market-alert" popovertarget="market-alert-pop" hidden><svg class="icon"><use href="/img/icons.svg#triangle-alert"/></svg><span class="hide-sm"></span></button>
           <span class="feed-status" id="feed-status" role="status" data-state="connecting"><i></i><span>Conectando</span></span>
           <button type="button" class="account-chip" id="account-chip" data-action="account"></button>
           <button type="button" class="icon-btn" data-action="theme" aria-label="Cambiar tema"><svg class="icon"><use href="/img/icons.svg#sun"/></svg></button>
@@ -187,6 +191,7 @@
     <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
   </div>
 
+  <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
     <div id="notif-list" class="notif-list"></div>

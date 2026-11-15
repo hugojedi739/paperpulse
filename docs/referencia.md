@@ -29,6 +29,7 @@ Hay dos modos:
   - El tipo de cambio de las ejecuciones por vela es el actual, no el del momento de la vela.
   - Yahoo puede dar las cotizaciones de algunas bolsas (p. ej. BME) con unos 15 minutos de retraso.
   - Solo se pueden operar los activos del catálogo (los encontrados con la búsqueda, solo en modo local). No hay ventas en corto.
+  - **No se abonan dividendos**: ninguna posición cobra dividendos (ni en la cuenta del servidor, ni en el modo local, ni en los retos) y las velas de Yahoo no se ajustan por ellos (`auto_adjust=False`), así que en la fecha ex-dividendo el precio baja sin compensación. La ficha y el Resumen solo informan de las fechas ([Próximos dividendos](#próximos-dividendos-y-luz-roja-de-mercado)).
 
 ## Comunidad (`backend/community/`)
 - **Perfiles**: alias único (3-20 caracteres: letras, números y `_`; sin distinguir mayúsculas; hay alias reservados), bio de hasta 280 caracteres y perfil privado opcional. Sin perfil no se participa. Ninguna respuesta incluye emails. De un perfil privado solo se confirma que existe: no sale en la clasificación ni en las búsquedas y no se le puede seguir, aunque sus mensajes del foro siguen siendo públicos.
@@ -94,6 +95,17 @@ Para que Administración → Resumen muestre cuánta gente entra, también sin s
   - El cálculo recorre todas las cuentas con operaciones; para miles de usuarios habría que repartirlo en lotes.
 
 ## Datos de mercado en vivo
+## Próximos dividendos y luz roja de mercado
+- **Próximos dividendos** (`GET /api/dividends`, `backend/market/dividends.py`; frontend `lib/dividends.js`): fecha ex-dividendo e importe por acción de las acciones del catálogo (los índices no reparten y no se piden). Usa `fetch_dividends` del proveedor de bolsa: con **yfinance**, `Ticker.info` (`exDividendDate`, `lastDividendValue`, `lastDividendDate`), una petición por acción, 4 en paralelo; el importe solo se da si ya está anunciado (`lastDividendDate` = fecha ex-dividendo) y si no se muestra «por confirmar» con el último pagado. Con **Finnhub** no hay datos (su plan gratuito no ofrece el calendario de dividendos) y no se pinta nada. Solo salen fechas de hoy en adelante. **Caché acotada**: una entrada con, como mucho, las 13 acciones del catálogo, durante 6 h; si el proveedor falla se reintenta a los 15 min y mientras tanto se sirve lo último bueno (máximo 24 h). 60 peticiones/min por IP.
+  - **Ficha de Operar** (solo acciones): «Próximo dividendo: ex-dividendo el … · importe», con la nota de que cuenta la fecha ex-dividendo (hay que tener la acción antes de ese día) y de que la simulación no los abona.
+  - **Resumen** (solo con la cuenta del servidor): tarjeta «Próximos dividendos» con las posiciones abiertas que tienen uno, de la fecha más cercana a la más lejana, y cuántos días faltan. Sin ninguna, no aparece. Es informativo: no es una recomendación y el saldo no cambia (ver *No se abonan dividendos* en las limitaciones de la cuenta del servidor).
+- **Luz roja de mercado** (cabecera; `lib/market-alert.js` y `ui/market-alert.js`): un botón rojo que **solo aparece** cuando se cumple una regla objetiva sobre las cotizaciones en vivo que ya recibe el navegador. Sin IA y sin predicciones. Reglas (`backend/market/alert.py`, umbrales en el panel → Integraciones → Luz roja de mercado):
+  - **BTC**: variación de 24 h ≤ −`market_alert_btc_drop_bps` (por defecto 1000 = −10 %).
+  - **IBEX 35**: variación de la sesión frente al cierre anterior ≤ −`market_alert_index_drop_bps` (por defecto 400 = −4 %), **solo con la bolsa abierta** (fuera de horario la variación de la última sesión se queda fija).
+  - Un umbral 0 desactiva la regla. Los umbrales viajan en `alertRules` de `/api/markets` (que el navegador consulta cada minuto), así que un cambio en el panel llega en un minuto.
+  - Nunca cuenta con precios sembrados desde la caché local (`seeded`), que pueden tener horas: solo con datos en vivo. Se revisa cada 5 s con la pestaña visible.
+  - Al pulsarlo, un popover con «Qué ha pasado» (activo, caída y umbral), una explicación neutral (reglas fijas, más volatilidad, no es una recomendación) y un enlace a Aprender. En móvil solo se ve el icono (el texto va en `aria-label`).
+
 - El navegador abre **un único WebSocket** con el backend (`/ws/market`) usando el protocolo de Binance: `{"method":"SUBSCRIBE","params":["btcusdt@ticker","btcusdt@kline_1h","btcusdt@depth20@100ms","stocks"]}`. Recibe `{"stream": ..., "data": ...}`.
 - `backend/market/stream.py` mantiene **una sola conexión con Binance** para todos los clientes, con recuento de referencias por stream y suscripciones agrupadas (límite de Binance: 5 mensajes/s). El stream `stocks` recibe las cotizaciones de bolsa cada 5 s.
 - **Arranque sin esperar al relay**: el relay abre su conexión con Binance al primer suscriptor y el primer ticker tarda de 2 a 4 s (más con la función en frío). Por eso `lib/feed.js`, a la vez que abre el WebSocket, pide **una vez** `/api/crypto/tickers` por REST (responde en menos de 1 s) y pinta antes los últimos precios conocidos de la **caché local** (`paperpulse_crypto_cache`, caduca a los 10 min; la de bolsa, a las 6 h). Los precios sembrados llevan `seeded: true` hasta el primer dato real: se muestran, pero no cuentan como «en vivo» (no entran en el historial de patrimonio) ni emiten eventos de precios (no pueden disparar órdenes ni alertas locales). Un dato del WebSocket más reciente no lo pisa la respuesta REST, y la REST no cuenta para el estado «En vivo».
@@ -128,7 +140,7 @@ Visible solo para administradores (el backend lo comprueba en cada petición con
 - **Mensajes**: búsqueda en motivo y texto (`%` y `_` se buscan tal cual), filtro de leídos, «Marcar todo como leído» y tarjetas plegables: abrir un mensaje sin leer lo marca como leído.
 - **Estado en la URL**: los filtros y subsecciones se guardan en el hash, p. ej. `#/admin/users:status=suspended&order=login_asc`, `#/admin/moderation:section=resolved`, `#/admin/messages:status=unread` (`lib/admin-url.js`; se escribe con `history.replaceState`, sin ensuciar el historial). Un valor desconocido en la URL se ignora.
 - **Inicio de sesión**: activar email+contraseña y el registro; configurar Google y Okta, con botón «Probar conexión».
-- **Integraciones**: clave, modelo y esfuerzo de Anthropic (`anthropic_effort`, por defecto `low`: razona menos y gasta menos salida; «El del modelo» no envía el parámetro); proveedor de bolsa y clave de Finnhub.
+- **Integraciones**: clave, modelo y esfuerzo de Anthropic (`anthropic_effort`, por defecto `low`: razona menos y gasta menos salida; «El del modelo» no envía el parámetro); proveedor de bolsa y clave de Finnhub. **Luz roja de mercado**: caída de BTC en 24 h y del IBEX 35 en la sesión que la encienden (`market_alert_btc_drop_bps`, `market_alert_index_drop_bps`, en puntos básicos; 0 la desactiva).
 
 Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel → variable de `.env` → valor por defecto. Los secretos nunca se devuelven al navegador (solo «configurado» y los 4 últimos caracteres). Están en claro en la base de datos: protege el token de Turso y, en local, `data/` (el archivo se crea con permisos 600).
 
@@ -150,6 +162,8 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET | `/api/stocks/quotes` · `/api/stocks/sparks` | Cotizaciones de bolsa del catálogo · cierres de 1 mes |
 | GET | `/api/search?q=` | Búsqueda de cripto y acciones |
 | GET | `/api/markets` · `/api/rates` · `/api/news` | Estado de mercados · divisas · noticias |
+| GET | `/api/markets` → `alertRules` | Además del estado de las bolsas, las reglas activas de la luz roja: `[{symbol, name, window: "24h"\|"session", dropPct}]` |
+| GET | `/api/dividends` | Próximos dividendos del catálogo: `{data: {SÍMBOLO: {exDate, amount\|null, lastAmount\|null, currency}}, updatedAt}`; `data` vacío sin datos. Público, 60/min por IP, caché de 6 h |
 | GET | `/api/benchmark/sp500?since=` | Rentabilidad del S&P 500 desde `since` (epoch en segundos, desde 2020) para el comparador del Resumen: `{available, since, startDate, startClose, lastClose, asOf, returnPct, source}` o `{available: false}`. Público, 60/min por IP, caché de 1 h |
 | GET/POST | `/api/chat/challenge` · `/api/chat` | Asistente (SSE) |
 | WS | `/ws/market` | Streams en vivo (protocolo de Binance + `stocks`) |

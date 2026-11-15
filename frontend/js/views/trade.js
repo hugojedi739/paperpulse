@@ -14,6 +14,8 @@ import { watchScroll } from '../lib/scroll-hint.js';
 import { closePositionDialog } from '../ui/dialogs.js';
 import { shareButton, shareDialog } from '../ui/share.js';
 import { afterBuy } from '../ui/celebrate.js';
+import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
+import { h, mount as put } from '../lib/el.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -220,8 +222,22 @@ function renderHead() {
     <div class="sym-actions">
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
       <button class="icon-btn" data-t="alert" aria-label="Crear alerta de precio" title="Alerta de precio">${icon('bell-ring')}</button>
-    </div>`);
+    </div>
+    <p class="sym-div" id="t-div" hidden></p>`);
   renderStats();
+  renderDividend();
+}
+
+/** «Próximo dividendo: ex-dividendo el … · importe» en las acciones que lo tienen; sin dato no se pinta nada. */
+async function renderDividend() {
+  const shown = asset;
+  if (shown.type !== 'stock') return;
+  const d = (await upcomingDividends())[shown.symbol];
+  const box = $('#t-div', root);
+  if (!box || asset !== shown || !d) return; // otra acción, la vista se repintó o no hay dividendo próximo
+  put(box, h('span', { class: 'sym-div-line' }, dividendLine(d)), ' ',
+    h('small', { class: 'muted' }, `${EX_DATE_NOTE} ${SIMULATION_NOTE}`));
+  box.hidden = false;
 }
 
 function renderStats() {

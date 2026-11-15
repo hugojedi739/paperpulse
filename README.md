@@ -13,6 +13,7 @@ Simulador de trading (*paper trading*) con **cotizaciones reales** de criptomone
 - **Dos modos de cuenta**: sin sesión, todo vive en el navegador; con sesión, la cuenta está en el servidor, que decide siempre el precio. El saldo inicial lo elige cada persona (de 50 a 1.000.000 €).
 - **Diario y estadísticas**: notas por operación, calendario de resultados, tasa de aciertos, pérdida máxima y resultado por semanas.
 - **¿Te ha compensado operar?**: con la cuenta del servidor, el Resumen compara tu rentabilidad (ya con comisiones y deslizamiento) con no invertir y con el S&P 500 desde el día en que abriste la cuenta.
+- **Dividendos y luz roja**: próximo dividendo (fecha ex-dividendo e importe) en la ficha de cada acción y de tus posiciones en el Resumen, solo informativo (la simulación no los abona); y un aviso en la cabecera cuando BTC o el IBEX 35 caen más de un umbral, con reglas fijas y sin predicciones.
 - **Comunidad**: perfiles con alias, foro con votos, operaciones compartidas, seguidores, clasificación por rentabilidad y moderación.
 - **Retención**: notificaciones, logros, racha de días, reto mensual con clasificación propia, retos personales de la semana y una sección para aprender (lecciones y glosario).
 - **Asistente IA**: chat con Claude en streaming, con límites de gasto y un modo de demostración si no hay clave.
@@ -52,7 +53,7 @@ backend/                  API y lógica del servidor (Starlette)
   chat_fixed.py           Respuestas fijas para los botones de sugerencia del chat
   contact.py              Formulario de contacto y bandeja del panel
   news.py                 /api/news: noticias RSS filtradas
-  market/                 Velas, cripto (Binance, CoinGecko), bolsa (Yahoo/Finnhub), divisas, horarios, búsqueda, S&P 500 del comparador y relay /ws/market
+  market/                 Velas, cripto (Binance, CoinGecko), bolsa (Yahoo/Finnhub), divisas, horarios, búsqueda, S&P 500 del comparador, dividendos, reglas de la luz roja y relay /ws/market
   trading/                Cuenta de práctica del servidor: reglas en enteros, precios, libro contable y API
   community/              Perfiles, foro, clasificación, pulso público y moderación
   retention/              Notificaciones, logros, racha, reto mensual, onboarding y cron diario
@@ -130,6 +131,7 @@ La plantilla completa y comentada está en [`.env.example`](.env.example). Todas
 | `DAILY_GLOBAL_TOKEN_LIMIT` · `DAILY_USER_TOKEN_LIMIT` · `DAILY_USER_CHAT_REQUESTS` | Límites diarios de gasto de la IA (global, por cliente y preguntas por cliente) | 1 000 000 · 100 000 · 100 |
 | `TRADING_INITIAL_BALANCE_USD` · `TRADING_FEE_BPS` · `TRADING_SLIPPAGE_BPS` ⚙ | Saldo de respaldo, comisión y deslizamiento (en puntos básicos) | 10 000 · 10 · 5 |
 | `CHALLENGE_INITIAL_BALANCE_USD` · `COMMUNITY_MIN_TRADES` ⚙ | Saldo del reto mensual · operaciones mínimas para la clasificación | 10 000 · 5 |
+| `MARKET_ALERT_BTC_DROP_BPS` · `MARKET_ALERT_INDEX_DROP_BPS` ⚙ | Caída que enciende la luz roja de la cabecera: BTC en 24 h · IBEX 35 en la sesión (puntos básicos; 0 = desactivada) | 1000 · 400 |
 | `VISITS_ENABLED` ⚙ | Contador de visitas de la portada para el panel: anónimo, sin cookies ni IP | `true` |
 | `STOCK_DATA_PROVIDER` · `FINNHUB_API_KEY` ⚙ | Proveedor de bolsa: `yfinance` (sin clave) o `finnhub` | `yfinance` |
 
