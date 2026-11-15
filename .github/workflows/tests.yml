@@ -35,7 +35,7 @@ jobs:
         run: pip install -r requirements.txt
 
       # Los tests de JavaScript no usan node_modules: no hace falta npm ci.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 

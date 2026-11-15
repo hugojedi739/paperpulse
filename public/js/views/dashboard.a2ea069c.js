@@ -4,7 +4,7 @@ import { tick } from '../lib/feed.34c660aa.js';
 import { ASSETS, findAsset } from '../lib/catalog.f1b2b586.js';
 import { html, icon, render, on, $ } from '../lib/dom.a575914e.js';
 import { money, price, pct, trendClass, timeAgo } from '../lib/format.df74909c.js';
-import { portfolio } from '../lib/trading.5637d759.js';
+import { portfolio } from '../lib/trading.ea5e09ad.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.b3988be4.js';
 import { currentUser, onAuth, ready as authReady } from '../lib/auth.17a9e375.js';
 import * as notifs from '../lib/notifications.49bec9ff.js';
@@ -17,6 +17,8 @@ import { mountCard } from '../ui/retention-card.1534b890.js';
 import { whatIfParts } from '../lib/starting-balance.4c6d23aa.js';
 import { goalsCard } from '../ui/goals-card.73704d16.js';
 import { countTo } from '../lib/motion.d917c017.js';
+import * as account from '../lib/account.a3e68072.js';
+import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.d15dd1c3.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -58,7 +60,7 @@ export function mount(el) {
 export function show() {
   renderAll();
   clearInterval(timer);
-  timer = setInterval(() => { renderSummary(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
+  timer = setInterval(() => { renderSummary(); renderCompare(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
 }
 export function hide() { clearInterval(timer); }
 export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); }
@@ -89,6 +91,7 @@ function renderAll() {
             <div class="hero-chart" id="d-chart"></div>
           </section>
           <div class="kpis" id="d-kpis"></div>
+          ${user ? html`<div id="d-compare"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
           <section class="card" aria-labelledby="d-start-title">
@@ -99,14 +102,14 @@ function renderAll() {
           <div class="kpis" id="d-tiles"></div>` : html`
           <section class="card cta" aria-labelledby="d-cta-title">
             <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
-            <h2 id="d-cta-title">Compite con otros traders, sin arriesgar un euro.</h2>
-            <p class="hero-sub">Cotizaciones reales, ranking mensual y retos. Practica con saldo virtual.</p>
+            <h2 id="d-cta-title">Practica con precios y costes reales. <span>Averigua si de verdad te compensa operar.</span></h2>
+            <p class="hero-sub">Saldo virtual y cotizaciones reales de cripto, Wall Street e IBEX 35. Con tu cuenta gratuita, cada operación paga comisión y deslizamiento, y comparas tu resultado con no invertir y con el S&amp;P 500. Sin dinero real.</p>
             <div class="hero-actions">
               <button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
               <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>
               <button class="btn btn-lg btn-link" data-action="tour">Ver cómo funciona</button>
             </div>
-            <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador con dinero virtual. No es asesoramiento financiero.</p>
+            <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador educativo con dinero virtual. No es asesoramiento financiero.</p>
           </section>
           <section class="features" aria-label="Qué hace diferente a PaperPulse">
             <a class="card feature" href="#/community/forum">
@@ -170,6 +173,7 @@ function renderAll() {
   if (user) { renderHello(user); renderNotifCount(); } else renderPulse(practice);
   if (!practice) renderTiles();
   renderSummary();
+  renderCompare();
   renderWatchlist();
   renderMovers();
   renderBreadth();
@@ -223,6 +227,30 @@ function renderWhatIf(p, hasTrades) {
   render(box, w.intro ? html`${icon('wallet', 'sm')} ${w.intro}`
     : html`${icon('wallet', 'sm')} ${w.lead} <span class="money">${w.start}</span> ${w.mid} <strong class="money">${w.now}</strong>
       <span class="money delta ${trendClass(w.trend)}">(${w.diff})</span>.`);
+}
+
+/* ---------- Con la cuenta del servidor: ¿te ha compensado operar? ---------- */
+/** Tu rentabilidad frente a no invertir y al S&P 500 desde la apertura de la cuenta. Sin dato del S&P 500 no se pinta. */
+async function renderCompare() {
+  const box = $('#d-compare', root);
+  const since = account.openedAt();
+  if (!box) return;
+  if (!since || !store.isServerMode()) return box.replaceChildren();
+  const sp = await sp500Since(since); // en caché unos minutos: el repintado cada 3 s no pide nada nuevo
+  const now = $('#d-compare', root);
+  if (!now || account.openedAt() !== since) return; // la vista se repintó o cambió la sesión mientras llegaba
+  const c = sp && comparison(portfolio().returnPct, sp.returnPct);
+  if (!c) return now.replaceChildren();
+  render(now, html`<section class="card compare" aria-labelledby="d-compare-title">
+    <div class="card-head"><h2 class="card-title" id="d-compare-title">${icon('scale')} ¿Te ha compensado operar?</h2>
+      <span class="card-sub">Desde el ${sinceLabel(since)}</span></div>
+    <ul class="compare-rows">${c.rows.map((r) => html`<li class="${r.key === 'mine' ? 'is-mine' : ''}">
+      <div><strong>${r.label}</strong><small>${r.detail}</small></div>
+      <span class="num delta ${trendClass(r.pct)}">${pct(r.pct)}</span></li>`)}</ul>
+    <p class="compare-summary">${c.summary}</p>
+    <p class="muted compare-note">${icon('info', 'sm')} Desde el día en que abriste la cuenta, en dólares. El S&amp;P 500 se mide por su precio, sin dividendos.
+      El rendimiento pasado no garantiza resultados futuros.</p>
+  </section>`);
 }
 
 /* ---------- Con sesión: saludo, patrimonio, notificaciones y accesos rápidos ---------- */

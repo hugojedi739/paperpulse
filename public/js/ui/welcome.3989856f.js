@@ -4,7 +4,7 @@ import { h, svgIcon, mount } from '../lib/el.71f9edc9.js';
 import { openDialog, toast, confirmDialog } from '../lib/dom.a575914e.js';
 import { convert } from '../lib/format.df74909c.js';
 import * as store from '../lib/store.e5cc93e9.js';
-import * as account from '../lib/account.31a8bf12.js';
+import * as account from '../lib/account.a3e68072.js';
 import { PRESETS, DEFAULT_AMOUNT, START_MIN, START_MAX, formatEuro, parseAmount, smallBalanceNote, summaryLine } from '../lib/starting-balance.4c6d23aa.js';
 
 /** @param {{ reset?: boolean }} options reset: ya hay una cuenta local y se reinicia con otro saldo */
