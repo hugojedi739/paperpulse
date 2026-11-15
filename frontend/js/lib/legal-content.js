@@ -79,11 +79,13 @@ export const PAGES = [
         'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
         'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
         'Datos técnicos: tu dirección IP se usa para limitar el abuso. Para aplicar los límites del asistente se guarda, como mucho hasta el día siguiente, un identificador seudonimizado derivado de tu IP que cambia cada día; la IP en sí no se guarda. Las cookies y el almacenamiento local se describen en la Política de cookies.',
+        'Contador de visitas: cada vez que se carga la portada contamos la visita en el servidor, sin cookies y sin guardar nada en tu navegador. Para no contarte dos veces el mismo día se calcula un identificador seudonimizado a partir de tu IP y del identificador de tu navegador (user-agent), mezclados con la fecha y una clave secreta; ni la IP ni el user-agent se guardan, y el identificador cambia cada día. Solo se conservan cifras agregadas por día (cuántas personas entraron, con y sin sesión, y cuántos robots).',
       ] }] },
       { h: '3. Finalidades y bases jurídicas', p: [{ list: [
         'Crear y gestionar tu cuenta y prestarte el servicio: ejecución del contrato (art. 6.1.b RGPD).',
         'Mostrar tu perfil público y tus mensajes en la comunidad, y hacerte aparecer en las clasificaciones (si el perfil es público): ejecución del contrato y tu decisión de publicarlos.',
         'Seguridad, prevención del abuso, moderación y cumplimiento de las Normas: interés legítimo (art. 6.1.f RGPD).',
+        'Saber cuánta gente usa la aplicación mediante un contador de visitas agregado y anónimo, sin cookies: interés legítimo en conocer el uso del servicio (art. 6.1.f RGPD). Puedes oponerte escribiéndonos por el formulario de contacto.',
         'Atender los mensajes del formulario de contacto y tus solicitudes, y cumplir obligaciones legales: tu solicitud y obligación legal (art. 6.1.c RGPD).',
         'Enviarte notificaciones dentro de la aplicación: ejecución del contrato. No enviamos correos comerciales.',
       ] }] },
@@ -105,6 +107,7 @@ export const PAGES = [
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',
         'Sesiones: 30 días. Notificaciones: 60 días. Estados de inicio de sesión: 10 minutos.',
+        'Contador de visitas: el identificador del día se borra al día siguiente; las cifras agregadas por día, que no identifican a nadie, se conservan 90 días.',
         'Mensajes del formulario de contacto: hasta que la administración los borre. Si los enviaste con la sesión iniciada, se eliminan al borrar tu cuenta.',
         'Denuncias: cuando alguien denuncia un mensaje, junto a la denuncia se guarda una copia del texto del mensaje y del alias de su autor en ese momento, para que la moderación pueda revisar exactamente lo denunciado. Solo la ven los administradores. Esa copia se conserva aunque el mensaje original se borre después, y se elimina si la persona autora borra su cuenta (ver el apartado 8).',
         'Registro de moderación: se conserva para poder justificar las decisiones y evitar abusos; no contiene el texto de tus mensajes (la copia de un mensaje denunciado se guarda con la denuncia, como se explica en el punto anterior).',
@@ -154,7 +157,7 @@ export const PAGES = [
   {
     id: 'cookies', title: 'Política de cookies', icon: 'info',
     sections: [
-      { h: '1. Resumen', p: ['PaperPulse solo usa cookies y almacenamiento estrictamente necesarios para funcionar. No usamos analítica, publicidad, seguimiento ni cookies de terceros. Por eso no mostramos un banner de cookies: según el artículo 22.2 de la LSSI-CE, el almacenamiento técnico imprescindible para prestar el servicio solicitado está exento de consentimiento.'] },
+      { h: '1. Resumen', p: ['PaperPulse solo usa cookies y almacenamiento estrictamente necesarios para funcionar. No usamos cookies de analítica, publicidad ni seguimiento, ni cookies de terceros. Contamos las visitas a la portada de forma agregada y anónima, pero en el servidor y sin cookies ni nada guardado en tu navegador (ver el apartado 3). Por eso no mostramos un banner de cookies: según el artículo 22.2 de la LSSI-CE, el almacenamiento técnico imprescindible para prestar el servicio solicitado está exento de consentimiento.'] },
       { h: '2. Qué se guarda en tu navegador', p: [{ list: [
         'Cookie de sesión (pp_session; en producción __Host-pp_session): identifica tu sesión si inicias sesión. HttpOnly, SameSite=Strict, caduca a los 30 días o al cerrar sesión. Propia y técnica.',
         'Cookie pp_oauth: protege el inicio de sesión con Google. Dura 10 minutos como máximo. Propia y técnica.',
@@ -162,9 +165,10 @@ export const PAGES = [
         'sessionStorage (paperpulse_oauth_pending): recuerda durante la pestaña que vienes de un inicio de sesión externo.',
         'Caché del navegador del service worker (paperpulse-shell-v1): copia de los ficheros de la aplicación para que abra más rápido y sin conexión. Nunca guarda datos de tu cuenta ni de mercado.',
       ] }] },
-      { h: '3. Contenidos de terceros', p: ['Algunas imágenes de noticias se cargan desde los servidores de los medios. Esa carga puede mostrarles tu dirección IP; PaperPulse no instala cookies de ellos.'] },
-      { h: '4. Cómo borrarlas', p: ['Puedes borrar las cookies y el almacenamiento local desde los ajustes de tu navegador, o con «Eliminar cuenta» si tienes sesión. Si las borras perderás tus datos locales no guardados en el servidor y tendrás que volver a iniciar sesión.'] },
-      { h: '5. Cambios', p: ['Si en el futuro se añadiera analítica, publicidad u otras cookies no necesarias, te lo diríamos antes y pediremos tu consentimiento previo.'] },
+      { h: '3. Contador de visitas (sin cookies)', p: ['Para saber cuánta gente usa la aplicación contamos cada carga de la portada en nuestro servidor. No instala cookies ni guarda nada en tu dispositivo. Para no contarte dos veces el mismo día se usa un identificador seudonimizado calculado con tu IP y tu user-agent junto con la fecha y una clave secreta; ni la IP ni el user-agent se guardan, el identificador se borra al día siguiente y solo quedan cifras agregadas por día durante 90 días. Más detalles en la Política de privacidad.'] },
+      { h: '4. Contenidos de terceros', p: ['Algunas imágenes de noticias se cargan desde los servidores de los medios. Esa carga puede mostrarles tu dirección IP; PaperPulse no instala cookies de ellos.'] },
+      { h: '5. Cómo borrarlas', p: ['Puedes borrar las cookies y el almacenamiento local desde los ajustes de tu navegador, o con «Eliminar cuenta» si tienes sesión. Si las borras perderás tus datos locales no guardados en el servidor y tendrás que volver a iniciar sesión.'] },
+      { h: '6. Cambios', p: ['Si en el futuro se añadieran cookies de analítica o publicidad, u otras cookies no necesarias, te lo diríamos antes y pediríamos tu consentimiento previo.'] },
     ],
   },
   {
