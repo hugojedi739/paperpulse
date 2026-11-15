@@ -27,7 +27,7 @@ from backend.config import (
     ADMIN_API_KEY, ALLOWED_ORIGINS, DEBUG, FRONTEND_DIR, IS_PRODUCTION, IS_VERCEL, PORT, app_domain,
 )
 from backend.http import current_user
-from backend.market import stream
+from backend.market import benchmark, stream
 from backend.market.candles import api_candles
 from backend.market.crypto import api_crypto_depth, api_crypto_markets, api_crypto_tickers
 from backend.market.fx import get_exchange_rates
@@ -57,6 +57,12 @@ async def api_health(request):
 BUILT_INDEX = os.path.join(os.path.dirname(__file__), "templates", "index.html")  # generado por `npm run build:static`
 
 
+# Marcador de frontend/index.html para canonical, og:url y og:image: se sustituye por APP_DOMAIN al servirlo.
+# Es un dominio .invalid (RFC 2606, nunca existe): si algo sirviera el HTML sin pasar por aquí,
+# los enlaces no apuntarían a un dominio ajeno.
+DOMAIN_PLACEHOLDER = "https://app-domain.invalid"
+
+
 async def serve_index(request):
     """index.html con el dominio real en canonical y Open Graph."""
     index_path = os.path.join(FRONTEND_DIR, "index.html")
@@ -72,7 +78,7 @@ async def serve_index(request):
             return Response("APP_DOMAIN es obligatoria en producción.", status_code=500)
         domain = f"http://localhost:{PORT}"
     with open(index_path, "r", encoding="utf-8") as f:
-        content = f.read().replace("https://paperpulse.app", domain)
+        content = f.read().replace(DOMAIN_PLACEHOLDER, domain)
     return HTMLResponse(content, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
@@ -89,6 +95,7 @@ routes = [
     Route("/api/search", api_search, methods=["GET"]),
     Route("/api/rates", get_exchange_rates, methods=["GET"]),
     Route("/api/news", api_news, methods=["GET"]),
+    *benchmark.routes,  # S&P 500 para el comparador del Resumen
     # Asistente
     Route("/api/chat/challenge", api_chat_challenge, methods=["GET"]),
     Route("/api/chat", api_chat_stream, methods=["POST"]),
