@@ -4,15 +4,15 @@ import * as feed from '../lib/feed.34c660aa.js';
 import { findAsset, displayPair } from '../lib/catalog.f1b2b586.js';
 import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, applyVars } from '../lib/dom.a575914e.js';
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.df74909c.js';
-import * as trading from '../lib/trading.5637d759.js';
-import * as account from '../lib/account.31a8bf12.js';
+import * as trading from '../lib/trading.ea5e09ad.js';
+import * as account from '../lib/account.a3e68072.js';
 import { createTradingChart, INDICATORS } from '../lib/charts.b3988be4.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.c9567489.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.0a736068.js';
 import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
-import { closePositionDialog } from '../ui/dialogs.c6e755f4.js';
-import { shareButton, shareDialog } from '../ui/share.d68fcc5b.js';
+import { closePositionDialog } from '../ui/dialogs.f04c89f6.js';
+import { shareButton, shareDialog } from '../ui/share.0569d040.js';
 import { afterBuy } from '../ui/celebrate.c16acb3e.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
@@ -474,7 +474,7 @@ const actions = {
     b.setAttribute('aria-pressed', String(added));
     toast(added ? `${asset.symbol} añadido a favoritos` : `${asset.symbol} quitado de favoritos`, 'success', 2500);
   },
-  alert() { import('../ui/dialogs.c6e755f4.js').then((m) => m.alertsDialog(asset)); },
+  alert() { import('../ui/dialogs.f04c89f6.js').then((m) => m.alertsDialog(asset)); },
   fit() { chart.fit(); },
   fullscreen() {
     const card = $('#t-chart-card', root);

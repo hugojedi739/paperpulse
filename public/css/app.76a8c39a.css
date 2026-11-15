@@ -696,10 +696,23 @@
   .whatif { margin-top: var(--s-2); max-width: 62ch; font-size: var(--fs-md); color: var(--text-2); text-wrap: pretty; }
   .whatif .icon { vertical-align: -3px; color: var(--text-3); }
   .whatif strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  /* Comparador «¿Te ha compensado operar?» (Resumen, cuenta del servidor) */
+  .compare-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+  .compare-rows li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+    padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--border); }
+  .compare-rows li.is-mine { border-color: var(--accent); }
+  .compare-rows li div { display: grid; gap: 2px; min-width: 0; }
+  .compare-rows small { color: var(--text-3); }
+  .compare-rows .num { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .compare-summary { margin: var(--s-3) 0 var(--s-2); color: var(--text-1); text-wrap: pretty; }
+  .compare-note { display: flex; gap: 6px; align-items: flex-start; font-size: var(--fs-sm); text-wrap: pretty; }
+  .compare-note .icon { flex: none; margin-top: 2px; }
   .hero-chart { height: 260px; margin: 16px -8px -8px; position: relative; }
   .hero-chart .empty { position: absolute; inset: 0; align-content: center; }
   .cta { padding: var(--s-6); }
-  .cta h2 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.02em; max-width: 22ch; }
+  .cta h2 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.02em; max-width: 26ch; text-wrap: balance; }
+  .cta h2 span { display: block; margin-top: 6px; color: var(--text-2); }
   .disclaimer {
     display: flex; gap: var(--s-2); align-items: flex-start; margin-bottom: var(--s-5); padding: var(--s-3);
     border: 1px solid var(--border-strong); border-left: 4px solid var(--warn); border-radius: var(--r-md);
