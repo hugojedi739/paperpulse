@@ -10,7 +10,7 @@ Simulador de trading (*paper trading*) con **cotizaciones reales** de criptomone
 
 - **Mercados en vivo**: cripto y bolsa con precios en tiempo real, libro de órdenes, búsqueda (Ctrl+K), noticias financieras y estado de las bolsas (horarios y festivos).
 - **Operar**: órdenes a mercado, límite y stop, con comisión y deslizamiento configurables. Gráfico de velas de 1 minuto a 1 mes, con histórico infinito e indicadores (medias, Bollinger, RSI).
-- **Dos modos de cuenta**: sin sesión, todo vive en el navegador; con sesión, la cuenta está en el servidor, que decide siempre el precio. El saldo inicial lo elige cada persona (de 50 a 1.000.000 €).
+- **Demo o Mi cuenta**: un selector en la cabecera elige entre la cuenta Demo del navegador (se puede reiniciar, no puntúa) y Mi cuenta en el servidor (con sesión; el servidor decide siempre el precio). Las dos son con dinero virtual y nunca se mezclan. El saldo inicial lo elige cada persona (de 50 a 1.000.000 €).
 - **Diario y estadísticas**: notas por operación, calendario de resultados, tasa de aciertos, pérdida máxima y resultado por semanas.
 - **¿Te ha compensado operar?**: con la cuenta del servidor, el Resumen compara tu rentabilidad (ya con comisiones y deslizamiento) con no invertir y con el S&P 500 desde el día en que abriste la cuenta.
 - **Dividendos y luz roja**: próximo dividendo (fecha ex-dividendo e importe) en la ficha de cada acción y de tus posiciones en el Resumen, solo informativo (la simulación no los abona); y un aviso en la cabecera cuando BTC o el IBEX 35 caen más de un umbral, con reglas fijas y sin predicciones.

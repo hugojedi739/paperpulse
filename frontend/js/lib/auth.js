@@ -65,6 +65,9 @@ export async function init(chooseAfterOAuth) {
   try { fromOAuth = sessionStorage.getItem(OAUTH_PENDING) === '1'; sessionStorage.removeItem(OAUTH_PENDING); } catch { /* sin almacenamiento */ }
   try {
     ({ user } = await api('/api/auth/me'));
+    // Versiones anteriores guardaban la copia del servidor en las claves locales: con sesión, esa «Demo» no es tal
+    // y empieza de cero. Se marca como lo más reciente para que no se importe una copia antigua de /api/data.
+    if (store.settleUpgrade(Boolean(user))) touch();
     if (user) await reconcile(fromOAuth && chooseAfterOAuth ? chooseAfterOAuth : async (remote) => remote.updatedAt * 1000 > modifiedAt());
   } catch { user = null; }
   changed();
