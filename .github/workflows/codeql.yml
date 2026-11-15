@@ -1,0 +1,51 @@
+# Análisis de seguridad CodeQL del backend (Python) y del frontend (JavaScript).
+# Se ejecuta en cada pull request, en cada push a main y cada lunes, para
+# detectar también vulnerabilidades que CodeQL aprenda después del último cambio.
+# Las acciones están fijadas a un commit (con su versión en el comentario).
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1" # lunes, 05:17 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analizar (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # javascript-typescript cubre frontend/ y scripts/; no hace falta compilar nada.
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          # Código generado o de terceros: se analiza su fuente en frontend/, no la copia.
+          config: |
+            paths-ignore:
+              - public
+              - frontend/vendor
+              - backend/templates
+              - node_modules
+
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:${{ matrix.language }}
