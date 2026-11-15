@@ -1,36 +1,41 @@
-"""Contador de visitas de la portada para Administración → Resumen. Sin cookies y sin guardar nada reconocible.
+"""Contador anónimo de visitas para Administración → Resumen. La portada NO lo toca: es una petición aparte.
 
-- Solo cuenta GET / (la portada): ni /api, ni estáticos, ni HEAD, ni /index.html, ni las precargas del navegador.
+- La portada ("/") se sirve sin consultar la base. Cuando la aplicación termina de cargar, el navegador envía
+  POST /api/visit (lib/visit.js, una vez por carga, sin cookies: credentials 'omit'). Así el conteo nunca frena
+  la portada, aunque la base esté lejos (en producción la función corre en iad1 y Turso en Dublín) o caída.
 - Identificador anónimo: HMAC-SHA256(secreto 'visits' de server_secrets, día | IP | user-agent), recortado. La IP y el
   user-agent solo se usan en memoria para calcularlo; no se guardan. Como el día entra en el cálculo, el valor cambia
   cada día y no permite seguir a nadie de un día a otro (igual que ai_usage).
-- Tres tipos: 'bot' (user-agent de robot evidente o vacío), 'user' (cookie de sesión válida) y 'anon' (el resto).
-- Se guardan agregados por día (visit_days) y los hashes del día (visit_seen) solo para deduplicar. El cron diario
-  borra los hashes de días pasados y los agregados de más de RETENTION_DAYS (migración 0014).
-- La portada nunca espera más de TIMEOUT ni falla por el contador: cualquier error se ignora (sin registrar datos).
+- Tres tipos: 'bot' (user-agent de robot evidente o vacío), 'user' (la app dice que hay sesión: `signedIn`) y 'anon'.
+  `signedIn` lo envía el navegador sin cookies, así que no se verifica: solo reparte cifras agregadas.
+- Una sentencia por tabla, en autocommit y SIN transacción (sin BEGIN IMMEDIATE): no bloquea otras escrituras.
+  visit_seen (hashes del día, solo para deduplicar) y visit_days (agregados). El cron diario borra los hashes de
+  días pasados y los agregados de más de RETENTION_DAYS (migración 0014).
+- Tolerante a fallos: con el contador apagado, la base caída o cualquier error, responde 204 igual.
 """
-import asyncio
 import datetime
 import hashlib
 import hmac
 import re
 import sys
-import time
 from contextlib import closing
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import Response
+from starlette.routing import Route
 
 from backend import db, settings
-from backend.http import COOKIE
-from backend.security import get_client_ip
+from backend.http import read_json, same_origin, error
+from backend.security import IP_VISIT_CALLS, check_ip_rate_limit, get_client_ip
 
 RETENTION_DAYS = 90
-TIMEOUT = 0.3  # segundos que la portada puede esperar como mucho al contador
+VISITS_PER_MINUTE = 30  # por IP: una carga normal envía una; esto solo frena abusos
 KINDS = ("anon", "user", "bot")
 
 # Robots evidentes por su user-agent (buscadores, previsualizaciones de enlaces, monitores y clientes de línea de órdenes).
-# No pretende ser perfecto: lo que no se reconozca cuenta como persona.
+# No pretende ser perfecto: lo que no se reconozca cuenta como persona. La mayoría de robots no ejecutan JavaScript
+# y ni siquiera llegan a enviar la petición.
 BOT_UA = re.compile(
     r"bot\b|bot/|crawl|spider|slurp|scrap|preview|facebookexternalhit|embedly|whatsapp|telegram|discord|slack|"
     r"headless|lighthouse|pagespeed|pingdom|uptime|monitor|vercel|curl/|wget/|python-|httpx|aiohttp|go-http-client|"
@@ -61,31 +66,12 @@ def is_bot(user_agent: str) -> bool:
     return not user_agent.strip() or bool(BOT_UA.search(user_agent))
 
 
-def should_count(request) -> bool:
-    """Solo la carga real de la portada: GET /, sin precargas especulativas del navegador."""
-    if request.method != "GET" or request.url.path != "/":
-        return False
-    purpose = (request.headers.get("sec-purpose") or request.headers.get("purpose") or "").lower()
-    return "prefetch" not in purpose and "prerender" not in purpose
-
-
-def _has_session(conn, token: Optional[str]) -> bool:
-    """¿Cookie de sesión válida? Solo lectura (no toca last_login ni nada del usuario)."""
-    if not token or len(token) > 100:
-        return False
-    row = conn.execute(
-        "SELECT 1 FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ? AND u.disabled = 0",
-        (db.token_hash(token), int(time.time())),
-    ).fetchone()
-    return row is not None
-
-
-def record(ip: str, user_agent: str, token: Optional[str]) -> str:
-    """Cuenta una carga de la portada. Devuelve el tipo contado. Se ejecuta en un hilo (bloquea en la base)."""
+def record(ip: str, user_agent: str, signed_in: bool) -> str:
+    """Cuenta una carga de la app. Dos sentencias en autocommit, una por tabla, sin transacción. Devuelve el tipo."""
     user_agent = user_agent[:512]
     day = today()
-    with db.transaction() as conn:
-        kind = "bot" if is_bot(user_agent) else "user" if _has_session(conn, token) else "anon"
+    kind = "bot" if is_bot(user_agent) else "user" if signed_in else "anon"
+    with closing(db.connect()) as conn:
         new = conn.execute("INSERT OR IGNORE INTO visit_seen (day, visitor, kind) VALUES (?, ?, ?)",
                            (day, visitor_key(ip, user_agent, day), kind)).rowcount == 1
         conn.execute("INSERT INTO visit_days (day, kind, visitors, views) VALUES (?, ?, ?, 1) "
@@ -94,22 +80,25 @@ def record(ip: str, user_agent: str, token: Optional[str]) -> str:
     return kind
 
 
-def _record_if_enabled(ip: str, user_agent: str, token: Optional[str]) -> Optional[str]:
-    # settings.get puede leer la base: va aquí, en el hilo y dentro del tope de tiempo, no en el bucle de eventos
-    return record(ip, user_agent, token) if settings.get("visits_enabled") else None
+def _record_if_enabled(ip: str, user_agent: str, signed_in: bool):
+    return record(ip, user_agent, signed_in) if settings.get("visits_enabled") else None
 
 
-async def count(request) -> None:
-    """Para serve_index: cuenta la visita si toca, sin hacer esperar más de TIMEOUT y sin propagar errores."""
+async def api_visit(request):
+    """POST /api/visit {signedIn: bool}. Siempre 204 salvo origen ajeno (403), abuso (429) o petición mal formada."""
+    if not same_origin(request):
+        return error("Origen no permitido.", 403)
+    if not check_ip_rate_limit(get_client_ip(request), IP_VISIT_CALLS, VISITS_PER_MINUTE):
+        return error("Demasiadas peticiones. Espera un minuto.", 429)
+    body, err = await read_json(request, limit=256)
+    if err:
+        return err
+    signed_in = isinstance(body, dict) and body.get("signedIn") is True
     try:
-        if not should_count(request):
-            return
-        args = (get_client_ip(request), request.headers.get("user-agent", ""), request.cookies.get(COOKIE))
-        await asyncio.wait_for(run_in_threadpool(_record_if_enabled, *args), TIMEOUT)
-    except asyncio.TimeoutError:
-        print("[Visitas] El contador tardó demasiado; la portada se sirvió sin esperarlo.", file=sys.stderr)
-    except Exception as exc:  # la base caída, una migración pendiente...: la portada se sirve igual
+        await run_in_threadpool(_record_if_enabled, get_client_ip(request), request.headers.get("user-agent", ""), signed_in)
+    except Exception as exc:  # base caída, migración pendiente...: no es asunto de quien navega
         print(f"[Visitas] No se pudo contar la visita: {type(exc).__name__}", file=sys.stderr)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 def summary(days: int = 14) -> Dict:
@@ -140,3 +129,6 @@ def cleanup() -> Dict:
         a = conn.execute("DELETE FROM visit_seen WHERE day < ?", (day,)).rowcount
         b = conn.execute("DELETE FROM visit_days WHERE day < ?", (old,)).rowcount
     return {"visitHashesDeleted": a, "visitDaysDeleted": b}
+
+
+routes = [Route("/api/visit", api_visit, methods=["POST"])]

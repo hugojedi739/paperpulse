@@ -8,6 +8,7 @@ import { portfolio, checkTriggers } from './lib/trading.js';
 import { marketsInfo, fxRates } from './lib/marketdata.js';
 import { setRules as setAlertRules } from './lib/market-alert.js';
 import { initMarketAlert } from './ui/market-alert.js';
+import { sendVisit } from './lib/visit.js';
 import { updateLive, assetIcon } from './lib/ui.js';
 import { current, go } from './lib/router.js';
 import * as dashboard from './views/dashboard.js';
@@ -354,6 +355,11 @@ renderFeedStatus(feed.getStatus());
 feed.start();
 renderTape(); // la cinta se pintó antes de que el feed sembrara los últimos precios conocidos (caché local)
 initMarketAlert();
+// Contador anónimo de visitas: después de cargar y de saber si hay sesión, sin cookies y sin frenar nada
+auth.ready.then(() => {
+  const go = () => setTimeout(() => sendVisit({ signedIn: Boolean(auth.currentUser()) }), 0);
+  if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true });
+});
 refreshMarkets();
 refreshRates();
 setInterval(refreshMarkets, 60_000);

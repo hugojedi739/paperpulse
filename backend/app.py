@@ -79,7 +79,6 @@ async def serve_index(request):
         domain = f"http://localhost:{PORT}"
     with open(index_path, "r", encoding="utf-8") as f:
         content = f.read().replace(DOMAIN_PLACEHOLDER, domain)
-    await visits.count(request)  # contador anónimo del panel; como mucho visits.TIMEOUT y nunca lanza
     return HTMLResponse(content, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
@@ -98,6 +97,7 @@ routes = [
     Route("/api/news", api_news, methods=["GET"]),
     *benchmark.routes,  # S&P 500 para el comparador del Resumen
     *dividends.routes,  # próximos dividendos (ficha de Operar y Resumen)
+    *visits.routes,  # contador anónimo de visitas (lo envía el navegador tras cargar; la portada no lo toca)
     # Asistente
     Route("/api/chat/challenge", api_chat_challenge, methods=["GET"]),
     Route("/api/chat", api_chat_stream, methods=["POST"]),
