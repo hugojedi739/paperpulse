@@ -4,8 +4,8 @@ import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toas
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.df74909c.js';
 import { createEquityChart } from '../lib/charts.b3988be4.js';
 import { assetIcon, empty, seg, pressSeg } from '../lib/ui.0a736068.js';
-import { noteDialog } from '../ui/dialogs.c6e755f4.js';
-import { shareButton, shareDialog } from '../ui/share.d68fcc5b.js';
+import { noteDialog } from '../ui/dialogs.f04c89f6.js';
+import { shareButton, shareDialog } from '../ui/share.0569d040.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];
 const DAY = 86400000;
