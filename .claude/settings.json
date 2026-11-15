@@ -39,7 +39,7 @@
       "Bash(git -c * push *)",
       "Bash(gh repo edit *--visibility*)",
       "Bash(gh api *visibility*)",
-      "Bash(gh api *private*)",
+      "Bash(gh api *private=*)",
       "Bash(gh api *git/refs*)",
       "Bash(gh api *-X DELETE*)",
       "Bash(gh api *--method DELETE*)"
