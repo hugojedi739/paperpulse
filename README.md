@@ -17,7 +17,7 @@ Simulador de trading (*paper trading*) con **cotizaciones reales** de criptomone
 - **Retención**: notificaciones, logros, racha de días, reto mensual con clasificación propia, retos personales de la semana y una sección para aprender (lecciones y glosario).
 - **Asistente IA**: chat con Claude en streaming, con límites de gasto y un modo de demostración si no hay clave.
 - **Cuentas**: email y contraseña, Google u Okta (OpenID Connect con PKCE), descarga de datos y borrado de la cuenta (RGPD).
-- **Administración**: métricas, usuarios, moderación, mensajes de contacto, auditoría y ajustes (inicio de sesión, IA, proveedor de bolsa, simulación).
+- **Administración**: métricas (también visitas anónimas de la portada, sin cookies), usuarios, moderación, mensajes de contacto, auditoría y ajustes (inicio de sesión, IA, proveedor de bolsa, simulación).
 - **PWA instalable** con temas claro y oscuro y una barra inferior táctil en el móvil.
 
 ## Tecnologías
@@ -56,7 +56,7 @@ backend/                  API y lógica del servidor (Starlette)
   trading/                Cuenta de práctica del servidor: reglas en enteros, precios, libro contable y API
   community/              Perfiles, foro, clasificación, pulso público y moderación
   retention/              Notificaciones, logros, racha, reto mensual, onboarding y cron diario
-  migrations/             Migraciones SQL numeradas (0001_… a 0013_…); se aplican al arrancar
+  migrations/             Migraciones SQL numeradas (0001_… a 0014_…); se aplican al arrancar
   templates/index.html    index.html para Vercel, generado por npm run build:static (no editar)
 frontend/                 La aplicación web que se sirve en local y con Docker (sin build)
   index.html              Shell de la app, sin scripts ni estilos inline
@@ -130,6 +130,7 @@ La plantilla completa y comentada está en [`.env.example`](.env.example). Todas
 | `DAILY_GLOBAL_TOKEN_LIMIT` · `DAILY_USER_TOKEN_LIMIT` · `DAILY_USER_CHAT_REQUESTS` | Límites diarios de gasto de la IA (global, por cliente y preguntas por cliente) | 1 000 000 · 100 000 · 100 |
 | `TRADING_INITIAL_BALANCE_USD` · `TRADING_FEE_BPS` · `TRADING_SLIPPAGE_BPS` ⚙ | Saldo de respaldo, comisión y deslizamiento (en puntos básicos) | 10 000 · 10 · 5 |
 | `CHALLENGE_INITIAL_BALANCE_USD` · `COMMUNITY_MIN_TRADES` ⚙ | Saldo del reto mensual · operaciones mínimas para la clasificación | 10 000 · 5 |
+| `VISITS_ENABLED` ⚙ | Contador de visitas de la portada para el panel: anónimo, sin cookies ni IP | `true` |
 | `STOCK_DATA_PROVIDER` · `FINNHUB_API_KEY` ⚙ | Proveedor de bolsa: `yfinance` (sin clave) o `finnhub` | `yfinance` |
 
 Para probar siempre con la base local, deja vacías `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`. Una variable nueva se documenta en `.env.example` y en `SCHEMA` de `backend/settings.py`.

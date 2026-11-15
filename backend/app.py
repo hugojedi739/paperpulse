@@ -21,7 +21,7 @@ from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
-from backend import account, admin, auth, contact, db, settings
+from backend import account, admin, auth, contact, db, settings, visits
 from backend.chat import api_chat_challenge, api_chat_stream
 from backend.config import (
     ADMIN_API_KEY, ALLOWED_ORIGINS, DEBUG, FRONTEND_DIR, IS_PRODUCTION, IS_VERCEL, PORT, app_domain,
@@ -79,6 +79,7 @@ async def serve_index(request):
         domain = f"http://localhost:{PORT}"
     with open(index_path, "r", encoding="utf-8") as f:
         content = f.read().replace(DOMAIN_PLACEHOLDER, domain)
+    await visits.count(request)  # contador anónimo del panel; como mucho visits.TIMEOUT y nunca lanza
     return HTMLResponse(content, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 

@@ -37,6 +37,8 @@ SCHEMA: Dict[str, tuple] = {
     "community_min_trades": ("COMMUNITY_MIN_TRADES", 5, int, False),
     # Retos mensuales: saldo inicial igual para todos los participantes
     "challenge_initial_balance_usd": ("CHALLENGE_INITIAL_BALANCE_USD", 10000, int, False),
+    # Contador de visitas de la portada (Administración → Resumen): anónimo, sin cookies ni IP (backend/visits.py)
+    "visits_enabled": ("VISITS_ENABLED", True, bool, False),
 }
 CHOICES = {"stock_data_provider": ("yfinance", "finnhub"), "anthropic_effort": ("low", "medium", "high", "auto")}
 # Rangos válidos de los ajustes enteros. bps = puntos básicos (10 bps = 0,10 %)
