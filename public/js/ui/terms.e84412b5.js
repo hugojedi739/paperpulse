@@ -2,7 +2,7 @@
 //  · Cuenta nueva sin aceptar (alta con Google): diálogo que NO se puede cerrar hasta aceptar o cerrar sesión.
 //  · Cuenta anterior a los textos legales («legacy») o con una versión antigua: aviso que se puede cerrar (una vez por sesión).
 import { api } from '../lib/api.d1db7328.js';
-import { LEGAL_VERSION } from '../lib/legal-content.dde43b20.js';
+import { LEGAL_VERSION } from '../lib/legal-content.6fbd330f.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
 import { openDialog, toast } from '../lib/dom.a575914e.js';
 import * as auth from '../lib/auth.740770c1.js';
