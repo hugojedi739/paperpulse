@@ -14,3 +14,8 @@ tests/
 *.zip
 *.json
 !frontend/manifest.json
+
+# Base local y enlace de Vercel (no hacen falta en la imagen)
+data/
+.vercel/
+node_modules/

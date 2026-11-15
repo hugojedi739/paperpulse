@@ -167,3 +167,14 @@ También funciona con Docker: `docker compose up --build`, con la base en el vol
 | `python -m backend.db migrate` · `status` | Aplica las migraciones pendientes · versión del esquema e integridad |
 | `python -m backend.db demo` · `users` · `admins` | Usuarios de prueba · listar usuarios · listar administradores |
 | `python -m backend.db admin <email>` | Da el rol de administrador a una cuenta verificada |
+
+## Licencia
+
+Copyright © 2026 Hugo ([@hugojedi739](https://github.com/hugojedi739)).
+
+PaperPulse se distribuye con **doble licencia**:
+
+- **[GNU AGPL-3.0](LICENSE)** (`AGPL-3.0-only`): puedes usar, estudiar, modificar y redistribuir el código, siempre que publiques con la misma licencia el código completo de tu versión, **también si solo la ofreces como servicio web** (sección 13).
+- **Licencia comercial**: si quieres usarlo sin las obligaciones de la AGPL (por ejemplo, en un producto o servicio de código cerrado), se puede adquirir una licencia comercial. Escribe desde el [formulario de contacto](https://paperpulse-delta.vercel.app/#/contact) o abre una *issue* en GitHub.
+
+Las contribuciones se aceptan solo si su autor permite que se incluyan también en la licencia comercial.
