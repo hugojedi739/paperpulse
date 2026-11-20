@@ -10,7 +10,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from backend.community import forum, moderation, profiles, pulse, ranking
+from backend.community import forum, moderation, profiles, pulse, ranking, sentiment
 from backend.community.common import CommunityError
 from backend.config import ADMIN_API_KEY
 from backend.http import current_user, error, ok, read_json, require_admin, same_origin
@@ -22,6 +22,7 @@ LIMITS = {
     "read": {"ip": 180, "user": 120},
     "act": {"ip": 60, "user": 30},  # votar, seguir, denunciar, editar perfil, borrar
     "post": {"ip": 20, "user": 5},
+    "vote": {"ip": 30, "user": 10},  # opinión alcista/bajista de un activo
 }
 MAX_PAGE = 500
 
@@ -235,6 +236,19 @@ async def api_vote(request):
     return err or await _run(forum.vote, user["id"], request.path_params["post_id"], body.get("value"))
 
 
+async def api_sentiment(request):
+    """GET: reparto de opiniones de un activo (público; con sesión añade mi voto). PUT {value: 1|-1|0}: votar."""
+    reading = request.method == "GET"
+    user, err = await _guard(request, "read" if reading else "vote", not reading)
+    if err:
+        return err
+    symbol = request.path_params["symbol"]
+    if reading:
+        return await _run(sentiment.get, symbol, _uid(user))
+    body, err = await read_json(request, limit=256)
+    return err or await _run(sentiment.vote, user["id"], symbol, body.get("value"))
+
+
 async def api_report(request):
     user, err = await _guard(request, "act", True)
     if err:
@@ -317,6 +331,7 @@ routes = [
     Route("/api/forum/posts/{post_id:int}", api_delete_post, methods=["DELETE"]),
     Route("/api/forum/posts/{post_id:int}/vote", api_vote, methods=["PUT"]),
     Route("/api/forum/posts/{post_id:int}/report", api_report, methods=["POST"]),
+    Route("/api/assets/{symbol}/sentiment", api_sentiment, methods=["GET", "PUT"]),
     Route("/api/admin/reports", api_admin_reports, methods=["GET"]),
     Route("/api/admin/posts/{post_id:int}/{action:str}", api_admin_post, methods=["POST"]),
     Route("/api/admin/users/{user_id:int}/{action:str}", api_admin_suspend, methods=["POST"]),

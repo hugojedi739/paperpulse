@@ -16,6 +16,8 @@ import { shareButton, shareDialog } from '../ui/share.223e72b0.js';
 import { afterBuy } from '../ui/celebrate.a821d690.js';
 import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.1e314bd3.js';
 import { h, mount as put } from '../lib/el.71f9edc9.js';
+import { currentUser, onAuth } from '../lib/auth.965fe481.js';
+import { loadSentiment, castVote, nextVote, shares, votesLabel, SENTIMENT_NOTE } from '../lib/sentiment.9a0aea28.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -137,6 +139,8 @@ export function mount(el) {
     renderIntervals();
     load();
   };
+  on(root, 'click', '[data-sent]', (_, b) => vote(Number(b.dataset.sent)));
+  onAuth(() => loadOpinion()); // al entrar o salir cambia mi voto
   on(root, 'click', '[data-seg="interval"] button', (_, b) => chooseInterval(b.dataset.value));
   on(root, 'click', '[data-iv]', (_, b) => { $('#iv-pop', root).hidePopover(); chooseInterval(b.dataset.iv); });
   on(root, 'click', '[data-seg="range"] button', (_, b) => {
@@ -241,9 +245,65 @@ function renderHead() {
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
       <button class="icon-btn" data-t="alert" aria-label="Crear alerta de precio" title="Alerta de precio">${icon('bell-ring')}</button>
     </div>
-    <p class="sym-div" id="t-div" hidden></p>`);
+    <p class="sym-div" id="t-div" hidden></p>
+    <div class="sym-sent" id="t-sent" hidden></div>`);
   renderStats();
   renderDividend();
+  loadOpinion();
+}
+
+/* ---------- Opinión de la comunidad (voto alcista/bajista) ---------- */
+let opinion = null; // reparto del activo mostrado
+let voting = false;
+
+async function loadOpinion() {
+  const shown = asset;
+  if (!shown) return;
+  opinion = null;
+  const s = await loadSentiment(shown.symbol);
+  if (asset !== shown) return; // otro activo mientras llegaba la respuesta
+  opinion = s;
+  renderOpinion();
+}
+
+function renderOpinion() {
+  const box = $('#t-sent', root);
+  if (!box) return;
+  if (!opinion) { box.hidden = true; return; } // sin dato (servidor caído): no se pinta nada
+  const sh = shares(opinion);
+  const mine = opinion.myVote;
+  const loggedIn = !!currentUser();
+  const btn = (value, label, count) => h('button', {
+    type: 'button', class: 'btn btn-sm btn-ghost', dataset: { sent: String(value) }, 'aria-pressed': String(mine === value), disabled: voting,
+  }, `${label} · ${count}${sh ? ` (${value === 1 ? sh.bull : sh.bear} %)` : ''}`);
+  const bar = h('div', { class: 'bar', role: 'img', 'aria-label': sh ? `${sh.bull} % alcistas, ${sh.bear} % bajistas` : 'Sin votos todavía' },
+    sh ? [h('i', { class: 'up', dataset: { w: String(sh.bull) } }), h('i', { class: 'down', dataset: { w: String(sh.bear) } })] : null);
+  put(box,
+    h('div', { class: 'sym-sent-head' }, h('strong', {}, 'Opinión de la comunidad'), h('span', { class: 'muted' }, opinion.total ? votesLabel(opinion.total) : 'Aún nadie ha opinado')),
+    bar,
+    h('div', { class: 'sym-sent-row' },
+      loggedIn ? [btn(1, 'Alcista', opinion.bullish), btn(-1, 'Bajista', opinion.bearish)]
+        : [h('span', { class: 'muted' }, `${opinion.bullish} alcistas · ${opinion.bearish} bajistas`),
+          h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-action': 'login' }, 'Inicia sesión para opinar')],
+      opinion.threadId ? h('a', { class: 'btn btn-sm btn-ghost', href: `#/community/thread:${opinion.threadId}` }, 'Ver el hilo del foro') : null),
+    h('small', { class: 'muted' }, SENTIMENT_NOTE));
+  applyVars(box);
+  box.hidden = false;
+}
+
+async function vote(value) {
+  const shown = asset;
+  if (voting || !opinion) return;
+  voting = true; renderOpinion();
+  try {
+    const s = await castVote(shown.symbol, nextVote(opinion.myVote, value));
+    if (asset === shown) opinion = s;
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    voting = false;
+    if (asset === shown) renderOpinion();
+  }
 }
 
 /** «Próximo dividendo: ex-dividendo el … · importe» en las acciones que lo tienen; sin dato no se pinta nada. */
