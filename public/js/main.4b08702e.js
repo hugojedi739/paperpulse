@@ -8,7 +8,7 @@ import { portfolio, checkTriggers } from './lib/trading.031ca84b.js';
 import { marketsInfo, fxRates } from './lib/marketdata.c6db1b1f.js';
 import { setRules as setAlertRules } from './lib/market-alert.9ca18474.js';
 import { initMarketAlert } from './ui/market-alert.71c1b81c.js';
-import { initAccountSwitch } from './ui/account-switch.9b141c9a.js';
+import { initAccountSwitch } from './ui/account-switch.b694b543.js';
 import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.c78c079a.js';
 import { sendVisit } from './lib/visit.c6cb5460.js';
 import { updateLive, assetIcon } from './lib/ui.3d803e38.js';

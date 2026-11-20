@@ -332,6 +332,24 @@
     font-weight: 600; color: var(--text-1); border: 1px solid var(--border-strong); }
   .acct-tag[data-mode='server'] { border-color: var(--accent); }
   .acct-tag:empty { display: none; }
+  /* Botón «?» junto a la etiqueta: abre la explicación de «dinero virtual». Zona táctil de 44 px sin cambiar su tamaño */
+  .acct-help { position: relative; display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; margin-left: -4px; border-radius: 50%; color: var(--text-2); }
+  .acct-help::before { content: ''; position: absolute; inset: -10px; }
+  .acct-help:hover, .acct-help[aria-expanded='true'] { color: var(--accent-text); background: var(--surface-2); }
+  .acct-tag:empty + .acct-help { display: none; }
+  .acct-info { gap: var(--s-2); padding: var(--s-3); font-size: var(--fs-md); }
+  .acct-info:popover-open { display: grid; } /* solo abierta: un display propio pisaría el ocultado del popover cerrado */
+  /* En el móvil, con margen a los dos lados (anchorPopover la alinea a la izquierda de la etiqueta con estilos en línea) */
+  @media (max-width: 767px) { .acct-info { left: 8px !important; right: 8px !important; width: auto; } }
+  .acct-info p { margin: 0; color: var(--text-2); text-wrap: pretty; }
+  .acct-info-title { font-size: var(--fs-lg); }
+  .acct-info-modes { display: grid; gap: var(--s-2); margin: 0; }
+  .acct-info-modes > div { padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-md); }
+  .acct-info-modes dt { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .acct-info-modes dd { margin: 4px 0 0; color: var(--text-2); font-size: var(--fs-sm); }
+  .acct-now { display: none; margin-left: auto; font-size: var(--fs-xs); font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--accent-fill); color: var(--accent-text); }
+  .acct-info[data-mode='demo'] [data-for='demo'], .acct-info[data-mode='server'] [data-for='server'] { border-color: var(--accent); }
+  .acct-info[data-mode='demo'] [data-for='demo'] .acct-now, .acct-info[data-mode='server'] [data-for='server'] .acct-now { display: inline-flex; }
   @media (max-width: 640px) {
     /* En el móvil el selector solo enseña los iconos; el texto sigue ahí para el lector de pantalla */
     .acct-opt { padding: 0; min-width: 36px; height: 32px; justify-content: center; }

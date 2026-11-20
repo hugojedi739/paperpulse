@@ -19,7 +19,7 @@
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
   <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/app.5dc8edda.css">
+  <link rel="stylesheet" href="/css/app.2df680bf.css">
   <link rel="modulepreload" href="/js/lib/account-mode.c78c079a.js">
   <link rel="modulepreload" href="/js/lib/account.200b05ac.js">
   <link rel="modulepreload" href="/js/lib/analysis.ee203d8f.js">
@@ -54,7 +54,7 @@
   <link rel="modulepreload" href="/js/lib/trading.031ca84b.js">
   <link rel="modulepreload" href="/js/lib/ui.3d803e38.js">
   <link rel="modulepreload" href="/js/lib/visit.c6cb5460.js">
-  <link rel="modulepreload" href="/js/ui/account-switch.9b141c9a.js">
+  <link rel="modulepreload" href="/js/ui/account-switch.b694b543.js">
   <link rel="modulepreload" href="/js/ui/celebrate.f4b194c2.js">
   <link rel="modulepreload" href="/js/ui/chat.d2e240fa.js">
   <link rel="modulepreload" href="/js/ui/dialogs.2ca290c8.js">
@@ -73,7 +73,7 @@
   <link rel="modulepreload" href="/js/views/trade.51679209.js">
   <link rel="modulepreload" href="/vendor/lightweight-charts.fd656c72.mjs">
   <script src="/js/theme-init.f6dbcac7.js"></script>
-  <script type="module" src="/js/main.35d5e4e8.js"></script>
+  <script type="module" src="/js/main.4b08702e.js"></script>
   <script type="module" src="/js/ui/status.8263630a.js"></script>
 </head>
 <body>
@@ -128,6 +128,7 @@
 
       <div class="statusbar">
         <span class="acct-tag" id="acct-tag" role="status"></span>
+        <button type="button" class="acct-help" id="acct-help" popovertarget="acct-info" aria-haspopup="dialog" aria-controls="acct-info" aria-label="Qué es el dinero virtual y qué diferencia hay entre Demo y Mi cuenta" title="¿Qué es el dinero virtual?"><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#circle-help"/></svg></button>
         <div class="statusbar-main" id="hdr-status"></div>
       </div>
 
@@ -197,6 +198,19 @@
     <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
   </div>
 
+  <!-- Qué es «dinero virtual» y en qué se diferencian Demo y Mi cuenta (se abre desde la etiqueta de la barra de estado) -->
+  <div popover id="acct-info" class="menu menu-wide acct-info" role="dialog" aria-labelledby="acct-info-title">
+    <strong class="acct-info-title" id="acct-info-title">¿Qué es «dinero virtual»?</strong>
+    <p>PaperPulse es un simulador: los precios son reales, pero el saldo no. No hay dinero real, ni brókeres, ni órdenes reales, así que no puedes ganar ni perder dinero de verdad.</p>
+    <dl class="acct-info-modes">
+      <div data-for="demo"><dt><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#graduation-cap"/></svg> Demo <span class="acct-now">La estás usando</span></dt>
+        <dd>La cuenta de este navegador, sin registrarte. Se guarda solo aquí, la puedes reiniciar cuando quieras, no cobra comisiones y no cuenta para la clasificación ni para los retos.</dd></div>
+      <div data-for="server"><dt><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#wallet"/></svg> Mi cuenta <span class="acct-now">La estás usando</span></dt>
+        <dd>Con la sesión iniciada. Se guarda en el servidor, cobra comisión y deslizamiento como un bróker real y cuenta para la clasificación y los retos. El saldo inicial se elige una vez y no se puede cambiar.</dd></div>
+    </dl>
+    <p class="muted">Pasa de una a otra con el selector «Demo / Mi cuenta» de la cabecera. Es un simulador educativo: no es asesoramiento financiero.</p>
+    <a class="link" href="#/learn/que-es-paper-trading">Qué es el paper trading <svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#arrow-right"/></svg></a>
+  </div>
   <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>

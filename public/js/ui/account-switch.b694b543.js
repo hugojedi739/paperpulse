@@ -5,6 +5,7 @@ import * as store from '../lib/store.13ad261a.js';
 import * as account from '../lib/account.200b05ac.js';
 import { DEMO, SERVER, LABELS } from '../lib/account-mode.c78c079a.js';
 import { h, mount, svgIcon } from '../lib/el.71f9edc9.js';
+import { anchorPopover } from '../lib/dom.a575914e.js';
 
 const OPTIONS = [
   { mode: DEMO, icon: 'graduation-cap' },
@@ -43,6 +44,8 @@ export function draw() {
     tag.dataset.mode = current;
     tag.title = LABELS[current].hint;
   }
+  const info = document.getElementById('acct-info');
+  if (info) info.dataset.mode = current; // la explicación marca la cuenta que se está usando
 }
 
 function onKey(e) {
@@ -64,6 +67,8 @@ export function initAccountSwitch({ login, welcome }) {
     if (btn) select(btn.dataset.mode);
   });
   box?.addEventListener('keydown', onKey);
+  const info = document.getElementById('acct-info');
+  if (info) anchorPopover(info); // bajo la etiqueta «… · dinero virtual»
   store.on('account', draw);
   draw();
 }

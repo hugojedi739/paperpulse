@@ -76,6 +76,7 @@
 
       <div class="statusbar">
         <span class="acct-tag" id="acct-tag" role="status"></span>
+        <button type="button" class="acct-help" id="acct-help" popovertarget="acct-info" aria-haspopup="dialog" aria-controls="acct-info" aria-label="Qué es el dinero virtual y qué diferencia hay entre Demo y Mi cuenta" title="¿Qué es el dinero virtual?"><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#circle-help"/></svg></button>
         <div class="statusbar-main" id="hdr-status"></div>
       </div>
 
@@ -145,6 +146,19 @@
     <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
   </div>
 
+  <!-- Qué es «dinero virtual» y en qué se diferencian Demo y Mi cuenta (se abre desde la etiqueta de la barra de estado) -->
+  <div popover id="acct-info" class="menu menu-wide acct-info" role="dialog" aria-labelledby="acct-info-title">
+    <strong class="acct-info-title" id="acct-info-title">¿Qué es «dinero virtual»?</strong>
+    <p>PaperPulse es un simulador: los precios son reales, pero el saldo no. No hay dinero real, ni brókeres, ni órdenes reales, así que no puedes ganar ni perder dinero de verdad.</p>
+    <dl class="acct-info-modes">
+      <div data-for="demo"><dt><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#graduation-cap"/></svg> Demo <span class="acct-now">La estás usando</span></dt>
+        <dd>La cuenta de este navegador, sin registrarte. Se guarda solo aquí, la puedes reiniciar cuando quieras, no cobra comisiones y no cuenta para la clasificación ni para los retos.</dd></div>
+      <div data-for="server"><dt><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#wallet"/></svg> Mi cuenta <span class="acct-now">La estás usando</span></dt>
+        <dd>Con la sesión iniciada. Se guarda en el servidor, cobra comisión y deslizamiento como un bróker real y cuenta para la clasificación y los retos. El saldo inicial se elige una vez y no se puede cambiar.</dd></div>
+    </dl>
+    <p class="muted">Pasa de una a otra con el selector «Demo / Mi cuenta» de la cabecera. Es un simulador educativo: no es asesoramiento financiero.</p>
+    <a class="link" href="#/learn/que-es-paper-trading">Qué es el paper trading <svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#arrow-right"/></svg></a>
+  </div>
   <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
