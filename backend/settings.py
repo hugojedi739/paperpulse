@@ -37,6 +37,13 @@ SCHEMA: Dict[str, tuple] = {
     "community_min_trades": ("COMMUNITY_MIN_TRADES", 5, int, False),
     # Retos mensuales: saldo inicial igual para todos los participantes
     "challenge_initial_balance_usd": ("CHALLENGE_INITIAL_BALANCE_USD", 10000, int, False),
+    # Luz roja de mercado (cabecera): caída que la enciende, en puntos básicos (1000 = 10 %); 0 = regla desactivada.
+    # Reglas objetivas sobre cotizaciones que ya tenemos, sin IA ni predicciones (frontend/js/lib/market-alert.js)
+    "market_alert_btc_drop_bps": ("MARKET_ALERT_BTC_DROP_BPS", 1000, int, False),  # BTC en 24 h
+    "market_alert_index_drop_bps": ("MARKET_ALERT_INDEX_DROP_BPS", 400, int, False),  # IBEX 35 en la sesión, con la bolsa abierta
+    # Contador de visitas de la portada (Administración → Resumen): anónimo, sin cookies ni IP (backend/visits.py).
+    # Desactivado por defecto: en producción (función en iad1, base en Dublín) hacía esperar a la portada ~0,8 s.
+    "visits_enabled": ("VISITS_ENABLED", False, bool, False),
 }
 CHOICES = {"stock_data_provider": ("yfinance", "finnhub"), "anthropic_effort": ("low", "medium", "high", "auto")}
 # Rangos válidos de los ajustes enteros. bps = puntos básicos (10 bps = 0,10 %)
@@ -46,6 +53,8 @@ INT_RANGES = {
     "trading_slippage_bps": (0, 500),
     "community_min_trades": (0, 1000),
     "challenge_initial_balance_usd": (100, 10_000_000),
+    "market_alert_btc_drop_bps": (0, 5000),
+    "market_alert_index_drop_bps": (0, 5000),
 }
 
 _cache: Dict[str, Any] = {"time": 0.0, "values": {}}

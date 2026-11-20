@@ -4,7 +4,7 @@ import time
 from starlette.concurrency import run_in_threadpool
 from starlette.routing import Route
 
-from backend import admin_log, admin_stats, ai_usage, auth, contact, db, settings
+from backend import admin_log, admin_stats, ai_usage, auth, contact, db, settings, visits
 from backend.config import DAILY_GLOBAL_TOKEN_LIMIT
 from backend.http import error, ok, read_json, require_admin
 from backend.market import stream
@@ -39,6 +39,7 @@ async def overview(request):
         "unreadMessages": await run_in_threadpool(contact.unread_count),
         "activity": await run_in_threadpool(admin_stats.activity),
         "aiHistory": await run_in_threadpool(ai_usage.history, 14),
+        "visits": await run_in_threadpool(visits.summary, 14),
         "stream": stream.status(),
         "integrations": {
             "anthropic": {"configured": bool(settings.get("anthropic_api_key")), "model": settings.get("anthropic_model")},

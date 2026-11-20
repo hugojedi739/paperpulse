@@ -7,7 +7,7 @@ import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPre
 import * as trading from '../lib/trading.ea5e09ad.js';
 import * as account from '../lib/account.a3e68072.js';
 import * as auth from '../lib/auth.17a9e375.js';
-import { safeUrl } from '../lib/marketdata.c9567489.js';
+import { safeUrl } from '../lib/marketdata.9debd77d.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.0a736068.js';
 import { go } from '../lib/router.de30a562.js';
 import { openWelcome } from './welcome.3989856f.js';

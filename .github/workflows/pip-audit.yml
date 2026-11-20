@@ -1,0 +1,43 @@
+# Auditoría de vulnerabilidades conocidas en las dependencias de Python
+# (requirements.txt) con pip-audit. Solo informa: no cambia nada.
+name: pip-audit
+
+on:
+  pull_request:
+    paths: [requirements.txt, .github/workflows/pip-audit.yml]
+  push:
+    branches: [main]
+    paths: [requirements.txt, .github/workflows/pip-audit.yml]
+  # Semanal: aparecen avisos nuevos aunque requirements.txt no cambie
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+# Mínimo imprescindible: solo leer el código. Nada de escribir ni de secretos.
+permissions:
+  contents: read
+
+concurrency:
+  group: pip-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Acciones fijadas por commit (comentario = etiqueta). Dependabot las actualiza.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Instalar pip-audit
+        run: pip install pip-audit==2.10.1
+
+      # --strict falla también si una dependencia no se puede auditar
+      - name: Auditar requirements.txt
+        run: pip-audit -r requirements.txt --strict

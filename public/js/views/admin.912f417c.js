@@ -127,7 +127,9 @@ async function renderOverview() {
   let o;
   try { o = await api('/api/admin/overview'); } catch (err) { return fail(err); }
   if (tab !== 'overview') return;
-  const u = o.users, use = o.usage, st = o.stream, int = o.integrations, act = o.activity, hist = o.aiHistory;
+  const u = o.users, use = o.usage, st = o.stream, int = o.integrations, act = o.activity, hist = o.aiHistory, vis = o.visits;
+  const people = (d) => d.anon + d.user; // visitantes únicos (personas): sin sesión + con sesión; los bots aparte
+  const maxPeople = Math.max(1, ...vis.history.map(people));
   const maxTokens = Math.max(1, ...hist.map((d) => d.tokens));
   const days = Array.from({ length: 30 }, (_, i) => new Date(Date.now() - (29 - i) * 86400_000).toISOString().slice(0, 10));
   const counts = new Map(u.signups30d.map((d) => [d.date, d.count]));
@@ -146,6 +148,17 @@ async function renderOverview() {
       <div class="card kpi"><span>Denuncias abiertas</span><strong>${num(act.community.openReports, 0)}</strong><small>mensajes por revisar</small></div>
       <div class="card kpi"><span>Mensajes de contacto</span><strong>${num(o.unreadMessages, 0)}</strong><small>sin leer</small></div>
     </div>
+    <div class="kpis">
+      <div class="card kpi"><span>Visitantes hoy</span><strong>${num(people(vis.today), 0)}</strong><small>${vis.today.anon} sin sesión · ${vis.today.user} con sesión</small></div>
+      <div class="card kpi"><span>Cargas de la portada hoy</span><strong>${num(vis.today.views, 0)}</strong><small>sin contar bots</small></div>
+      <div class="card kpi"><span>Bots hoy</span><strong>${num(vis.today.bot, 0)}</strong><small>buscadores, previsualizaciones y monitores</small></div>
+      <div class="card kpi"><span>Registros hoy</span><strong>${num(vis.today.signups, 0)}</strong><small>cuentas nuevas (día UTC)</small></div>
+    </div>
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('users')} Visitantes: últimos 14 días</h2><span class="card-sub">${vis.enabled ? `${num(vis.history.reduce((a, d) => a + people(d), 0), 0)} visitantes (suma de cada día) · ${num(vis.history.reduce((a, d) => a + d.bot, 0), 0)} bots` : 'Contador desactivado en Integraciones'}</span></div>
+      <div class="spark-bars" role="img" aria-label="Visitantes únicos por día">${vis.history.map((d) => html`<i data-w="${Math.max(4, (people(d) / maxPeople) * 100)}" title="${d.day}: ${d.anon} sin sesión · ${d.user} con sesión · ${d.bot} bots · ${d.views} cargas"></i>`)}</div>
+      <p class="hint">Visitantes únicos por día de la portada, sin cookies ni IP: un identificador anónimo que cambia cada día. Quien entra sin sesión y luego con sesión cuenta en los dos grupos.</p>
+    </section>
     <section class="card">
       <div class="card-head"><h2 class="card-title">${icon('sparkles')} Asistente: últimos 14 días</h2><span class="card-sub">${num(hist.reduce((a, d) => a + d.tokens, 0), 0)} tokens · ${hist.reduce((a, d) => a + d.aiRequests, 0)} con IA · ${hist.reduce((a, d) => a + d.fixedAnswers, 0)} respuestas fijas</span></div>
       <div class="spark-bars" role="img" aria-label="Tokens de IA por día">${hist.map((d) => html`<i data-w="${Math.max(4, (d.tokens / maxTokens) * 100)}" title="${d.day}: ${num(d.tokens, 0)} tokens · ${d.aiRequests} con IA · ${d.fixedAnswers} fijas"></i>`)}</div>
@@ -342,6 +355,18 @@ async function renderIntegrations() {
         ${text('trading_slippage_bps', 'Deslizamiento en órdenes a mercado y stop (puntos básicos)', '5', 'number')}
         ${text('community_min_trades', 'Operaciones mínimas para aparecer en la clasificación', '5', 'number')}
         <p class="hint">El saldo inicial solo se aplica a las cuentas que se crean a partir de ahora. Sin sesión, el modo local no cobra comisiones.</p>
+        ${save()}
+      </form></section>
+      <section class="card"><form class="admin-form" data-form>
+        <div class="card-head"><h2 class="card-title">${icon('triangle-alert')} Luz roja de mercado</h2></div>
+        ${text('market_alert_btc_drop_bps', 'Caída de BTC en 24 h que la enciende (puntos básicos; 1000 = 10 %)', '1000', 'number')}
+        ${text('market_alert_index_drop_bps', 'Caída del IBEX 35 en la sesión que la enciende (puntos básicos; 400 = 4 %)', '400', 'number')}
+        <p class="hint">Aviso de la cabecera con reglas fijas sobre las cotizaciones en vivo, sin IA ni predicciones. El del IBEX 35 solo cuenta con la bolsa abierta. 0 desactiva la regla. Los cambios llegan a los navegadores en un minuto.</p>
+        ${save()}
+      </form></section>
+      <section class="card"><form class="admin-form" data-form>
+        <div class="card-head"><h2 class="card-title">${icon('users')} Contador de visitas</h2></div>
+        ${toggle('visits_enabled', 'Contar las visitas de la portada', 'Anónimo y agregado: sin cookies, sin guardar IP ni user-agent. Se ve en el Resumen.')}
         ${save()}
       </form></section>
     </div>`);
