@@ -26,6 +26,7 @@ import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
 import { initTabbar } from './ui/tabbar.js';
+import { initDismiss } from './ui/dismiss.js';
 
 const VIEWS = { dashboard, trade, markets };
 // Vistas que no hacen falta para arrancar (la portada es el Resumen, y Operar y Mercados se abren a menudo desde él):
@@ -273,6 +274,7 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {
