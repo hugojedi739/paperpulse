@@ -304,7 +304,18 @@ def verify_password(password: str, stored: str) -> bool:
         return False
 
 
-DUMMY_HASH = hash_password(secrets.token_hex(8))  # iguala el tiempo de respuesta si el email no existe
+_dummy_hash: Optional[str] = None
+
+
+def dummy_hash() -> str:
+    """Hash de relleno: iguala el tiempo de respuesta si el email no existe. Se calcula al primer uso, no al importar
+    (un scrypt cuesta ~60 ms y se pagaba en cada arranque en frío de la función serverless)."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password(secrets.token_hex(8))
+    return _dummy_hash
+
+
 token_hash = lambda token: hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -358,7 +369,7 @@ def _touch_login(conn, row) -> Row:
 def authenticate(email: str, password: str) -> Optional[Dict]:
     with closing(connect()) as conn:
         row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        stored = row["password_hash"] if row and row["password_hash"] else DUMMY_HASH
+        stored = row["password_hash"] if row and row["password_hash"] else dummy_hash()
         if not verify_password(password, stored) or not row or not row["password_hash"] or row["disabled"]:
             return None
         return public_user(_touch_login(conn, row))
@@ -422,7 +433,10 @@ def create_session(user_id: int) -> str:
     token = secrets.token_urlsafe(32)
     now = int(time.time())
     with closing(connect()) as conn:
-        conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
+        # Las caducadas las borra el cron diario; aquí solo de vez en cuando (sin cron, p. ej. en Docker, la tabla sigue acotada).
+        # Con Turso cada sentencia es un viaje de red: así el inicio de sesión se ahorra uno 19 de cada 20 veces.
+        if secrets.randbelow(20) == 0:
+            conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
         conn.execute("INSERT INTO sessions VALUES (?, ?, ?, ?)", (token_hash(token), user_id, now, now + SESSION_TTL))
     return token
 
