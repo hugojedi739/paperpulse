@@ -7,6 +7,7 @@ import { money, price, pct, currency, locale, approx } from '../lib/format.js';
 import { portfolio } from '../lib/trading.js';
 import { INTERVALS, normalizeInterval } from '../lib/marketdata.js';
 import { markdown } from '../lib/markdown.js';
+import { apiUrl } from '../lib/api.js';
 
 // Deben coincidir con SUGGESTIONS de backend/chat_fixed.py (se responden sin IA; lo comprueba un test)
 export const SUGGESTIONS = ['¿Cómo está el mercado hoy?', '¿Cómo leo las velas?', 'Explícame el RSI', '¿Cómo gestiono el riesgo?', '¿Qué es una orden límite?'];
@@ -116,8 +117,8 @@ async function send(raw) {
   bot.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
   let answer = '';
   try {
-    const challenge = (await (await fetch('/api/chat/challenge')).json()).challenge ?? '';
-    const res = await fetch('/api/chat', {
+    const challenge = (await (await fetch(apiUrl('/api/chat/challenge'))).json()).challenge ?? '';
+    const res = await fetch(apiUrl('/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Chat-Challenge': challenge },
       body: JSON.stringify({ message, history: history.slice(-8), context: context() }),
