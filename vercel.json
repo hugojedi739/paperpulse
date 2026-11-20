@@ -5,7 +5,8 @@
   "functions": {
     "server.py": {
       "maxDuration": 60,
-      "includeFiles": "{backend,frontend}/**"
+      "includeFiles": "{backend,frontend}/**",
+      "excludeFiles": "{public/**,docs/**,.github/**,.claude/**,LICENSE,frontend/img/**,**/tests/**}"
     }
   },
   "crons": [
