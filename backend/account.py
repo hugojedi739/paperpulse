@@ -21,7 +21,7 @@ from backend.http import allow, error, ok, read_json
 
 # Versión de los textos legales (términos, privacidad, normas). Si cambian de forma relevante, súbela: a las
 # cuentas con otra versión se les pide aceptar de nuevo. Debe coincidir con LEGAL_VERSION de frontend/js/lib/legal-content.js.
-LEGAL_VERSION = "2026-11-borrador-1"
+LEGAL_VERSION = "2026-11-borrador-2"
 MIN_AGE = 14
 
 
