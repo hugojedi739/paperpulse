@@ -814,6 +814,20 @@
   .breadth-legend { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--text-2); }
   .breadth-value { font-size: var(--fs-2xl); font-weight: 650; letter-spacing: -0.02em; }
 
+  /* Cartera del Resumen: tabla sobria, con aire y resultado con signo (importe y %) */
+  .holdings td, .holdings tfoot th { padding-block: var(--s-3); }
+  .holdings tbody tr:hover { background: none; }
+  .hold-asset { display: flex; align-items: center; gap: var(--s-3); min-width: 0; color: inherit; }
+  .hold-asset span { display: grid; min-width: 0; }
+  .hold-asset strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .hold-asset small, .hold-pnl small { font-size: var(--fs-sm); color: var(--text-3); font-weight: 500; }
+  .hold-asset:hover strong { color: var(--accent-text); }
+  .hold-pnl > .money { display: block; font-weight: 600; }
+  .hold-pnl.up small, .hold-pnl.down small { color: inherit; opacity: 0.85; }
+  .holdings tfoot th, .holdings tfoot td { border-top: 1px solid var(--border); border-bottom: 0; font-weight: 600; color: var(--text-1); }
+  .holdings tfoot th { position: static; background: none; text-align: left; text-transform: none; letter-spacing: 0; font-size: var(--fs-md); }
+  .hold-pnl-sm { font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
+  .card-head .seg { margin-left: auto; }
   .alloc-bar { display: flex; height: 12px; gap: 2px; margin-bottom: 12px; }
   .alloc-bar i { width: var(--w); border-radius: 3px; background: var(--c); min-width: 3px; }
   .alloc-legend { display: grid; gap: 8px; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
