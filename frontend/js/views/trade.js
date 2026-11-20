@@ -6,7 +6,7 @@ import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, ap
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
-import { createTradingChart, INDICATORS } from '../lib/charts.js';
+import { createTradingChart, INDICATORS, isAdvanced } from '../lib/charts.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.js';
 import { go } from '../lib/router.js';
@@ -93,7 +93,12 @@ export function mount(el) {
             <button class="btn btn-primary btn-sm btn-block">${icon('calendar', 'sm')} Ir</button>
           </form>
           <div popover id="ind-pop" class="menu ind-menu" role="menu">
-            ${Object.entries(INDICATORS).map(([k, v]) => html`<button type="button" role="menuitemcheckbox" data-ind="${k}" aria-checked="${store.settings().indicators.includes(k)}">${v.label}</button>`)}
+            ${Object.entries(INDICATORS).filter(([k]) => !isAdvanced(k)).map(([k, v]) => indItem(k, v))}
+            <button type="button" role="menuitemcheckbox" class="ind-adv-switch" data-adv aria-checked="${advancedOn()}">${icon('chart-line', 'sm')} Análisis avanzado</button>
+            <div id="ind-adv" role="group" aria-label="Análisis avanzado" ${advancedOn() ? '' : 'hidden'}>
+              ${Object.entries(INDICATORS).filter(([k]) => isAdvanced(k)).map(([k, v]) => indItem(k, v))}
+              <p class="menu-note muted">Herramientas de estudio calculadas en tu navegador con las velas cargadas. No predicen el precio ni son una recomendación.</p>
+            </div>
           </div>
         </section>
         <section class="card flush dock">
@@ -116,7 +121,7 @@ export function mount(el) {
     </div>`);
 
   chart = createTradingChart($('#t-chart', root), $('#t-legend', root));
-  chart.setIndicators(store.settings().indicators);
+  chart.setIndicators(effectiveIndicators());
   anchorPopover($('#ind-pop', root));
   anchorPopover($('#iv-pop', root));
   anchorPopover($('#date-pop', root));
@@ -152,6 +157,13 @@ export function mount(el) {
     pressSeg(root, 'ctype', b.dataset.value);
     chart.setType(b.dataset.value);
     decorate();
+  });
+  on(root, 'click', '[data-adv]', (_, b) => {
+    const next = b.getAttribute('aria-checked') !== 'true';
+    b.setAttribute('aria-checked', String(next));
+    $('#ind-adv', root).hidden = !next;
+    store.setSetting('advanced', next);
+    chart.setIndicators(effectiveIndicators());
   });
   on(root, 'click', '[data-ind]', (_, b) => {
     const onState = b.getAttribute('aria-checked') !== 'true';
@@ -204,6 +216,12 @@ export function hide() {
 export function theme() { chart?.theme(); decorate(); }
 
 export const currentAsset = () => asset;
+
+/* ---------- Indicadores y análisis avanzado ---------- */
+const advancedOn = () => store.settings().advanced === true;
+const indItem = (k, v) => html`<button type="button" role="menuitemcheckbox" data-ind="${k}" aria-checked="${store.settings().indicators.includes(k)}">${v.label}</button>`;
+/** Los indicadores guardados que se dibujan: los avanzados solo con el interruptor encendido. */
+const effectiveIndicators = () => store.settings().indicators.filter((k) => advancedOn() || !isAdvanced(k));
 
 /* ---------- Cabecera del símbolo ---------- */
 function renderHead() {
