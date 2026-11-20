@@ -869,6 +869,9 @@
   .alloc-bar { display: flex; height: 12px; gap: 2px; margin-bottom: 12px; }
   .alloc-bar i { width: var(--w); border-radius: 3px; background: var(--c); min-width: 3px; }
   .alloc-legend { display: grid; gap: 8px; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+  /* Con ancho (junto a la Cartera, en la columna principal) la leyenda va en dos columnas */
+  @container (min-width: 560px) { .alloc-legend { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
+  #d-alloc { container-type: inline-size; }
   .alloc-legend div { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 8px; align-items: center; }
   .alloc-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
   .alloc-legend span:last-child { color: var(--text-3); min-width: 52px; text-align: right; }
@@ -1844,4 +1847,14 @@ select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
 }
 @media (forced-colors: active) {
   .hero-value, .brand-name { background: none; color: CanvasText; }
+}
+
+/* Retos de la semana en el Resumen, en el móvil: versión corta (título, estado, barra y progreso); el detalle sigue en
+   Estadísticas. Va aquí, sin capa, para ganar a las tarjetas internas de Aurora. */
+@media (max-width: 767px) {
+  .goals.compact .goals-intro, .goals.compact .goal-why { display: none; }
+  .goals.compact .goals-list { gap: 0; }
+  .goals.compact .goal { padding: var(--s-2) 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .goals.compact .goal + .goal { border-top: 1px solid var(--border); }
+  .goals.compact .goal-icon { width: 28px; height: 28px; }
 }

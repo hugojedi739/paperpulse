@@ -15,10 +15,11 @@ export function goalsCard({ compact = false } = {}) {
   const capital = store.initialCapital();
   const w = weekGoals(trades, capital);
   const prev = compact ? null : lastWeek(trades, capital);
+  const titleId = compact ? 'goals-title-summary' : 'goals-title'; // la versión del Resumen y la de Estadísticas conviven en el DOM
   const left = w.daysLeft === 0 ? 'Termina hoy' : w.daysLeft === 1 ? 'Queda 1 día' : `Quedan ${w.daysLeft} días`;
-  return html`<section class="card goals" aria-labelledby="goals-title">
+  return html`<section class="card goals${compact ? ' compact' : ''}" aria-labelledby="${titleId}">
     <div class="card-head">
-      <h2 class="card-title" id="goals-title">${icon('target')} Retos de la semana</h2>
+      <h2 class="card-title" id="${titleId}">${icon('target')} Retos de la semana</h2>
       <span class="card-sub">${weekLabel(w)} · ${left}</span>
     </div>
     <p class="goals-intro">Metas personales para practicar con cabeza. Son solo para ti: no hay clasificación y el lunes empiezan de nuevo.</p>
@@ -28,7 +29,7 @@ export function goalsCard({ compact = false } = {}) {
         <div class="goal-main">
           <div class="goal-head"><strong>${g.title}</strong><span class="chip goal-chip">${STATE_LABEL[g.state]}</span></div>
           <div class="goal-bar ${g.kind}" role="img" aria-label="${g.kind === 'limit' ? 'Límite usado' : 'Progreso'}: ${progress(g)}"><i data-w="${(g.ratio * 100).toFixed(1)}"></i></div>
-          <p class="goal-detail"><span class="goal-progress">${progress(g)}</span> · ${g.detail}</p>
+          <p class="goal-detail"><span class="goal-progress">${progress(g)}</span><span class="goal-why"> · ${g.detail}</span></p>
         </div>
       </li>`)}
     </ul>

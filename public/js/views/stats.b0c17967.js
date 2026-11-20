@@ -4,7 +4,7 @@ import { html, icon, render } from '../lib/dom.a575914e.js';
 import { money, pct, trendClass } from '../lib/format.df74909c.js';
 import { assetIcon, empty } from '../lib/ui.3d803e38.js';
 import { summary, weekLabel, WEEKS } from '../lib/stats.f991e639.js';
-import { goalsCard } from '../ui/goals-card.32837f44.js';
+import { goalsCard } from '../ui/goals-card.0f6da070.js';
 
 const SERVER_TRADES = 500; // el servidor envía como mucho las últimas 500 operaciones cerradas
 

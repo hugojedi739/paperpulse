@@ -23,7 +23,7 @@ test('cookies: ya no dice que no haya analítica y explica que el contador no us
 });
 
 test('LEGAL_VERSION no se ha cambiado en esta rama', () => {
-  assert.equal(LEGAL_VERSION, '2026-11-borrador-1');
+  assert.equal(LEGAL_VERSION, '2026-11-borrador-2');
 });
 
 test('el Resumen del panel pinta visitantes de hoy, 14 días, bots y registros', () => {
