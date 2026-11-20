@@ -1827,3 +1827,13 @@ select[data-ch] option { background: var(--surface-1); color: var(--text-1); }
 @media (forced-colors: active) {
   .hero-value, .brand-name { background: none; color: CanvasText; }
 }
+
+/* Retos de la semana en el Resumen, en el móvil: versión corta (título, estado, barra y progreso); el detalle sigue en
+   Estadísticas. Va aquí, sin capa, para ganar a las tarjetas internas de Aurora. */
+@media (max-width: 767px) {
+  .goals.compact .goals-intro, .goals.compact .goal-why { display: none; }
+  .goals.compact .goals-list { gap: 0; }
+  .goals.compact .goal { padding: var(--s-2) 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .goals.compact .goal + .goal { border-top: 1px solid var(--border); }
+  .goals.compact .goal-icon { width: 28px; height: 28px; }
+}

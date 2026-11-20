@@ -15,7 +15,7 @@ import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } fr
 import { go } from '../lib/router.de30a562.js';
 import { mountCard } from '../ui/retention-card.b6816818.js';
 import { whatIfParts } from '../lib/starting-balance.4c6d23aa.js';
-import { goalsCard } from '../ui/goals-card.32837f44.js';
+import { goalsCard } from '../ui/goals-card.0f6da070.js';
 import { countTo } from '../lib/motion.d917c017.js';
 import * as account from '../lib/account.200b05ac.js';
 import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.555a4bbe.js';
