@@ -267,3 +267,7 @@ vercel env pull .env.local                 # copia local (ignorada por git)
 Si das las variables de Turso también a `preview`, **las vistas previas usan la base de producción** y aplican en ella las migraciones de la rama al arrancar. Para probar una migración sin riesgo, crea una base aparte (`turso db create paperpulse-preview --from-db paperpulse`) y asígnala solo a `preview`.
 
 Las migraciones se aplican solas al arrancar la función. Para aplicarlas a mano: `set -a; . ./.env.local; set +a; python -m backend.db migrate`.
+
+### `node_modules` en el dev container
+
+Con el repositorio en una carpeta compartida de Windows, `npm install` falla con `EPERM` al crear symlinks. Por eso el dev container monta `node_modules` en un volumen del contenedor (`paperpulse-node_modules`) y `postCreateCommand` le da el dueño al usuario `vscode` antes de `npm install`. Si ya tenías el contenedor, reconstrúyelo («Dev Containers: Rebuild Container»). El volumen es independiente del repositorio: para reinstalar desde cero, borra el volumen. El contenedor también trae Node 22 y `gh`.
