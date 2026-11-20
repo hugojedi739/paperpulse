@@ -19,7 +19,7 @@
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
   <link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/app.86260642.css">
+  <link rel="stylesheet" href="/css/app.1a9a918e.css">
   <link rel="modulepreload" href="/js/lib/account.9a3760f2.js">
   <link rel="modulepreload" href="/js/lib/analysis.ee203d8f.js">
   <link rel="modulepreload" href="/js/lib/api.c22010e9.js">
@@ -53,8 +53,9 @@
   <link rel="modulepreload" href="/js/lib/ui.a5941650.js">
   <link rel="modulepreload" href="/js/lib/visit.c6cb5460.js">
   <link rel="modulepreload" href="/js/ui/celebrate.a821d690.js">
-  <link rel="modulepreload" href="/js/ui/chat.2dd78adf.js">
+  <link rel="modulepreload" href="/js/ui/chat.273523bf.js">
   <link rel="modulepreload" href="/js/ui/dialogs.c44e6aee.js">
+  <link rel="modulepreload" href="/js/ui/dismiss.b802d012.js">
   <link rel="modulepreload" href="/js/ui/goals-card.fb7d7d3c.js">
   <link rel="modulepreload" href="/js/ui/market-alert.dc5c3e73.js">
   <link rel="modulepreload" href="/js/ui/palette.5764cc18.js">
@@ -74,7 +75,7 @@
   <link rel="modulepreload" href="/js/views/trade.1c96d347.js">
   <link rel="modulepreload" href="/vendor/lightweight-charts.7d001f7d.mjs">
   <script src="/js/theme-init.f6dbcac7.js"></script>
-  <script type="module" src="/js/main.a034e152.js"></script>
+  <script type="module" src="/js/main.2c9d815e.js"></script>
   <script type="module" src="/js/ui/status.638065ad.js"></script>
 </head>
 <body>
@@ -197,7 +198,7 @@
   <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
-    <div id="notif-list" class="notif-list"></div>
+    <div id="notif-list" class="notif-list" data-keep-open></div>
     <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#plus"/></svg>Nueva alerta de precio</button>
   </div>
 
@@ -205,10 +206,11 @@
   <button type="button" class="fab" data-action="chat" aria-label="Abrir asistente" aria-controls="chat" aria-expanded="false">
     <svg class="icon"><use href="/img/icons.svg#sparkles"/></svg>
   </button>
-  <aside class="chat" id="chat" aria-label="Asistente PaperPulse" hidden>
+  <div class="chat-scrim" id="chat-scrim" data-action="chat" hidden></div>
+  <aside class="chat" id="chat" aria-label="Asistente PaperPulse" tabindex="-1" hidden>
     <header class="chat-head">
       <div><strong>Asistente</strong><span class="muted">Explicaciones y datos del mercado</span></div>
-      <button type="button" class="icon-btn" data-action="chat" aria-label="Cerrar asistente"><svg class="icon"><use href="/img/icons.svg#x"/></svg></button>
+      <button type="button" class="icon-btn chat-close" data-action="chat" aria-label="Cerrar asistente" title="Cerrar"><svg class="icon"><use href="/img/icons.svg#x"/></svg></button>
     </header>
     <div class="chat-log" id="chat-log" aria-live="polite"></div>
     <div class="chat-suggest" id="chat-suggest"></div>

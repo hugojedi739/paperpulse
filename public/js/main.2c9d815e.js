@@ -26,10 +26,11 @@ import * as contact from './views/contact.bfb9ab5c.js';
 import { maybeAskTerms } from './ui/terms.6a01e9f7.js';
 import { openWelcome } from './ui/welcome.bcefd3b7.js';
 import { initPalette, openPalette } from './ui/palette.5764cc18.js';
-import { initChat, toggleChat } from './ui/chat.2dd78adf.js';
+import { initChat, toggleChat } from './ui/chat.273523bf.js';
 import { startTour } from './ui/tour.269d461e.js';
 import { checkGoals } from './ui/celebrate.a821d690.js';
 import { initTabbar } from './ui/tabbar.052b7f59.js';
+import { initDismiss } from './ui/dismiss.b802d012.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
@@ -272,6 +273,7 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {

@@ -30,6 +30,7 @@ import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
 import { initTabbar } from './ui/tabbar.js';
+import { initDismiss } from './ui/dismiss.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
 // Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
@@ -272,6 +273,7 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {
