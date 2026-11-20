@@ -5,7 +5,7 @@
 | Rama | Para qué | Despliegue en Vercel |
 |---|---|---|
 | `main` | Lo que está en producción. Solo recibe cambios por pull request. | **Producción** |
-| `feat/…`, `fix/…`, `docs/…`, `chore/…`, `refactor/…`, `test/…`, `style/…` | Un cambio concreto, creado desde `main`. | **Vista previa** con su propia URL |
+| `feat/…`, `fix/…`, `docs/…`, `chore/…`, `refactor/…`, `perf/…`, `test/…`, `style/…` | Un cambio concreto, creado desde `main`. | **Vista previa** con su propia URL |
 
 `main` está protegida por un ruleset de GitHub: solo recibe cambios por pull request. Comprueba una vez en Vercel → Settings → Git que la *Production Branch* es `main`, y en GitHub → Settings que la rama por defecto también es `main`.
 
@@ -28,7 +28,7 @@ git push -u origin feat/mi-cambio              # Vercel crea la vista previa
 
 ## Mensajes de commit
 
-Formato `tipo(zona): resumen en español`, por ejemplo `fix(db): …` o `feat(móvil): …`. Los tipos son `feat`, `fix`, `docs`, `style`, `refactor`, `test` y `chore`.
+Formato `tipo(zona): resumen en español`, por ejemplo `fix(db): …` o `feat(móvil): …`. Los tipos son `feat`, `fix`, `docs`, `style`, `refactor`, `perf` (rendimiento medido), `test` y `chore`.
 
 ## Antes de fusionar
 
