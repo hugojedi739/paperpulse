@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>PaperPulse — Simulador de trading con datos en vivo</title>
   <meta name="description" content="Practica trading con cotizaciones reales de cripto y bolsa, gráficos profesionales y un diario de operaciones, sin arriesgar dinero.">
-  <link rel="canonical" href="https://paperpulse.app/">
+  <link rel="canonical" href="https://app-domain.invalid/">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://paperpulse.app/">
+  <meta property="og:url" content="https://app-domain.invalid/">
   <meta property="og:title" content="PaperPulse — Simulador de trading con datos en vivo">
   <meta property="og:description" content="Cotizaciones reales de cripto y bolsa, gráficos profesionales y práctica sin riesgo.">
-  <meta property="og:image" content="https://paperpulse.app/img/brand/og-preview.png">
+  <meta property="og:image" content="https://app-domain.invalid/img/brand/og-preview.png">
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#070a1c" media="(prefers-color-scheme: dark)">
@@ -62,6 +62,7 @@
           <kbd>Ctrl K</kbd>
         </button>
         <div class="topbar-actions">
+          <button type="button" class="market-alert" id="market-alert" popovertarget="market-alert-pop" hidden><svg class="icon"><use href="/img/icons.svg#triangle-alert"/></svg><span class="hide-sm"></span></button>
           <span class="feed-status" id="feed-status" role="status" data-state="connecting"><i></i><span>Conectando</span></span>
           <button type="button" class="account-chip" id="account-chip" data-action="account"></button>
           <button type="button" class="icon-btn" data-action="theme" aria-label="Cambiar tema"><svg class="icon"><use href="/img/icons.svg#sun"/></svg></button>
@@ -140,6 +141,7 @@
     <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
   </div>
 
+  <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
     <div id="notif-list" class="notif-list"></div>

@@ -17,6 +17,9 @@ import { mountCard } from '../ui/retention-card.js';
 import { whatIfParts } from '../lib/starting-balance.js';
 import { goalsCard } from '../ui/goals-card.js';
 import { countTo } from '../lib/motion.js';
+import * as account from '../lib/account.js';
+import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.js';
+import { upcomingDividends, forPositions, exDateLabel, amountText, daysUntil, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
 const RANGE_SECONDS = { '1D': 86400, '1W': 604800, '1M': 2592000, '3M': 7776000, ALL: Infinity };
@@ -58,7 +61,7 @@ export function mount(el) {
 export function show() {
   renderAll();
   clearInterval(timer);
-  timer = setInterval(() => { renderSummary(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
+  timer = setInterval(() => { renderSummary(); renderCompare(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
 }
 export function hide() { clearInterval(timer); }
 export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); }
@@ -89,6 +92,7 @@ function renderAll() {
             <div class="hero-chart" id="d-chart"></div>
           </section>
           <div class="kpis" id="d-kpis"></div>
+          ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
           <section class="card" aria-labelledby="d-start-title">
@@ -99,14 +103,14 @@ function renderAll() {
           <div class="kpis" id="d-tiles"></div>` : html`
           <section class="card cta" aria-labelledby="d-cta-title">
             <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
-            <h2 id="d-cta-title">Compite con otros traders, sin arriesgar un euro.</h2>
-            <p class="hero-sub">Cotizaciones reales, ranking mensual y retos. Practica con saldo virtual.</p>
+            <h2 id="d-cta-title">Practica con precios y costes reales. <span>Averigua si de verdad te compensa operar.</span></h2>
+            <p class="hero-sub">Saldo virtual y cotizaciones reales de cripto, Wall Street e IBEX 35. Con tu cuenta gratuita, cada operación paga comisión y deslizamiento, y comparas tu resultado con no invertir y con el S&amp;P 500. Sin dinero real.</p>
             <div class="hero-actions">
               <button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
               <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>
               <button class="btn btn-lg btn-link" data-action="tour">Ver cómo funciona</button>
             </div>
-            <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador con dinero virtual. No es asesoramiento financiero.</p>
+            <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador educativo con dinero virtual. No es asesoramiento financiero.</p>
           </section>
           <section class="features" aria-label="Qué hace diferente a PaperPulse">
             <a class="card feature" href="#/community/forum">
@@ -170,6 +174,8 @@ function renderAll() {
   if (user) { renderHello(user); renderNotifCount(); } else renderPulse(practice);
   if (!practice) renderTiles();
   renderSummary();
+  renderCompare();
+  renderDividends();
   renderWatchlist();
   renderMovers();
   renderBreadth();
@@ -223,6 +229,51 @@ function renderWhatIf(p, hasTrades) {
   render(box, w.intro ? html`${icon('wallet', 'sm')} ${w.intro}`
     : html`${icon('wallet', 'sm')} ${w.lead} <span class="money">${w.start}</span> ${w.mid} <strong class="money">${w.now}</strong>
       <span class="money delta ${trendClass(w.trend)}">(${w.diff})</span>.`);
+}
+
+/* ---------- Con la cuenta del servidor: ¿te ha compensado operar? ---------- */
+/** Tu rentabilidad frente a no invertir y al S&P 500 desde la apertura de la cuenta. Sin dato del S&P 500 no se pinta. */
+async function renderCompare() {
+  const box = $('#d-compare', root);
+  const since = account.openedAt();
+  if (!box) return;
+  if (!since || !store.isServerMode()) return box.replaceChildren();
+  const sp = await sp500Since(since); // en caché unos minutos: el repintado cada 3 s no pide nada nuevo
+  const now = $('#d-compare', root);
+  if (!now || account.openedAt() !== since) return; // la vista se repintó o cambió la sesión mientras llegaba
+  const c = sp && comparison(portfolio().returnPct, sp.returnPct);
+  if (!c) return now.replaceChildren();
+  render(now, html`<section class="card compare" aria-labelledby="d-compare-title">
+    <div class="card-head"><h2 class="card-title" id="d-compare-title">${icon('scale')} ¿Te ha compensado operar?</h2>
+      <span class="card-sub">Desde el ${sinceLabel(since)}</span></div>
+    <ul class="compare-rows">${c.rows.map((r) => html`<li class="${r.key === 'mine' ? 'is-mine' : ''}">
+      <div><strong>${r.label}</strong><small>${r.detail}</small></div>
+      <span class="num delta ${trendClass(r.pct)}">${pct(r.pct)}</span></li>`)}</ul>
+    <p class="compare-summary">${c.summary}</p>
+    <p class="muted compare-note">${icon('info', 'sm')} Desde el día en que abriste la cuenta, en dólares. El S&amp;P 500 se mide por su precio, sin dividendos.
+      El rendimiento pasado no garantiza resultados futuros.</p>
+  </section>`);
+}
+
+/* ---------- Con la cuenta del servidor: próximos dividendos de mis posiciones ---------- */
+/** Solo posiciones abiertas con fecha ex-dividendo conocida; si no hay ninguna, no se pinta nada. */
+async function renderDividends() {
+  const box = $('#d-divs', root);
+  if (!box) return;
+  if (!account.openedAt() || !store.isServerMode()) return box.replaceChildren();
+  const data = await upcomingDividends();
+  const now = $('#d-divs', root);
+  if (!now || !account.openedAt()) return;
+  const list = forPositions(store.positions(), data);
+  if (!list.length) return now.replaceChildren();
+  const when = (d) => { const n = daysUntil(d.exDate); return n <= 0 ? 'hoy' : n === 1 ? 'mañana' : `en ${n} días`; };
+  put(now, h('section', { class: 'card divs', 'aria-labelledby': 'd-divs-title' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'card-title', id: 'd-divs-title' }, 'Próximos dividendos'),
+      h('span', { class: 'card-sub' }, 'De tus posiciones abiertas')),
+    h('ul', { class: 'divs-rows' }, list.map((d) => h('li', {},
+      h('a', { href: `#/trade/${d.symbol}` }, h('strong', {}, d.symbol), h('small', {}, d.name)),
+      h('div', {}, h('span', {}, `Ex-dividendo el ${exDateLabel(d.exDate)} (${when(d)})`), h('small', {}, amountText(d)))))),
+    h('p', { class: 'muted divs-note' }, `${EX_DATE_NOTE} ${SIMULATION_NOTE}`)));
 }
 
 /* ---------- Con sesión: saludo, patrimonio, notificaciones y accesos rápidos ---------- */

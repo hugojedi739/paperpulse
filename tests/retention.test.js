@@ -143,7 +143,8 @@ test('el aviso legal, la privacidad y los términos enlazan al formulario de con
 
 test('la política de cookies describe el almacenamiento real y justifica que no haya banner', () => {
   const t = flat(legal.pageById('cookies'));
-  for (const word of ['pp_session', 'pp_oauth', 'localStorage', 'sessionStorage', 'service worker', '22.2', 'sin analítica'.replace('sin ', 'No usamos ')]) assert.ok(t.includes(word), word);
+  // Sin cookies de analítica; el contador de visitas es del servidor y no usa cookies (backend/visits.py)
+  for (const word of ['pp_session', 'pp_oauth', 'localStorage', 'sessionStorage', 'service worker', '22.2', 'No usamos cookies de analítica', 'Contador de visitas (sin cookies)']) assert.ok(t.includes(word), word);
   assert.doesNotMatch(read('frontend/index.html'), /cookie-banner|aceptar cookies/i);
 });
 

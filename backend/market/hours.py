@@ -6,6 +6,7 @@ import zoneinfo
 from typing import Dict, Any, List, Tuple
 
 from starlette.responses import JSONResponse
+from backend.market.alert import alert_rules
 
 # ==============================================================================
 # Horarios de Mercado Reales con Zonas Horarias y Detección de Festivos
@@ -251,15 +252,18 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
 async def api_markets(request):
     """Endpoint público y ligero con estado de mercados globales."""
     now = time.time()
+    loop = asyncio.get_running_loop()
+    # Umbrales de la luz roja de la cabecera (ajustes del panel; settings.get puede leer la base: en un hilo)
+    rules = await loop.run_in_executor(None, alert_rules)
     if now - MARKETS_CACHE["timestamp"] < 30 and MARKETS_CACHE["data"]:
         return JSONResponse({
             "status": "success",
             "source": "cache",
             "updated_at": MARKETS_CACHE["timestamp"],
-            "markets": MARKETS_CACHE["data"]
+            "markets": MARKETS_CACHE["data"],
+            "alertRules": rules,
         })
 
-    loop = asyncio.get_running_loop()
     markets_data = await loop.run_in_executor(None, build_markets_data_sync)
     MARKETS_CACHE["data"] = markets_data
     MARKETS_CACHE["timestamp"] = now
@@ -268,5 +272,6 @@ async def api_markets(request):
         "status": "success",
         "source": "live",
         "updated_at": now,
-        "markets": markets_data
+        "markets": markets_data,
+        "alertRules": rules,
     })

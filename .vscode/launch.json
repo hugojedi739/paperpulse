@@ -34,7 +34,7 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["--test", "tests/frontend.test.js"],
+      "runtimeArgs": ["--test", "tests/"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]

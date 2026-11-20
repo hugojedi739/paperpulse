@@ -4,8 +4,8 @@ import { tick } from '../lib/feed.34c660aa.js';
 import { findAsset, displayPair } from '../lib/catalog.f1b2b586.js';
 import { html, escape, render, $ } from '../lib/dom.a575914e.js';
 import { money, price, pct, currency, locale, approx } from '../lib/format.df74909c.js';
-import { portfolio } from '../lib/trading.5637d759.js';
-import { INTERVALS, normalizeInterval } from '../lib/marketdata.c9567489.js';
+import { portfolio } from '../lib/trading.ea5e09ad.js';
+import { INTERVALS, normalizeInterval } from '../lib/marketdata.9debd77d.js';
 import { markdown } from '../lib/markdown.70f08f7e.js';
 
 // Deben coincidir con SUGGESTIONS de backend/chat_fixed.py (se responden sin IA; lo comprueba un test)

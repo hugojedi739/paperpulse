@@ -8,6 +8,7 @@ import * as notifications from './notifications.49bec9ff.js';
 
 let active = false;
 let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)
+let opened = null; // fecha de apertura de la cuenta del servidor (epoch en segundos), para el comparador del Resumen
 let timer = null;
 let cfg = { feeBps: 0, slippageBps: 0, minOrderCents: 500 };
 const POLL_MS = 20_000; // con órdenes pendientes, el servidor las resuelve en cada consulta
@@ -15,6 +16,8 @@ const POLL_MS = 20_000; // con órdenes pendientes, el servidor las resuelve en 
 export const isActive = () => active;
 export const needsSetup = () => active && needs;
 export const config = () => cfg;
+/** Cuándo se abrió la cuenta del servidor (segundos), o null sin sesión o sin cuenta todavía. */
+export const openedAt = () => (active && !needs ? opened : null);
 
 const cents = (c) => (Number(c) || 0) / 100;
 const iso = (s) => new Date(s * 1000).toISOString();
@@ -62,6 +65,7 @@ export async function refresh() {
   if (!active) return null; // la sesión se cerró mientras tanto
   cfg = { ...cfg, ...data.config };
   needs = Boolean(data.needsSetup);
+  opened = needs ? null : Number(data.account?.createdAt) || null;
   if (needs) store.noServerAccount();
   else store.applyServer(toStore(data));
   announce(data.events);
@@ -73,6 +77,7 @@ export async function startAccount(amountEur) {
   const data = await api('/api/portfolio/start', { method: 'POST', body: { amount: amountEur, currency: 'EUR' } });
   cfg = { ...cfg, ...data.config };
   needs = false;
+  opened = Number(data.account?.createdAt) || null;
   store.applyServer(toStore(data));
   return data;
 }

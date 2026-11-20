@@ -696,10 +696,43 @@
   .whatif { margin-top: var(--s-2); max-width: 62ch; font-size: var(--fs-md); color: var(--text-2); text-wrap: pretty; }
   .whatif .icon { vertical-align: -3px; color: var(--text-3); }
   .whatif strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  /* Comparador «¿Te ha compensado operar?» (Resumen, cuenta del servidor) */
+  .compare-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+  .compare-rows li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+    padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--border); }
+  .compare-rows li.is-mine { border-color: var(--accent); }
+  .compare-rows li div { display: grid; gap: 2px; min-width: 0; }
+  .compare-rows small { color: var(--text-3); }
+  .compare-rows .num { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .compare-summary { margin: var(--s-3) 0 var(--s-2); color: var(--text-1); text-wrap: pretty; }
+  .compare-note { display: flex; gap: 6px; align-items: flex-start; font-size: var(--fs-sm); text-wrap: pretty; }
+  .compare-note .icon { flex: none; margin-top: 2px; }
+
+  /* Próximos dividendos (Resumen, cuenta del servidor) */
+  .divs-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+  .divs-rows li { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+    padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--border); }
+  .divs-rows a, .divs-rows li > div { display: grid; gap: 2px; min-width: 0; }
+  .divs-rows li > div { text-align: right; }
+  .divs-rows small { color: var(--text-3); }
+  .divs-note { margin: var(--s-3) 0 0; font-size: var(--fs-sm); text-wrap: pretty; }
+
+  /* Luz roja de mercado (cabecera): solo visible con una caída fuerte */
+  .market-alert { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+    font-size: var(--fs-sm); font-weight: 600; color: var(--down); background: color-mix(in oklab, var(--down) 14%, transparent);
+    border: 1px solid color-mix(in oklab, var(--down) 45%, transparent); white-space: nowrap; }
+  .market-alert:hover { background: color-mix(in oklab, var(--down) 22%, transparent); }
+  .market-alert .icon { width: 16px; height: 16px; }
+  #market-alert-pop .alert-body { padding: 4px 12px 12px; display: grid; gap: 8px; max-width: 42ch; }
+  #market-alert-pop h3 { margin: 0; font-size: var(--fs-md); }
+  #market-alert-pop ul { margin: 0; padding-left: 18px; }
+  #market-alert-pop p { margin: 0; font-size: var(--fs-sm); text-wrap: pretty; }
   .hero-chart { height: 260px; margin: 16px -8px -8px; position: relative; }
   .hero-chart .empty { position: absolute; inset: 0; align-content: center; }
   .cta { padding: var(--s-6); }
-  .cta h2 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.02em; max-width: 22ch; }
+  .cta h2 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.02em; max-width: 26ch; text-wrap: balance; }
+  .cta h2 span { display: block; margin-top: 6px; color: var(--text-2); }
   .disclaimer {
     display: flex; gap: var(--s-2); align-items: flex-start; margin-bottom: var(--s-5); padding: var(--s-3);
     border: 1px solid var(--border-strong); border-left: 4px solid var(--warn); border-radius: var(--r-md);
@@ -812,6 +845,8 @@
   .sym-stats span { font-size: var(--fs-xs); color: var(--text-3); }
   .sym-stats strong { font-weight: 600; font-size: var(--fs-md); }
   .sym-actions { display: flex; gap: 4px; }
+  .sym-div { flex-basis: 100%; margin: 0; display: grid; gap: 2px; font-size: var(--fs-md); color: var(--text-2); }
+  .sym-div small { font-size: var(--fs-sm); text-wrap: pretty; }
 
   .chart-card { padding: 0; overflow: hidden; }
   .chart-card:fullscreen { border-radius: 0; display: flex; flex-direction: column; }
