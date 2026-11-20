@@ -26,7 +26,7 @@ import * as contact from './views/contact.bfb9ab5c.js';
 import { maybeAskTerms } from './ui/terms.6a01e9f7.js';
 import { openWelcome } from './ui/welcome.bcefd3b7.js';
 import { initPalette, openPalette } from './ui/palette.5764cc18.js';
-import { initChat, toggleChat } from './ui/chat.7436a664.js';
+import { initChat, toggleChat } from './ui/chat.2dd78adf.js';
 import { startTour } from './ui/tour.269d461e.js';
 import { checkGoals } from './ui/celebrate.a821d690.js';
 import { initTabbar } from './ui/tabbar.052b7f59.js';
