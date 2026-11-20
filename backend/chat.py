@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from backend import ai_usage, chat_fixed, settings
 from backend.config import ANTHROPIC_MAX_TOKENS, DEBUG
+from backend.http import same_origin
 from backend.security import IP_CHALLENGE_CALLS, USAGE_STATS, check_ip_rate_limit, get_client_ip
 
 _UNSET = object()
@@ -96,6 +97,12 @@ def _too_many(message: str) -> JSONResponse:
 async def api_chat_stream(request):
     """Endpoint SSE del asistente: streaming, límites globales (en la base de datos) y registro del consumo."""
     client_ip = get_client_ip(request)
+
+    # Como toda escritura: mismo origen (CSRF) y JSON
+    if not same_origin(request):
+        return JSONResponse({"error": "Origen no permitido."}, status_code=403)
+    if not request.headers.get("content-type", "").startswith("application/json"):
+        return JSONResponse({"error": "Se esperaba JSON."}, status_code=415)
 
     # Tamaño del cuerpo (máx. 32 KB)
     content_length = request.headers.get("content-length")

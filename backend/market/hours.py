@@ -6,6 +6,8 @@ import zoneinfo
 from typing import Dict, Any, List, Tuple
 
 from starlette.responses import JSONResponse
+
+from backend.market.crypto import limited
 from backend.market.alert import alert_rules
 
 # ==============================================================================
@@ -251,6 +253,8 @@ def build_markets_data_sync() -> List[Dict[str, Any]]:
 
 async def api_markets(request):
     """Endpoint público y ligero con estado de mercados globales."""
+    if (err := limited(request)):  # límite por IP, como el resto de datos de mercado
+        return err
     now = time.time()
     loop = asyncio.get_running_loop()
     # Umbrales de la luz roja de la cabecera (ajustes del panel; settings.get puede leer la base: en un hilo)
