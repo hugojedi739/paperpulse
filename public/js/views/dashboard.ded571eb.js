@@ -98,6 +98,10 @@ function renderAll() {
           <section class="card" aria-labelledby="d-hold-title">
             <div class="card-head"><h2 class="card-title" id="d-hold-title">${icon('wallet')} Cartera</h2><a class="link" href="#/trade">Operar</a></div>
             <div class="table-wrap" id="d-hold"></div>
+          </section>
+          <section class="card" aria-labelledby="d-alloc-title">
+            <div class="card-head"><h2 class="card-title" id="d-alloc-title">${icon('layers')} Distribución</h2>${seg('alloc', ALLOCATION_TABS, allocBy)}</div>
+            <div id="d-alloc"></div>
           </section>` : ''}
           ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
@@ -156,11 +160,6 @@ function renderAll() {
             <button class="icon-btn sm" data-action="palette" aria-label="Añadir favorito">${icon('plus')}</button></div>
           <div class="rows" id="d-watch"></div>
         </section>
-        ${practice && store.positions().length ? html`
-          <section class="card">
-            <div class="card-head"><h2 class="card-title">${icon('layers')} Distribución</h2>${seg('alloc', ALLOCATION_TABS, allocBy)}</div>
-            <div id="d-alloc"></div>
-          </section>` : ''}
         <section class="card">
           <div class="card-head"><h2 class="card-title">${icon('flame')} Mayores movimientos</h2>
             ${seg('movers', [['gainers', 'Suben'], ['losers', 'Bajan']], movers)}</div>
