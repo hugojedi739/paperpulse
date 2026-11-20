@@ -9,6 +9,7 @@ import { html, raw } from './dom.js';
 import { num, pct, volume, trendClass } from './format.js';
 import { alpha, sheenTones, drawCandleSheen, drawHalo, drawGlowLine, SHEEN_MAX_BARS } from './chart-fx.js';
 import { reducedMotion } from './motion.js';
+import { macd, volumeAverage, supportResistance } from './analysis.js';
 
 /* ---------- Tema ---------- */
 export function palette() {
@@ -113,7 +114,14 @@ export const INDICATORS = {
   ema: { label: 'EMA 50', color: 's2' },
   bb: { label: 'Bollinger 20', color: 's7' },
   rsi: { label: 'RSI 14', color: 's7' },
+  // Análisis avanzado: solo se ofrecen (y se dibujan) con el interruptor «Análisis avanzado» encendido
+  macd: { label: 'MACD 12/26/9', color: 's1', advanced: true },
+  volma: { label: 'Volumen medio 20', color: 's2', advanced: true },
+  sr: { label: 'Soportes y resistencias', advanced: true },
 };
+export const isAdvanced = (key) => INDICATORS[key]?.advanced === true;
+const SUB_PANES = ['rsi', 'macd']; // indicadores con panel propio, en este orden
+const SUB_SERIES = { rsi: ['rsi'], macd: ['macdH', 'macdL', 'macdS'] };
 
 /* ---------- Gráfico de trading ---------- */
 export function createTradingChart(container, legendEl) {
@@ -126,6 +134,7 @@ export function createTradingChart(container, legendEl) {
   let markers = null;
   let watermark = null;
   let lines = [];
+  let srLines = []; // soportes y resistencias (líneas de precio de la serie principal)
   const ind = {};
   const vals = {};
   const active = new Set();
@@ -136,6 +145,7 @@ export function createTradingChart(container, legendEl) {
 
   function createMain() {
     if (main) chart.removeSeries(main);
+    srLines = []; // se van con la serie anterior; syncIndicators las vuelve a poner
     const common = { priceLineStyle: LineStyle.Dotted, lastPriceAnimation: lastPriceAnimation() };
     main = type === 'candles'
       ? chart.addSeries(CandlestickSeries, { ...common, upColor: c.up, downColor: c.down, borderVisible: false, wickUpColor: c.up, wickDownColor: c.down })
@@ -197,18 +207,52 @@ export function createTradingChart(container, legendEl) {
       ensure('bbL', () => chart.addSeries(LineSeries, thin(alpha(c.s7, 0.8), { lineWidth: 1 }))).setData(track('bbL', bb.lower));
     } else { drop('bbU'); drop('bbL'); }
 
+    // Indicadores con panel propio (RSI, MACD): cada uno en el panel que le toca según cuáles estén activos
+    const sub = SUB_PANES.filter(want);
+    const paneOf = (k) => sub.indexOf(k) + 1;
+    for (const k of SUB_PANES) {
+      const first = ind[SUB_SERIES[k][0]];
+      if (first && (!want(k) || first.getPane().paneIndex() !== paneOf(k))) SUB_SERIES[k].forEach(drop);
+    }
+    while (chart.panes().length > 1 + sub.length) chart.removePane(chart.panes().length - 1);
+
     if (want('rsi')) {
       const s = ensure('rsi', () => {
-        const series = chart.addSeries(LineSeries, thin(c.s7, { lastValueVisible: true }), 1);
+        const series = chart.addSeries(LineSeries, thin(c.s7, { lastValueVisible: true }), paneOf('rsi'));
         series.createPriceLine({ price: 70, color: c.border, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false });
         series.createPriceLine({ price: 30, color: c.border, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false });
-        chart.panes()[1]?.setStretchFactor(0.28);
         return series;
       });
       s.setData(track('rsi', rsi(data)));
-    } else if (ind.rsi) {
-      drop('rsi');
-      if (chart.panes().length > 1) chart.removePane(1);
+    }
+
+    if (want('macd')) {
+      const m = macd(data);
+      const last = data.at(-1).close;
+      const precision = last >= 100 ? 2 : last >= 1 ? 4 : 6;
+      const format = { type: 'price', precision, minMove: 10 ** -precision };
+      const idx = paneOf('macd');
+      ensure('macdH', () => chart.addSeries(HistogramSeries, { lastValueVisible: false, priceLineVisible: false, priceFormat: format }, idx))
+        .setData(track('macdH', m.hist).map((p) => ({ ...p, color: p.value >= 0 ? alpha(c.up, 0.5) : alpha(c.down, 0.5) })));
+      ensure('macdL', () => chart.addSeries(LineSeries, thin(c.s1, { lineWidth: 1, priceFormat: format }), idx)).setData(track('macdL', m.macd));
+      ensure('macdS', () => chart.addSeries(LineSeries, thin(c.s2, { lineWidth: 1, priceFormat: format }), idx)).setData(track('macdS', m.signal));
+    }
+    sub.forEach((k) => chart.panes()[paneOf(k)]?.setStretchFactor(0.28));
+
+    if (want('volma')) {
+      ensure('volma', () => {
+        chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+        return chart.addSeries(LineSeries, thin(c.s2, { lineWidth: 1, priceScaleId: 'vol' }));
+      }).setData(track('volma', volumeAverage(data)));
+    } else drop('volma');
+
+    // Soportes (verde) y resistencias (rojo): líneas de precio discontinuas con las veces que el precio las tocó
+    srLines.forEach((l) => { try { main?.removePriceLine(l); } catch { /* serie recreada */ } });
+    srLines = [];
+    if (want('sr') && main) {
+      const { supports, resistances } = supportResistance(data);
+      const line = (l, color, tag) => main.createPriceLine({ price: l.price, color: alpha(color, 0.85), lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: `${tag} ${l.touches}×` });
+      srLines = [...resistances.map((l) => line(l, c.down, 'R')), ...supports.map((l) => line(l, c.up, 'S'))];
     }
   }
 
@@ -223,6 +267,7 @@ export function createTradingChart(container, legendEl) {
       const v = vals[key]?.get(d.time);
       return v != null ? num(v) : '—';
     };
+    const vols = (key) => { const v = vals[key]?.get(d.time); return v != null ? volume(v) : '—'; };
     const item = (key, label, value) => html`<span class="lg-ind"><i class="swatch sw-${key}"></i>${label} <b>${value}</b></span>`;
     legendEl.innerHTML = String(html`
       <div class="lg-row"><strong>${meta.label}</strong>
@@ -236,6 +281,8 @@ export function createTradingChart(container, legendEl) {
         ${active.has('ema') ? item('s2', 'EMA 50', valueAt('ema')) : ''}
         ${active.has('bb') ? item('s7', 'BB 20', `${valueAt('bbU')} / ${valueAt('bbL')}`) : ''}
         ${active.has('rsi') ? item('s7', 'RSI 14', valueAt('rsi')) : ''}
+        ${active.has('macd') ? item('s1', 'MACD', `${valueAt('macdL')} / ${valueAt('macdS')} / ${valueAt('macdH')}`) : ''}
+        ${active.has('volma') ? item('s2', 'Vol. medio 20', vols('volma')) : ''}
       </div>` : ''}`);
   }
 
@@ -279,13 +326,14 @@ export function createTradingChart(container, legendEl) {
       if (candle.time === data.at(-1).time) data[data.length - 1] = candle; else data.push(candle);
       main.update(mainPoint(candle));
       if (ind.volume) ind.volume.update({ time: candle.time, value: candle.volume, color: volumeColor(candle) });
-      if (active.size > 1) throttledSync();
+      if ([...active].some((k) => k !== 'volume')) throttledSync();
       legend(null);
     },
     setType(next) {
       type = next;
       if (!data.length) return;
       createMain();
+      syncIndicators(); // las líneas de soportes y resistencias viven en la serie principal
       api.setLines(lines.map((l) => l.opts));
     },
     toggleIndicator(key, on) {
@@ -293,7 +341,7 @@ export function createTradingChart(container, legendEl) {
       syncIndicators();
       legend(null);
     },
-    setIndicators(keys) { active.clear(); keys.forEach((k) => active.add(k)); syncIndicators(); },
+    setIndicators(keys) { active.clear(); keys.forEach((k) => active.add(k)); syncIndicators(); legend(null); },
     /** Líneas horizontales: entradas de posición, órdenes pendientes y alertas. */
     setLines(list) {
       lines.forEach((l) => { try { main?.removePriceLine(l.line); } catch { /* serie recreada */ } });

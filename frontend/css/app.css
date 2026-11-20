@@ -874,6 +874,8 @@
   .sw-s1 { background: var(--series-1); } .sw-s2 { background: var(--series-2); } .sw-s7 { background: var(--series-7); }
   .chart-msg { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: color-mix(in srgb, var(--surface-1) 70%, transparent); }
   .ind-menu { min-width: 220px; }
+  .ind-menu .ind-adv-switch { border-top: 1px solid var(--border); margin-top: var(--s-1); padding-top: var(--s-2); font-weight: 600; }
+  .ind-menu .menu-note { margin: 0; padding: var(--s-1) var(--s-3); max-width: 260px; font-size: var(--fs-sm); text-wrap: pretty; }
   .range-bar { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .range-bar .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
   .range-bar .spacer { flex: 1; }
