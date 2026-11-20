@@ -14,26 +14,28 @@ import { current, go } from './lib/router.de30a562.js';
 import * as dashboard from './views/dashboard.b2e69715.js';
 import * as trade from './views/trade.1c96d347.js';
 import * as markets from './views/markets.46debc55.js';
-import * as newsView from './views/news.c56e2524.js';
-import * as journal from './views/journal.23ac57af.js';
-import * as community from './views/community.cbc97e4f.js';
 import * as dialogs from './ui/dialogs.c44e6aee.js';
 import * as auth from './lib/auth.965fe481.js';
 import * as account from './lib/account.9a3760f2.js';
 import * as notifs from './lib/notifications.eb07bd92.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
-import * as contact from './views/contact.bfb9ab5c.js';
 import { maybeAskTerms } from './ui/terms.6a01e9f7.js';
 import { openWelcome } from './ui/welcome.bcefd3b7.js';
 import { initPalette, openPalette } from './ui/palette.5764cc18.js';
-import { initChat, toggleChat } from './ui/chat.2dd78adf.js';
+import { initChat, toggleChat } from './ui/chat.273523bf.js';
 import { startTour } from './ui/tour.269d461e.js';
 import { checkGoals } from './ui/celebrate.a821d690.js';
 import { initTabbar } from './ui/tabbar.052b7f59.js';
+import { initDismiss } from './ui/dismiss.b802d012.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
-// Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
+const VIEWS = { dashboard, trade, markets };
+// Vistas que no hacen falta para arrancar (la portada es el Resumen, y Operar y Mercados se abren a menudo desde él):
+// se descargan al entrar por primera vez
 const LAZY = {
+  news: () => import('./views/news.c56e2524.js'),
+  journal: () => import('./views/journal.23ac57af.js'),
+  community: () => import('./views/community.cbc97e4f.js'),
+  contact: () => import('./views/contact.bfb9ab5c.js'),
   stats: () => import('./views/stats.1f680afd.js'),
   learn: () => import('./views/learn.6ab9f161.js'),
   legal: () => import('./views/legal.43b42a22.js'),
@@ -272,6 +274,7 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {

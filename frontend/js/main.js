@@ -14,15 +14,11 @@ import { current, go } from './lib/router.js';
 import * as dashboard from './views/dashboard.js';
 import * as trade from './views/trade.js';
 import * as markets from './views/markets.js';
-import * as newsView from './views/news.js';
-import * as journal from './views/journal.js';
-import * as community from './views/community.js';
 import * as dialogs from './ui/dialogs.js';
 import * as auth from './lib/auth.js';
 import * as account from './lib/account.js';
 import * as notifs from './lib/notifications.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.js';
-import * as contact from './views/contact.js';
 import { maybeAskTerms } from './ui/terms.js';
 import { openWelcome } from './ui/welcome.js';
 import { initPalette, openPalette } from './ui/palette.js';
@@ -30,10 +26,16 @@ import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
 import { initTabbar } from './ui/tabbar.js';
+import { initDismiss } from './ui/dismiss.js';
 
-const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };
-// Vistas que no hacen falta para arrancar: se descargan al entrar por primera vez
+const VIEWS = { dashboard, trade, markets };
+// Vistas que no hacen falta para arrancar (la portada es el Resumen, y Operar y Mercados se abren a menudo desde él):
+// se descargan al entrar por primera vez
 const LAZY = {
+  news: () => import('./views/news.js'),
+  journal: () => import('./views/journal.js'),
+  community: () => import('./views/community.js'),
+  contact: () => import('./views/contact.js'),
   stats: () => import('./views/stats.js'),
   learn: () => import('./views/learn.js'),
   legal: () => import('./views/legal.js'),
@@ -272,6 +274,7 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */
 addEventListener('keydown', (e) => {
