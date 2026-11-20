@@ -20,7 +20,7 @@ Navegador (frontend/)  ──HTTP /api/*──▶  Backend (backend/, Starlette)
 
 | Pieza | Qué hace |
 |---|---|
-| **Backend** (`backend/`) | Python 3.13 con Starlette y Uvicorn. Sin ORM: SQL directo con el cliente `libsql`. `server.py` solo expone `backend.app:app`. Cada dominio tiene su módulo o paquete: `market/` (datos de mercado), `trading/` (cuenta de práctica), `community/`, `retention/`, más `auth`, `admin`, `chat`, `contact` y `account`. |
+| **Backend** (`backend/`) | Python 3.13 con Starlette y Uvicorn. Sin ORM: SQL directo con el cliente `libsql`. `server.py` solo expone `backend.app:app`. Cada dominio tiene su módulo o paquete: `market/` (datos de mercado), `trading/` (cuenta de práctica), `community/`, `retention/`, más `auth`, `admin`, `chat`, `contact`, `account` y `visits` (contador anónimo de la portada, apagado por defecto). |
 | **Base de datos** | Turso (libSQL) en producción; un fichero libSQL compatible con SQLite en local. Las migraciones numeradas de `backend/migrations/` se aplican al arrancar. |
 | **Frontend** (`frontend/`) | HTML, CSS y JavaScript con módulos ES nativos, **sin framework ni build para desarrollar**. `js/lib/` es lógica sin interfaz, `js/ui/` son piezas compartidas (diálogos, chat, barra inferior) y `js/views/` una vista por pantalla. Gráficos con Lightweight Charts 5. |
 | **Build estático** (`public/`) | Solo para Vercel: `npm run build:static` copia `frontend/` a `public/` con un hash en el nombre de cada JS y CSS, y genera `backend/templates/index.html`. Ambos se versionan; un test falla si están desactualizados. |
