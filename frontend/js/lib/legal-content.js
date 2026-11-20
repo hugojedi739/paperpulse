@@ -53,8 +53,8 @@ export const PAGES = [
       ] },
       { h: '4. Condiciones de uso', p: ['El acceso y uso de PaperPulse atribuye la condición de persona usuaria e implica la aceptación de estos textos legales: Términos de uso, Política de privacidad, Política de cookies y Normas de la comunidad.'] },
       { h: '5. Propiedad intelectual e industrial', p: [
-        'El código, el diseño y los contenidos propios de PaperPulse están protegidos por la normativa de propiedad intelectual. Los mensajes publicados en la comunidad pertenecen a quienes los escriben.',
-        'Los gráficos utilizan TradingView Lightweight Charts™ (licencia Apache-2.0, con atribución a TradingView). Los iconos son de Lucide (licencia ISC) y las tipografías Inter, Sora y JetBrains Mono, con licencia SIL OFL. Las marcas y nombres de terceros pertenecen a sus titulares.',
+        'El código de PaperPulse es software libre publicado bajo la licencia GNU AGPL-3.0 (https://github.com/hugojedi739/paperpulse); el diseño y los contenidos propios están protegidos por la normativa de propiedad intelectual. Los mensajes publicados en la comunidad pertenecen a quienes los escriben.',
+        'Los gráficos utilizan TradingView Lightweight Charts™ (licencia Apache-2.0, con atribución a TradingView). Los iconos son de Lucide (licencia ISC) y las tipografías Inter, Sora y JetBrains Mono, con licencia SIL OFL. Los datos de criptomonedas proceden en parte de la API de CoinGecko (https://www.coingecko.com). Las marcas y nombres de terceros pertenecen a sus titulares.',
       ] },
       { h: '6. Responsabilidad', p: ['El titular no garantiza la disponibilidad continua del servicio ni la ausencia de errores, y no responde de los daños derivados del uso de la información mostrada, ni de las decisiones que se tomen con ella. No se responde de los contenidos publicados por la comunidad, aunque se moderan según las Normas.'] },
       { h: '7. Enlaces', p: ['Los enlaces a sitios de terceros (por ejemplo, noticias) se ofrecen como referencia. El titular no controla ni responde de sus contenidos o políticas.'] },
@@ -71,15 +71,16 @@ export const PAGES = [
         'Esta política se ajusta al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica 3/2018 (LOPDGDD).',
       ] },
       { h: '2. Qué datos tratamos', p: [{ list: [
-        'Cuenta: email, nombre, contraseña (solo su huella cifrada con scrypt; nunca la contraseña), método de acceso (email o Google), fecha de alta, último acceso, versión y fecha de aceptación de los términos y confirmación de la edad mínima.',
+        'Cuenta: email, nombre, contraseña (solo su huella cifrada con scrypt; nunca la contraseña), método de acceso (email o Google; con Google recibimos tu email, tu nombre y si el email está verificado), fecha de alta, último acceso, versión y fecha de aceptación de los términos y confirmación de la edad mínima.',
         'Perfil público (solo si lo creas): alias, biografía y si tu perfil es privado. Tu email nunca se muestra a otras personas.',
         'Actividad de simulación: tu cuenta de práctica en el servidor (saldo virtual, órdenes, operaciones, posiciones), retos mensuales, logros, racha de días y notificaciones.',
         'Comunidad: hilos, mensajes, votos, seguidos y seguidores, denuncias que hagas, acciones de moderación que te afecten y, si alguien denuncia un mensaje tuyo, la copia de ese mensaje que se guarda con la denuncia (ver el apartado 6).',
         'Opinión por activo: si votas «alcista» o «bajista» sobre un activo, tu voto (el activo, el sentido y las fechas) se guarda asociado a tu cuenta. Solo se muestra el recuento de votos: nunca se dice quién ha votado qué.',
         'Copia de tus datos locales (alertas, favoritos, ajustes) si inicias sesión.',
         'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
-        'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
-        'Datos técnicos: tu dirección IP se usa para limitar el abuso. Para aplicar los límites del asistente se guarda, como mucho hasta el día siguiente, un identificador seudonimizado derivado de tu IP que cambia cada día; la IP en sí no se guarda. Las cookies y el almacenamiento local se describen en la Política de cookies.',
+        'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta. Las respuestas las genera una inteligencia artificial: no escribas datos personales ni sensibles tuyos o de otras personas.',
+        'Datos técnicos: al servirte la aplicación, nuestro proveedor de alojamiento (Vercel) registra de forma automática datos de cada petición, como la dirección IP, el navegador y la fecha, con fines de seguridad y funcionamiento. Además, tu dirección IP se usa para limitar el abuso. Para aplicar los límites del asistente se guarda, como mucho hasta el día siguiente, un identificador seudonimizado derivado de tu IP que cambia cada día; la IP en sí no se guarda. Las cookies y el almacenamiento local se describen en la Política de cookies.',
+        'Necesidad de los datos: el email (o la cuenta de Google) es imprescindible para crear una cuenta; sin ella puedes usar la cuenta «Demo», que no envía datos a nuestro servidor. No tomamos decisiones automatizadas con efectos jurídicos sobre ti.',
         'Contador de visitas: cuando la aplicación termina de cargar, tu navegador envía a nuestro servidor un aviso anónimo para contar la visita, sin cookies y sin guardar nada en tu navegador. Para no contarte dos veces el mismo día se calcula un identificador seudonimizado a partir de tu IP y del identificador de tu navegador (user-agent), mezclados con la fecha y una clave secreta; ni la IP ni el user-agent se guardan, y el identificador cambia cada día. Solo se conservan cifras agregadas por día (cuántas personas entraron, con y sin sesión, y cuántos robots).',
       ] }] },
       { h: '3. Finalidades y bases jurídicas', p: [{ list: [
@@ -88,13 +89,13 @@ export const PAGES = [
         'Mostrar el reparto agregado de opiniones alcistas y bajistas de cada activo, sin identificar a quien vota: ejecución del contrato.',
         'Seguridad, prevención del abuso, moderación y cumplimiento de las Normas: interés legítimo (art. 6.1.f RGPD).',
         'Saber cuánta gente usa la aplicación mediante un contador de visitas agregado y anónimo, sin cookies: interés legítimo en conocer el uso del servicio (art. 6.1.f RGPD). Puedes oponerte escribiéndonos por el formulario de contacto.',
-        'Atender los mensajes del formulario de contacto y tus solicitudes, y cumplir obligaciones legales: tu solicitud y obligación legal (art. 6.1.c RGPD).',
+        'Atender los mensajes del formulario de contacto y tus solicitudes de derechos: aplicar medidas a petición tuya (art. 6.1.b RGPD) y cumplir las obligaciones legales que correspondan (art. 6.1.c RGPD).',
         'Enviarte notificaciones dentro de la aplicación: ejecución del contrato. No enviamos correos comerciales.',
       ] }] },
       { h: '4. Destinatarios y encargados del tratamiento', p: [
         'No vendemos tus datos. Para prestar el servicio utilizamos estos proveedores, que actúan como encargados del tratamiento:',
         { list: [
-          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan en la región de París (Francia, UE). Los datos de tu cuenta no se guardan en Vercel, sino en la base de datos de Turso.',
+          'Vercel Inc. (EE. UU.): alojamiento y ejecución de la aplicación. Las funciones que atienden las peticiones se ejecutan en la región de París (Francia, UE). Los datos de tu cuenta no se guardan en Vercel, sino en la base de datos de Turso, pero Vercel trata los datos técnicos de las peticiones (IP, navegador, fecha) y sirve los ficheros estáticos desde su red de distribución.',
           `Turso (ChiselStrike, Inc., EE. UU.): base de datos donde se guardan los datos de tu cuenta. Región: ${PENDING.region}.`,
           'Google LLC (EE. UU.): solo si eliges iniciar sesión con Google; recibe los datos propios de ese inicio de sesión.',
           'Anthropic PBC (EE. UU.): solo si usas el asistente con IA; recibe los mensajes que le envías.',
@@ -103,7 +104,7 @@ export const PAGES = [
         ] },
       ] },
       { h: '5. Transferencias internacionales', p: [
-        `Almacenamiento y ejecución: tus datos se guardan en una base de datos de Turso alojada en ${PENDING.region}, y las funciones de Vercel que los tratan se ejecutan en París (Francia, UE). El almacenamiento no supone una transferencia internacional de datos por parte de Turso.`,
+        `Almacenamiento y ejecución: tus datos se guardan en una base de datos de Turso alojada en ${PENDING.region}, y las funciones de Vercel que los tratan se ejecutan en París (Francia, UE).`,
         'Proveedores con sede en Estados Unidos: Vercel y Turso son empresas estadounidenses aunque los datos se alojen en la UE; Google (solo si inicias sesión con Google) y Anthropic (solo si usas el asistente con IA) tratan datos en Estados Unidos. Esas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. (cuando el proveedor está adherido) o en cláusulas contractuales tipo aprobadas por la Comisión Europea.',
       ] },
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
@@ -111,9 +112,9 @@ export const PAGES = [
         'Sesiones: 30 días. Notificaciones: 60 días. Estados de inicio de sesión: 10 minutos.',
         'Votos de opinión por activo: mientras mantengas la cuenta. Los de cuentas desactivadas o suspendidas dejan de contar en el recuento, y puedes retirar o cambiar tu voto cuando quieras.',
         'Contador de visitas: el identificador del día se borra al día siguiente; las cifras agregadas por día, que no identifican a nadie, se conservan 90 días.',
-        'Mensajes del formulario de contacto: hasta que la administración los borre. Si los enviaste con la sesión iniciada, se eliminan al borrar tu cuenta.',
+        'Mensajes del formulario de contacto: se borran automáticamente a los 12 meses. Si los enviaste con la sesión iniciada, se eliminan antes, al borrar tu cuenta.',
         'Denuncias: cuando alguien denuncia un mensaje, junto a la denuncia se guarda una copia del texto del mensaje y del alias de su autor en ese momento, para que la moderación pueda revisar exactamente lo denunciado. Solo la ven los administradores. Esa copia se conserva aunque el mensaje original se borre después, y se elimina si la persona autora borra su cuenta (ver el apartado 8).',
-        'Registro de moderación: se conserva para poder justificar las decisiones y evitar abusos; no contiene el texto de tus mensajes (la copia de un mensaje denunciado se guarda con la denuncia, como se explica en el punto anterior).',
+        'Registros de moderación y de administración: se conservan 24 meses para poder justificar las decisiones y evitar abusos, y después se borran automáticamente; no contienen el texto de tus mensajes (la copia de un mensaje denunciado se guarda con la denuncia, como se explica en el punto anterior).',
         'Datos que debamos conservar por obligación legal: durante los plazos que establezca la ley.',
       ] }] },
       { h: '7. Tus derechos', p: [
@@ -136,12 +137,14 @@ export const PAGES = [
       { h: '1. Aceptación', p: ['Al crear una cuenta o usar PaperPulse aceptas estos términos, la Política de privacidad y las Normas de la comunidad. Si no estás de acuerdo, no uses el servicio.'] },
       { h: '2. El servicio', p: [
         'PaperPulse es un simulador educativo: el dinero, las posiciones y las órdenes son virtuales y no tienen valor económico. No hay brókeres ni órdenes reales. Las cotizaciones son reales pero pueden llevar retraso o contener errores. Hay dos cuentas: «Demo», que vive solo en tu navegador, no necesita registro y no cobra comisiones, y «Mi cuenta», guardada en el servidor al iniciar sesión, que aplica comisiones y deslizamientos simplificados que pueden diferir de los de un mercado real.',
-        'Nada en el servicio es asesoramiento financiero ni una recomendación personalizada.',
+        'Nada en el servicio es asesoramiento financiero ni una recomendación personalizada. El asistente del chat es una inteligencia artificial (Claude, de Anthropic): sus respuestas pueden contener errores y no sustituyen a una persona profesional.',
       ] },
       { h: '3. Edad y cuenta', p: ['Debes tener al menos 14 años. Eres responsable de mantener la confidencialidad de tu contraseña y de la actividad de tu cuenta. Debes facilitar datos veraces. Una persona, una cuenta.'] },
       { h: '4. Contenido de la comunidad', p: [
         'Eres responsable de lo que publicas. Garantizas que tienes derecho a publicarlo y que no infringe derechos de terceros ni la ley. Nos concedes una licencia gratuita, no exclusiva y limitada para mostrar tu contenido dentro de PaperPulse mientras esté publicado.',
         'Los administradores pueden ocultar contenido y suspender o desactivar cuentas que incumplan las Normas o la ley, y conservar un registro de esas decisiones. Puedes borrar tus propios mensajes.',
+        'Cómo se modera: cualquier persona con perfil puede denunciar un mensaje con el botón «Denunciar» e indicar el motivo; una persona administradora revisa la denuncia, sin decisiones automáticas, y puede ocultar el mensaje, descartar la denuncia o suspender la cuenta de forma temporal o indefinida. Cuando se oculta un mensaje tuyo, se te avisa en tus notificaciones con el motivo. Si no estás de acuerdo con una decisión (o quieres saber el motivo de una suspensión), puedes pedir que se revise desde el formulario de contacto, con la sesión iniciada.',
+        'Contenido ilegal o que vulnere derechos: si ves un contenido que consideres ilegal o que infringe tus derechos (por ejemplo, de propiedad intelectual), denúncialo con el botón «Denunciar» o escríbenos desde el formulario de contacto indicando dónde está, por qué crees que es ilegal y quién eres. Lo revisaremos y, si procede, lo retiraremos con prontitud.',
       ] },
       { h: '5. Conductas prohibidas', p: [{ list: [
         'Promocionar servicios de pago, señales, cursos, grupos privados, brókeres, enlaces de afiliado o referidos.',

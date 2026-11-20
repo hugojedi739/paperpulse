@@ -13,6 +13,7 @@ from backend import db
 log = logging.getLogger("paperpulse.admin_log")
 
 PAGE = 50
+RETENTION_DAYS = 730  # el registro de moderación y de administración se borra a los 24 meses (lo dice la política de privacidad)
 
 
 def record(actor_id: Optional[int], action: str, target_user_id: Optional[int] = None, detail: str = "") -> None:
@@ -72,3 +73,12 @@ def _aliases(conn, ids: Sequence[int]) -> Dict[int, str]:
     marks = ",".join("?" * len(ids))
     rows = conn.execute(f"SELECT u.id, COALESCE(p.alias, u.name) AS label FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id IN ({marks})", ids).fetchall()
     return {r["id"]: r["label"] for r in rows}
+
+
+def cleanup() -> Dict:
+    """Para el cron diario: borra las entradas de moderation_log y admin_log con más de RETENTION_DAYS."""
+    limit = int(time.time()) - RETENTION_DAYS * 86400
+    with db.transaction() as conn:
+        a = conn.execute("DELETE FROM moderation_log WHERE created_at < ?", (limit,)).rowcount
+        b = conn.execute("DELETE FROM admin_log WHERE created_at < ?", (limit,)).rowcount
+    return {"moderationLogDeleted": a, "adminLogDeleted": b}
