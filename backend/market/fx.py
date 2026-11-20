@@ -6,6 +6,8 @@ import asyncio
 import requests
 from starlette.responses import JSONResponse
 
+from backend.market.crypto import limited
+
 # ==============================================================================
 # Tipos de Cambio (FX) con Caché (Frankfurter / BCE)
 # ==============================================================================
@@ -49,6 +51,8 @@ def real_rates_sync():
 
 async def get_exchange_rates(request):
     """Retorna tipos de cambio actualizados con caché de 1 hora."""
+    if (err := limited(request)):  # límite por IP, como el resto de datos de mercado
+        return err
     now = time.time()
     if now - FX_CACHE["timestamp"] < 3600 and FX_CACHE["rates"]:
         return JSONResponse({

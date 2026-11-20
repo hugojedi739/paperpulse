@@ -7,6 +7,7 @@ import { money, price, pct, currency, locale, approx } from '../lib/format.js';
 import { portfolio } from '../lib/trading.js';
 import { INTERVALS, normalizeInterval } from '../lib/marketdata.js';
 import { markdown } from '../lib/markdown.js';
+import { apiUrl } from '../lib/api.js';
 
 // Deben coincidir con SUGGESTIONS de backend/chat_fixed.py (se responden sin IA; lo comprueba un test)
 export const SUGGESTIONS = ['¿Cómo está el mercado hoy?', '¿Cómo leo las velas?', 'Explícame el RSI', '¿Cómo gestiono el riesgo?', '¿Qué es una orden límite?'];
@@ -27,14 +28,41 @@ export function initChat({ getAsset }) {
   addMessage('bot', '¡Hola! Soy el asistente de PaperPulse. Puedo explicarte conceptos (velas, indicadores, tipos de orden), ayudarte con la gestión del riesgo o decirte cómo cotiza un activo. **No doy recomendaciones de inversión.**');
 }
 
+// En el móvil el asistente es una hoja inferior sobre un fondo oscurecido: se cierra con su botón, tocando el fondo,
+// con Escape (main.js), con el gesto o botón de «atrás» (una entrada propia en el historial) y al cambiar de vista.
+const MOBILE = '(max-width: 767px)';
+let inHistory = false; // hay una entrada del historial que representa «asistente abierto»
+let opener = null;
+
 export function toggleChat(force) {
   const panel = $('#chat');
   const open = force ?? panel.hidden;
+  if (open === !panel.hidden) return;
+  if (open) opener = document.activeElement; // antes de ocultar el botón flotante, que puede tener el foco
   panel.hidden = !open;
-  document.querySelector('.fab').setAttribute('aria-expanded', String(open));
-  document.querySelector('.fab').hidden = open;
-  if (open) $('#chat-input').focus();
+  $('#chat-scrim').hidden = !open;
+  const fab = document.querySelector('.fab');
+  fab.setAttribute('aria-expanded', String(open));
+  fab.hidden = open;
+  if (open) {
+    if (matchMedia(MOBILE).matches) {
+      globalThis.history.pushState({ ppChat: true }, '');
+      inHistory = true;
+      panel.focus(); // sin abrir el teclado en pantalla nada más empezar
+    } else $('#chat-input').focus();
+    return;
+  }
+  if (inHistory) { inHistory = false; if (globalThis.history.state?.ppChat) globalThis.history.back(); }
+  const visible = (e) => e?.isConnected && e.getClientRects().length > 0; // offsetParent no sirve: el botón flotante es fixed
+  const back = visible(opener) ? opener : visible(fab) ? fab : null;
+  back?.focus?.();
+  opener = null;
 }
+
+// «Atrás» con el asistente abierto: lo cierra sin salir de la vista
+addEventListener('popstate', () => { if (inHistory && !globalThis.history.state?.ppChat) { inHistory = false; toggleChat(false); } });
+// Ir a otra vista (barra inferior, enlace de una respuesta…) lo cierra en el móvil
+addEventListener('hashchange', () => { if (!$('#chat').hidden && matchMedia(MOBILE).matches) { inHistory = false; toggleChat(false); } });
 
 function addMessage(role, text) {
   const el = document.createElement('div');
@@ -89,8 +117,8 @@ async function send(raw) {
   bot.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
   let answer = '';
   try {
-    const challenge = (await (await fetch('/api/chat/challenge')).json()).challenge ?? '';
-    const res = await fetch('/api/chat', {
+    const challenge = (await (await fetch(apiUrl('/api/chat/challenge'))).json()).challenge ?? '';
+    const res = await fetch(apiUrl('/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Chat-Challenge': challenge },
       body: JSON.stringify({ message, history: history.slice(-8), context: context() }),

@@ -10,10 +10,10 @@
 #   uvicorn server:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers
 # ==============================================================================
 
-anthropic==1.13.0
+anthropic==2.8.0
 starlette==1.10.0
 uvicorn==0.54.0
 requests==2.34.2
-websockets==16.1.1
+websockets==17.4
 yfinance==1.8.0
 libsql==0.1.11

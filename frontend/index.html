@@ -148,7 +148,7 @@
   <div popover id="market-alert-pop" class="menu menu-wide" aria-label="Luz roja de mercado"></div>
   <div popover id="notif-pop" class="menu menu-wide">
     <div class="menu-title"><strong>Notificaciones</strong><button type="button" class="link" data-action="read-all">Marcar leídas</button></div>
-    <div id="notif-list" class="notif-list"></div>
+    <div id="notif-list" class="notif-list" data-keep-open></div>
     <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#plus"/></svg>Nueva alerta de precio</button>
   </div>
 
@@ -156,10 +156,11 @@
   <button type="button" class="fab" data-action="chat" aria-label="Abrir asistente" aria-controls="chat" aria-expanded="false">
     <svg class="icon"><use href="/img/icons.svg#sparkles"/></svg>
   </button>
-  <aside class="chat" id="chat" aria-label="Asistente PaperPulse" hidden>
+  <div class="chat-scrim" id="chat-scrim" data-action="chat" hidden></div>
+  <aside class="chat" id="chat" aria-label="Asistente PaperPulse" tabindex="-1" hidden>
     <header class="chat-head">
       <div><strong>Asistente</strong><span class="muted">Explicaciones y datos del mercado</span></div>
-      <button type="button" class="icon-btn" data-action="chat" aria-label="Cerrar asistente"><svg class="icon"><use href="/img/icons.svg#x"/></svg></button>
+      <button type="button" class="icon-btn chat-close" data-action="chat" aria-label="Cerrar asistente" title="Cerrar"><svg class="icon"><use href="/img/icons.svg#x"/></svg></button>
     </header>
     <div class="chat-log" id="chat-log" aria-live="polite"></div>
     <div class="chat-suggest" id="chat-suggest"></div>

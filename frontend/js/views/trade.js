@@ -6,7 +6,7 @@ import { html, icon, raw, render, on, $, confirmDialog, toast, anchorPopover, ap
 import { money, price, units, pct, volume, num, currency, convert, approx, trendClass, timeAgo, toUsd } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
-import { createTradingChart, INDICATORS } from '../lib/charts.js';
+import { createTradingChart, INDICATORS, isAdvanced } from '../lib/charts.js';
 import { candles, INTERVALS, QUICK_INTERVALS, RANGES, normalizeInterval } from '../lib/marketdata.js';
 import { assetIcon, assetCell, empty, seg, pressSeg, liveChange, statusChip } from '../lib/ui.js';
 import { go } from '../lib/router.js';
@@ -16,6 +16,8 @@ import { shareButton, shareDialog } from '../ui/share.js';
 import { afterBuy } from '../ui/celebrate.js';
 import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 import { h, mount as put } from '../lib/el.js';
+import { currentUser, onAuth } from '../lib/auth.js';
+import { loadSentiment, castVote, nextVote, shares, votesLabel, SENTIMENT_NOTE } from '../lib/sentiment.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
 
@@ -93,7 +95,12 @@ export function mount(el) {
             <button class="btn btn-primary btn-sm btn-block">${icon('calendar', 'sm')} Ir</button>
           </form>
           <div popover id="ind-pop" class="menu ind-menu" role="menu">
-            ${Object.entries(INDICATORS).map(([k, v]) => html`<button type="button" role="menuitemcheckbox" data-ind="${k}" aria-checked="${store.settings().indicators.includes(k)}">${v.label}</button>`)}
+            ${Object.entries(INDICATORS).filter(([k]) => !isAdvanced(k)).map(([k, v]) => indItem(k, v))}
+            <button type="button" role="menuitemcheckbox" class="ind-adv-switch" data-adv aria-checked="${advancedOn()}">${icon('chart-line', 'sm')} Análisis avanzado</button>
+            <div id="ind-adv" role="group" aria-label="Análisis avanzado" ${advancedOn() ? '' : 'hidden'}>
+              ${Object.entries(INDICATORS).filter(([k]) => isAdvanced(k)).map(([k, v]) => indItem(k, v))}
+              <p class="menu-note muted">Herramientas de estudio calculadas en tu navegador con las velas cargadas. No predicen el precio ni son una recomendación.</p>
+            </div>
           </div>
         </section>
         <section class="card flush dock">
@@ -116,7 +123,7 @@ export function mount(el) {
     </div>`);
 
   chart = createTradingChart($('#t-chart', root), $('#t-legend', root));
-  chart.setIndicators(store.settings().indicators);
+  chart.setIndicators(effectiveIndicators());
   anchorPopover($('#ind-pop', root));
   anchorPopover($('#iv-pop', root));
   anchorPopover($('#date-pop', root));
@@ -132,6 +139,8 @@ export function mount(el) {
     renderIntervals();
     load();
   };
+  on(root, 'click', '[data-sent]', (_, b) => vote(Number(b.dataset.sent)));
+  onAuth(() => loadOpinion()); // al entrar o salir cambia mi voto
   on(root, 'click', '[data-seg="interval"] button', (_, b) => chooseInterval(b.dataset.value));
   on(root, 'click', '[data-iv]', (_, b) => { $('#iv-pop', root).hidePopover(); chooseInterval(b.dataset.iv); });
   on(root, 'click', '[data-seg="range"] button', (_, b) => {
@@ -152,6 +161,13 @@ export function mount(el) {
     pressSeg(root, 'ctype', b.dataset.value);
     chart.setType(b.dataset.value);
     decorate();
+  });
+  on(root, 'click', '[data-adv]', (_, b) => {
+    const next = b.getAttribute('aria-checked') !== 'true';
+    b.setAttribute('aria-checked', String(next));
+    $('#ind-adv', root).hidden = !next;
+    store.setSetting('advanced', next);
+    chart.setIndicators(effectiveIndicators());
   });
   on(root, 'click', '[data-ind]', (_, b) => {
     const onState = b.getAttribute('aria-checked') !== 'true';
@@ -205,6 +221,12 @@ export function theme() { chart?.theme(); decorate(); }
 
 export const currentAsset = () => asset;
 
+/* ---------- Indicadores y análisis avanzado ---------- */
+const advancedOn = () => store.settings().advanced === true;
+const indItem = (k, v) => html`<button type="button" role="menuitemcheckbox" data-ind="${k}" aria-checked="${store.settings().indicators.includes(k)}">${v.label}</button>`;
+/** Los indicadores guardados que se dibujan: los avanzados solo con el interruptor encendido. */
+const effectiveIndicators = () => store.settings().indicators.filter((k) => advancedOn() || !isAdvanced(k));
+
 /* ---------- Cabecera del símbolo ---------- */
 function renderHead() {
   const t = feed.tick(asset.symbol);
@@ -223,9 +245,65 @@ function renderHead() {
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
       <button class="icon-btn" data-t="alert" aria-label="Crear alerta de precio" title="Alerta de precio">${icon('bell-ring')}</button>
     </div>
-    <p class="sym-div" id="t-div" hidden></p>`);
+    <p class="sym-div" id="t-div" hidden></p>
+    <div class="sym-sent" id="t-sent" hidden></div>`);
   renderStats();
   renderDividend();
+  loadOpinion();
+}
+
+/* ---------- Opinión de la comunidad (voto alcista/bajista) ---------- */
+let opinion = null; // reparto del activo mostrado
+let voting = false;
+
+async function loadOpinion() {
+  const shown = asset;
+  if (!shown) return;
+  opinion = null;
+  const s = await loadSentiment(shown.symbol);
+  if (asset !== shown) return; // otro activo mientras llegaba la respuesta
+  opinion = s;
+  renderOpinion();
+}
+
+function renderOpinion() {
+  const box = $('#t-sent', root);
+  if (!box) return;
+  if (!opinion) { box.hidden = true; return; } // sin dato (servidor caído): no se pinta nada
+  const sh = shares(opinion);
+  const mine = opinion.myVote;
+  const loggedIn = !!currentUser();
+  const btn = (value, label, count) => h('button', {
+    type: 'button', class: 'btn btn-sm btn-ghost', dataset: { sent: String(value) }, 'aria-pressed': String(mine === value), disabled: voting,
+  }, `${label} · ${count}${sh ? ` (${value === 1 ? sh.bull : sh.bear} %)` : ''}`);
+  const bar = h('div', { class: 'bar', role: 'img', 'aria-label': sh ? `${sh.bull} % alcistas, ${sh.bear} % bajistas` : 'Sin votos todavía' },
+    sh ? [h('i', { class: 'up', dataset: { w: String(sh.bull) } }), h('i', { class: 'down', dataset: { w: String(sh.bear) } })] : null);
+  put(box,
+    h('div', { class: 'sym-sent-head' }, h('strong', {}, 'Opinión de la comunidad'), h('span', { class: 'muted' }, opinion.total ? votesLabel(opinion.total) : 'Aún nadie ha opinado')),
+    bar,
+    h('div', { class: 'sym-sent-row' },
+      loggedIn ? [btn(1, 'Alcista', opinion.bullish), btn(-1, 'Bajista', opinion.bearish)]
+        : [h('span', { class: 'muted' }, `${opinion.bullish} alcistas · ${opinion.bearish} bajistas`),
+          h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-action': 'login' }, 'Inicia sesión para opinar')],
+      opinion.threadId ? h('a', { class: 'btn btn-sm btn-ghost', href: `#/community/thread:${opinion.threadId}` }, 'Ver el hilo del foro') : null),
+    h('small', { class: 'muted' }, SENTIMENT_NOTE));
+  applyVars(box);
+  box.hidden = false;
+}
+
+async function vote(value) {
+  const shown = asset;
+  if (voting || !opinion) return;
+  voting = true; renderOpinion();
+  try {
+    const s = await castVote(shown.symbol, nextVote(opinion.myVote, value));
+    if (asset === shown) opinion = s;
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    voting = false;
+    if (asset === shown) renderOpinion();
+  }
 }
 
 /** «Próximo dividendo: ex-dividendo el … · importe» en las acciones que lo tienen; sin dato no se pinta nada. */

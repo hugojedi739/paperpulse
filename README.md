@@ -9,12 +9,12 @@ Simulador de trading (*paper trading*) con **cotizaciones reales** de criptomone
 ## Funciones
 
 - **Mercados en vivo**: cripto y bolsa con precios en tiempo real, libro de órdenes, búsqueda (Ctrl+K), noticias financieras y estado de las bolsas (horarios y festivos).
-- **Operar**: órdenes a mercado, límite y stop, con comisión y deslizamiento configurables. Gráfico de velas de 1 minuto a 1 mes, con histórico infinito e indicadores (medias, Bollinger, RSI).
+- **Operar**: órdenes a mercado, límite y stop, con comisión y deslizamiento configurables. Gráfico de velas de 1 minuto a 1 mes, con histórico infinito e indicadores (medias, Bollinger, RSI) y, con el interruptor «Análisis avanzado», MACD, volumen medio y soportes/resistencias simples.
 - **Demo o Mi cuenta**: un selector en la cabecera elige entre la cuenta Demo del navegador (se puede reiniciar, no puntúa) y Mi cuenta en el servidor (con sesión; el servidor decide siempre el precio). Las dos son con dinero virtual y nunca se mezclan. El saldo inicial lo elige cada persona (de 50 a 1.000.000 €).
 - **Diario y estadísticas**: notas por operación, calendario de resultados, tasa de aciertos, pérdida máxima y resultado por semanas.
 - **¿Te ha compensado operar?**: con la cuenta del servidor, el Resumen compara tu rentabilidad (ya con comisiones y deslizamiento) con no invertir y con el S&P 500 desde el día en que abriste la cuenta.
 - **Dividendos y luz roja**: próximo dividendo (fecha ex-dividendo e importe) en la ficha de cada acción y de tus posiciones en el Resumen, solo informativo (la simulación no los abona); y un aviso en la cabecera cuando BTC o el IBEX 35 caen más de un umbral, con reglas fijas y sin predicciones.
-- **Comunidad**: perfiles con alias, foro con votos, operaciones compartidas, seguidores, clasificación por rentabilidad y moderación.
+- **Comunidad**: perfiles con alias, foro con votos, operaciones compartidas, seguidores, clasificación por rentabilidad, opinión alcista/bajista por activo (solo el recuento, nunca quién votó) y moderación.
 - **Retención**: notificaciones, logros, racha de días, reto mensual con clasificación propia, retos personales de la semana y una sección para aprender (lecciones y glosario).
 - **Asistente IA**: chat con Claude en streaming, con límites de gasto y un modo de demostración si no hay clave.
 - **Cuentas**: email y contraseña, Google u Okta (OpenID Connect con PKCE), descarga de datos y borrado de la cuenta (RGPD).
@@ -56,9 +56,9 @@ backend/                  API y lógica del servidor (Starlette)
   news.py                 /api/news: noticias RSS filtradas
   market/                 Velas, cripto (Binance, CoinGecko), bolsa (Yahoo/Finnhub), divisas, horarios, búsqueda, S&P 500 del comparador, dividendos, reglas de la luz roja y relay /ws/market
   trading/                Cuenta de práctica del servidor: reglas en enteros, precios, libro contable y API
-  community/              Perfiles, foro, clasificación, pulso público y moderación
+  community/              Perfiles, foro, clasificación, pulso público, opinión por activo y moderación
   retention/              Notificaciones, logros, racha, reto mensual, onboarding y cron diario
-  migrations/             Migraciones SQL numeradas (0001_… a 0014_…); se aplican al arrancar
+  migrations/             Migraciones SQL numeradas (0001_… a 0015_…); se aplican al arrancar
   templates/index.html    index.html para Vercel, generado por npm run build:static (no editar)
 frontend/                 La aplicación web que se sirve en local y con Docker (sin build)
   index.html              Shell de la app, sin scripts ni estilos inline
@@ -83,6 +83,7 @@ docs/                     Arquitectura, flujo de trabajo con git y referencia de
 Dockerfile · docker-compose.yml   Imagen y despliegue con Docker
 vercel.json               Función, cron diario y cabeceras de seguridad del CDN
 .env.example              Plantilla comentada de variables de entorno
+SECURITY.md · LICENSE     Cómo avisar de una vulnerabilidad (en privado) · licencia AGPL-3.0
 ```
 
 `data/` (base local), `node_modules/` y `screenshots/` se crean solos y están en `.gitignore`.

@@ -26,6 +26,8 @@ IP_COMMUNITY_CALLS: Dict[str, List[float]] = {}
 USER_COMMUNITY_CALLS: Dict[str, List[float]] = {}
 # Formulario de contacto (/api/contact), por IP
 IP_CONTACT_CALLS: Dict[str, List[float]] = {}
+# Contador de visitas (/api/visit), por IP
+IP_VISIT_CALLS: Dict[str, List[float]] = {}
 
 def get_client_ip(request) -> str:
     """Extrae la IP real del cliente respetando proxies de confianza."""
@@ -59,7 +61,7 @@ def cleanup_stale_ip_data():
     """Evita fugas de memoria limpiando IPs inactivas."""
     now = time.time()
     for store in (IP_STOCK_CALLS, IP_CHALLENGE_CALLS, IP_TRADING_CALLS, USER_TRADING_CALLS,
-                  IP_COMMUNITY_CALLS, USER_COMMUNITY_CALLS, IP_CONTACT_CALLS):
+                  IP_COMMUNITY_CALLS, USER_COMMUNITY_CALLS, IP_CONTACT_CALLS, IP_VISIT_CALLS):
         stale_keys = [ip for ip, calls in store.items() if not calls or (now - calls[-1] > 600)]
         for k in stale_keys:
             store.pop(k, None)

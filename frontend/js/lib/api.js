@@ -11,13 +11,13 @@ export function wsUrl(path) {
 }
 
 /** GET/POST/... con JSON. Lanza Error con el mensaje del servidor y `status`. */
-export async function api(path, { method = 'GET', body, signal } = {}) {
+export async function api(path, { method = 'GET', body, signal, credentials = 'same-origin' } = {}) {
   let res;
   try {
     res = await fetch(apiUrl(path), {
       method,
       signal,
-      credentials: 'same-origin',
+      credentials, // 'omit' para peticiones que no deben llevar cookies (p. ej. el contador de visitas)
       headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });

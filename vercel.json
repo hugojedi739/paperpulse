@@ -1,10 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "echo 'Sin build en Vercel: public/ se genera y se versiona con npm run build:static'",
+  "regions": ["cdg1"],
   "functions": {
     "server.py": {
       "maxDuration": 60,
-      "includeFiles": "{backend,frontend}/**"
+      "includeFiles": "{backend,frontend}/**",
+      "excludeFiles": "{public/**,docs/**,.github/**,.claude/**,LICENSE,frontend/img/**,**/tests/**}"
     }
   },
   "crons": [
