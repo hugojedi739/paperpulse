@@ -283,6 +283,15 @@ Si das las variables de Turso también a `preview`, **las vistas previas usan la
 
 Las migraciones se aplican solas al arrancar la función. Para aplicarlas a mano: `set -a; . ./.env.local; set +a; python -m backend.db migrate`.
 
+### Vercel: espacio de funciones (Function Storage)
+
+El plan gratuito da 10 GB de *Function Storage* y **cada despliegue guarda su propia copia de la función Python**, con sus dependencias (pandas y numpy, que llegan por `yfinance`, unos 145 MB; `curl_cffi`, ~40 MB; `anthropic`, ~26 MB). Muchas ramas y muchos *pushes* llenan el cupo.
+
+- **20/11/2026**: llegó al 100 % y Vercel avisó por correo («Older deployments will be automatically deleted»). No fue una caída: la producción siguió sirviendo.
+- **Qué se hizo**: `excludeFiles` en `vercel.json` (la función no lleva `public/`, `docs/`, `.github/`, `.claude/`, `LICENSE`, `frontend/img/` ni ninguna carpeta `tests/`) y una política de retención en Vercel → Settings → Build and Deployment → *Deployment Retention Policy*: **Canceled, Errored y Pre-Production, 1 día; Production, 30 días**. Opciones del plan gratuito: 30 días, 2 semanas, 1 semana y 1 día.
+- **Hábitos**: agrupa cambios en menos *pushes* a una rama con pull request abierto, y revisa el uso en Vercel → Usage si vuelve el aviso. Si hace falta más margen, baja Production a 1 semana.
+- **Descartado por ahora**: sustituir `yfinance` (quitaría pandas y numpy). Se usa para cotizaciones, velas, dividendos, el S&P 500 del comparador y la búsqueda (`backend/market/stocks.py`, `search.py`), y Yahoo exige cookies y bloquea IPs de servidores, así que el cambio es arriesgado. Si se hace, que sea en un pull request aparte y probado en la vista previa.
+
 ### `node_modules` en el dev container
 
 Con el repositorio en una carpeta compartida de Windows, `npm install` falla con `EPERM` al crear symlinks. Por eso el dev container monta `node_modules` en un volumen del contenedor (`paperpulse-node_modules`) y `postCreateCommand` le da el dueño al usuario `vscode` antes de `npm install`. Si ya tenías el contenedor, reconstrúyelo («Dev Containers: Rebuild Container»). El volumen es independiente del repositorio: para reinstalar desde cero, borra el volumen. El contenedor también trae Node 22 y `gh`.

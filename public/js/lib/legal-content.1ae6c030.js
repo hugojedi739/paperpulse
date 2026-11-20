@@ -4,7 +4,7 @@
 // Cada párrafo es texto plano (se pinta con textContent). {list: [...]} = lista con viñetas; {link: [texto, '#/ruta']} = enlace interno.
 
 /** Versión de los textos. Debe coincidir con LEGAL_VERSION de backend/account.py (lo comprueba un test). */
-export const LEGAL_VERSION = '2026-11-borrador-1';
+export const LEGAL_VERSION = '2026-11-borrador-2';
 /** Fecha visible al pie de cada página legal. Actualízala al cambiar los textos. */
 export const LAST_UPDATED = 'noviembre de 2026';
 export const DISCLAIMER = 'PaperPulse es un simulador educativo con dinero virtual. Nada de lo publicado es asesoramiento financiero.';
@@ -75,6 +75,7 @@ export const PAGES = [
         'Perfil público (solo si lo creas): alias, biografía y si tu perfil es privado. Tu email nunca se muestra a otras personas.',
         'Actividad de simulación: tu cuenta de práctica en el servidor (saldo virtual, órdenes, operaciones, posiciones), retos mensuales, logros, racha de días y notificaciones.',
         'Comunidad: hilos, mensajes, votos, seguidos y seguidores, denuncias que hagas, acciones de moderación que te afecten y, si alguien denuncia un mensaje tuyo, la copia de ese mensaje que se guarda con la denuncia (ver el apartado 6).',
+        'Opinión por activo: si votas «alcista» o «bajista» sobre un activo, tu voto (el activo, el sentido y las fechas) se guarda asociado a tu cuenta. Solo se muestra el recuento de votos: nunca se dice quién ha votado qué.',
         'Copia de tus datos locales (alertas, favoritos, ajustes) si inicias sesión.',
         'Formulario de contacto: el motivo y el mensaje que escribas, la fecha y, si tenías la sesión iniciada, tu cuenta. No se pide ni se guarda tu email ni tu IP en ese mensaje.',
         'Asistente con IA: los mensajes que escribas al asistente se envían a Anthropic para generar la respuesta.',
@@ -84,6 +85,7 @@ export const PAGES = [
       { h: '3. Finalidades y bases jurídicas', p: [{ list: [
         'Crear y gestionar tu cuenta y prestarte el servicio: ejecución del contrato (art. 6.1.b RGPD).',
         'Mostrar tu perfil público y tus mensajes en la comunidad, y hacerte aparecer en las clasificaciones (si el perfil es público): ejecución del contrato y tu decisión de publicarlos.',
+        'Mostrar el reparto agregado de opiniones alcistas y bajistas de cada activo, sin identificar a quien vota: ejecución del contrato.',
         'Seguridad, prevención del abuso, moderación y cumplimiento de las Normas: interés legítimo (art. 6.1.f RGPD).',
         'Saber cuánta gente usa la aplicación mediante un contador de visitas agregado y anónimo, sin cookies: interés legítimo en conocer el uso del servicio (art. 6.1.f RGPD). Puedes oponerte escribiéndonos por el formulario de contacto.',
         'Atender los mensajes del formulario de contacto y tus solicitudes, y cumplir obligaciones legales: tu solicitud y obligación legal (art. 6.1.c RGPD).',
@@ -107,6 +109,7 @@ export const PAGES = [
       { h: '6. Cuánto tiempo conservamos los datos', p: [{ list: [
         'Cuenta y datos de la simulación: mientras mantengas la cuenta. Al eliminarla se borran o anonimizan (ver apartado 8).',
         'Sesiones: 30 días. Notificaciones: 60 días. Estados de inicio de sesión: 10 minutos.',
+        'Votos de opinión por activo: mientras mantengas la cuenta. Los de cuentas desactivadas o suspendidas dejan de contar en el recuento, y puedes retirar o cambiar tu voto cuando quieras.',
         'Contador de visitas: el identificador del día se borra al día siguiente; las cifras agregadas por día, que no identifican a nadie, se conservan 90 días.',
         'Mensajes del formulario de contacto: hasta que la administración los borre. Si los enviaste con la sesión iniciada, se eliminan al borrar tu cuenta.',
         'Denuncias: cuando alguien denuncia un mensaje, junto a la denuncia se guarda una copia del texto del mensaje y del alias de su autor en ese momento, para que la moderación pueda revisar exactamente lo denunciado. Solo la ven los administradores. Esa copia se conserva aunque el mensaje original se borre después, y se elimina si la persona autora borra su cuenta (ver el apartado 8).',
@@ -120,7 +123,7 @@ export const PAGES = [
         'Si consideras que no tratamos tus datos conforme a la normativa, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD, www.aepd.es).',
       ] },
       { h: '8. Qué ocurre cuando eliminas tu cuenta', p: [
-        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, copias de datos, mensajes de contacto enviados con la sesión iniciada, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Si algún mensaje tuyo había sido denunciado, se borra también la copia de su texto y de tu alias que se guardó con la denuncia, y las denuncias que hayas hecho tú se eliminan. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
+        'Se borran tu email, nombre, contraseña, perfil, cuenta de práctica, operaciones, retos, notificaciones, logros, votos de opinión, copias de datos, mensajes de contacto enviados con la sesión iniciada, sesiones y seguimientos. Tus mensajes de la comunidad se vacían y tus hilos pasan a «eliminados», de modo que las respuestas de otras personas siguen teniendo sentido. Si algún mensaje tuyo había sido denunciado, se borra también la copia de su texto y de tu alias que se guardó con la denuncia, y las denuncias que hayas hecho tú se eliminan. Tu cuenta queda como un registro anónimo («Usuario eliminado») sin ningún dato personal.',
       ] },
       { h: '9. Menores', p: ['PaperPulse no está dirigido a menores de 14 años. Al registrarte declaras tener al menos 14 años (art. 7 LOPDGDD). Si detectamos una cuenta de una persona menor de esa edad, la eliminaremos.'] },
       { h: '10. Seguridad', p: ['Aplicamos medidas técnicas y organizativas razonables: contraseñas con scrypt, cookie de sesión HttpOnly, política de seguridad de contenidos (CSP) estricta, límites de peticiones y control de permisos en el servidor. Ningún sistema es infalible.'] },
