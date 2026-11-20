@@ -63,21 +63,23 @@
         </button>
         <div class="topbar-actions">
           <button type="button" class="market-alert" id="market-alert" popovertarget="market-alert-pop" hidden><svg class="icon"><use href="/img/icons.svg#triangle-alert"/></svg><span class="hide-sm"></span></button>
-          <span class="feed-status" id="feed-status" role="status" data-state="connecting"><i></i><span>Conectando</span></span>
-          <div class="acct-switch" id="acct-switch" role="radiogroup" aria-label="Cuenta con la que operas (dinero virtual)"></div>
           <button type="button" class="account-chip" id="account-chip" data-action="account"></button>
-          <button type="button" class="icon-btn" data-action="theme" aria-label="Cambiar tema"><svg class="icon"><use href="/img/icons.svg#sun"/></svg></button>
-          <button type="button" class="icon-btn" popovertarget="notif-pop" aria-label="Notificaciones" id="notif-btn">
+          <button type="button" class="icon-btn hide-sm" data-action="theme" aria-label="Cambiar tema"><svg class="icon"><use href="/img/icons.svg#sun"/></svg></button>
+          <button type="button" class="icon-btn hide-sm" popovertarget="notif-pop" aria-label="Notificaciones" id="notif-btn">
             <svg class="icon"><use href="/img/icons.svg#bell"/></svg><span class="dot-badge" id="notif-badge" hidden></span>
           </button>
-          <button type="button" class="avatar" popovertarget="user-pop" aria-label="Menú de cuenta"><svg class="icon"><use href="/img/icons.svg#user"/></svg></button>
+          <button type="button" class="avatar" id="avatar-btn" popovertarget="user-pop" aria-label="Menú de cuenta"><svg class="icon"><use href="/img/icons.svg#user"/></svg><span class="dot-badge" id="avatar-badge" hidden></span></button>
         </div>
       </header>
 
-      <div class="statusbar">
+      <!-- Franja de estado: cuenta (selector + etiqueta + «?»), estado en vivo y bolsas. En el móvil las bolsas se pliegan -->
+      <div class="statusbar" id="statusbar" data-open="false">
+        <div class="acct-switch" id="acct-switch" role="radiogroup" aria-label="Cuenta con la que operas (dinero virtual)"></div>
         <span class="acct-tag" id="acct-tag" role="status"></span>
         <button type="button" class="acct-help" id="acct-help" popovertarget="acct-info" aria-haspopup="dialog" aria-controls="acct-info" aria-label="Qué es el dinero virtual y qué diferencia hay entre Demo y Mi cuenta" title="¿Qué es el dinero virtual?"><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#circle-help"/></svg></button>
+        <span class="feed-status" id="feed-status" role="status" data-state="connecting"><i></i><span>Conectando</span></span>
         <div class="statusbar-main" id="hdr-status"></div>
+        <button type="button" class="strip-toggle" id="strip-toggle" aria-expanded="false" aria-controls="hdr-status" aria-label="Mostrar el estado de las bolsas"><svg class="icon sm" aria-hidden="true"><use href="/img/icons.svg#chevron-down"/></svg></button>
       </div>
 
       <div class="ticker" id="ticker" aria-label="Cotizaciones en vivo"><div class="ticker-track" id="ticker-track"></div></div>
@@ -136,6 +138,7 @@
     <div id="user-auth"></div>
     <button type="button" data-action="account"><svg class="icon"><use href="/img/icons.svg#wallet"/></svg>Cuenta de práctica</button>
     <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#bell-ring"/></svg>Alertas de precio</button>
+    <button type="button" class="only-sm" data-action="notifications"><svg class="icon"><use href="/img/icons.svg#bell"/></svg>Notificaciones<span class="count alert" id="menu-notif-count" hidden></span></button>
     <button type="button" data-action="theme"><svg class="icon"><use href="/img/icons.svg#moon"/></svg>Cambiar tema</button>
     <button type="button" data-action="privacy"><svg class="icon"><use href="/img/icons.svg#eye-off"/></svg>Ocultar importes</button>
     <button type="button" data-action="settings"><svg class="icon"><use href="/img/icons.svg#settings"/></svg>Ajustes y datos</button>

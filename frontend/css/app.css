@@ -357,6 +357,36 @@
     .statusbar .mkt-badge b { display: none; }
   }
 
+  /* Franja de estado con la cuenta: selector compacto, etiqueta, «?», estado en vivo y bolsas (plegables en el móvil) */
+  /* Resumen: lo prioritario según el estado (elegir saldo, órdenes pendientes, primera compra) va arriba con acento */
+  .focus-card { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .focus-card .hero-sub { margin: var(--s-2) 0 var(--s-3); }
+  .focus-card .rows .row { color: inherit; }
+  .focus-card .rows .row > div:not(.row-end) { display: grid; min-width: 0; }
+  .focus-card .rows .row small { color: var(--text-3); }
+  .statusbar .acct-switch { flex: none; }
+  .statusbar .acct-opt { height: 26px; }
+  .statusbar .feed-status { flex: none; height: 24px; }
+  .strip-toggle { display: none; place-items: center; flex: none; width: 28px; height: 28px; margin-left: auto; border-radius: 50%; color: var(--text-2); position: relative; }
+  .strip-toggle::before { content: ''; position: absolute; inset: -8px; }
+  .strip-toggle .icon { transition: transform 0.2s var(--ease); }
+  .statusbar[data-open='true'] .strip-toggle .icon { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .strip-toggle .icon { transition: none; } }
+  .avatar { position: relative; }
+  .avatar .dot-badge { top: 6px; right: 6px; }
+  .menu > button.only-sm { display: none; }
+  .menu > button .count { margin-left: auto; }
+  @media (max-width: 767px) {
+    .strip-toggle { display: inline-grid; }
+    .statusbar { flex-wrap: wrap; row-gap: 6px; padding-block: 6px; }
+    .statusbar:not([data-open='true']) .statusbar-main { display: none; }
+    .statusbar[data-open='true'] .statusbar-main { display: flex; flex-basis: 100%; order: 1; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+    .statusbar .acct-opt { height: 30px; }
+    .menu > button.only-sm { display: flex; }
+    /* La campana del móvil se abre desde el menú de perfil: bajo la cabecera, no bajo un botón oculto */
+    #notif-pop { top: calc(var(--top-h) + env(safe-area-inset-top) + 6px) !important; }
+  }
+
   /* Tarjetas */
   .card {
     background: var(--surface-1); border: 1px solid var(--border);
@@ -727,6 +757,7 @@
 
   /* Resumen */
   .dash { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+  .dash.dash-minimal { grid-template-columns: minmax(0, 1fr); } /* sin cuenta del servidor: sin la columna de mercados */
   .stack { display: grid; gap: 20px; min-width: 0; }
   .hero-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
   .hero-label { color: var(--text-2); font-weight: 500; display: flex; align-items: center; gap: 8px; }
