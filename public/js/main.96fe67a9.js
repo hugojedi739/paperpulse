@@ -21,7 +21,7 @@ import * as auth from './lib/auth.3d41218e.js';
 import * as account from './lib/account.200b05ac.js';
 import * as notifs from './lib/notifications.6a0ca81c.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
-import { maybeAskTerms } from './ui/terms.664aa743.js';
+import { maybeAskTerms } from './ui/terms.63ef9373.js';
 import { openWelcome } from './ui/welcome.dfb7949b.js';
 import { initPalette, openPalette } from './ui/palette.274692d6.js';
 import { initChat, toggleChat } from './ui/chat.d2e240fa.js';
@@ -36,11 +36,11 @@ const VIEWS = { dashboard, trade, markets };
 const LAZY = {
   news: () => import('./views/news.1a880029.js'),
   journal: () => import('./views/journal.c5eca11d.js'),
-  community: () => import('./views/community.308d346b.js'),
+  community: () => import('./views/community.e76a1a85.js'),
   contact: () => import('./views/contact.6e001db9.js'),
   stats: () => import('./views/stats.b0c17967.js'),
   learn: () => import('./views/learn.6ab9f161.js'),
-  legal: () => import('./views/legal.64bfe25f.js'),
+  legal: () => import('./views/legal.913eb601.js'),
   admin: () => import('./views/admin.6a94591a.js'),
 };
 const mounted = new Set();
