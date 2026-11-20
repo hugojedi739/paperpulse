@@ -3,6 +3,7 @@
 import * as store from './store.js';
 import { debounce, download } from './dom.js';
 import { api, apiUrl } from './api.js';
+import { mergeAtLogin, demoOf } from './cloud-merge.js';
 
 let user = null;
 let applying = false; // evita reenviar al servidor lo que acabamos de descargar
@@ -29,21 +30,37 @@ const MOD_KEY = 'paperpulse_modified_at';
 const modifiedAt = () => { try { return Number(localStorage.getItem(MOD_KEY)) || 0; } catch { return 0; } };
 const touch = (t = Date.now()) => { try { localStorage.setItem(MOD_KEY, String(t)); } catch { /* sin almacenamiento */ } };
 
+// Conflicto de Demos sin decidir: hasta que la persona elija, la copia de la cuenta conserva su Demo (se sube la local
+// solo con favoritos, alertas y ajustes) y al recargar se vuelve a preguntar en vez de pisar una con la otra.
+const UNDECIDED_KEY = 'paperpulse_demo_undecided';
+let heldDemo = null;
+const undecided = () => { try { return localStorage.getItem(UNDECIDED_KEY) === '1'; } catch { return false; } };
+const setUndecided = (on) => { try { if (on) localStorage.setItem(UNDECIDED_KEY, '1'); else localStorage.removeItem(UNDECIDED_KEY); } catch { /* sin almacenamiento */ } };
+
 export async function push() {
   if (!user) return;
-  await api('/api/data', { method: 'PUT', body: { data: store.exportData() } });
+  const data = store.exportData();
+  if (heldDemo) Object.assign(data, heldDemo);
+  await api('/api/data', { method: 'PUT', body: { data } });
   lastSync = Date.now();
   changed();
 }
 const schedulePush = debounce(() => push().catch(() => {}), 2000);
 
-/** Decide entre los datos de la nube y los del navegador. `choose(remote)` resuelve true = usar los de la nube. */
-async function reconcile(choose) {
+function apply(data, at) {
+  applying = true;
+  try { store.importData(data); } finally { applying = false; }
+  touch(at);
+}
+
+/**
+ * Al recargar con la sesión ya abierta en este navegador: lo local y la copia de la cuenta son la misma cuenta,
+ * así que gana lo más reciente (si se combinara, volverían favoritos y alertas borrados aquí).
+ */
+async function refreshFromCloud() {
   const remote = await api('/api/data');
-  if (remote.data && (!hasLocalData() || (await choose(remote)))) {
-    applying = true;
-    try { store.importData(remote.data); } finally { applying = false; }
-    touch(remote.updatedAt * 1000);
+  if (remote.data && (!hasLocalData() || remote.updatedAt * 1000 > modifiedAt())) {
+    apply(remote.data, remote.updatedAt * 1000);
     lastSync = Date.now();
     changed();
   } else {
@@ -52,8 +69,30 @@ async function reconcile(choose) {
 }
 
 /**
- * Restaura la sesión al cargar. `chooseAfterOAuth(remote)` se usa si venimos de entrar con Google/Okta
- * (mismo diálogo que tras el login con contraseña); si no, ganan los datos más recientes.
+ * Al iniciar sesión: se juntan los datos de este navegador con los de la cuenta (lib/cloud-merge.js) sin preguntar.
+ * Solo si las dos Demos tienen operaciones distintas se llama a `chooseDemo({ local, remote, updatedAt })`, que
+ * resuelve 'cloud' (usar la guardada), 'local' (quedarse con la de este navegador) o null (decidir más tarde: no se
+ * pierde ninguna). «Mi cuenta» no entra: ya es la misma en todos los navegadores.
+ */
+async function mergeOnLogin(chooseDemo) {
+  const remote = await api('/api/data');
+  heldDemo = null;
+  if (!remote.data) { setUndecided(false); await push(); return; }
+  const local = store.exportData();
+  let { data, conflict } = mergeAtLogin(local, remote.data, { localNewer: modifiedAt() >= remote.updatedAt * 1000 });
+  if (conflict) {
+    const pick = chooseDemo ? await chooseDemo({ local, remote: remote.data, updatedAt: remote.updatedAt }) : null;
+    if (pick === 'cloud') data = { ...data, ...demoOf(remote.data) };
+    else if (pick !== 'local') heldDemo = demoOf(remote.data); // sin decidir: la guardada no se toca
+    setUndecided(pick !== 'cloud' && pick !== 'local');
+  } else setUndecided(false);
+  apply(data);
+  await push();
+}
+
+/**
+ * Restaura la sesión al cargar. Si venimos de entrar con Google/Okta (o quedó un conflicto de Demos sin decidir) se
+ * juntan los datos como tras el login con contraseña y `chooseAfterOAuth` resuelve el conflicto; si no, gana lo más reciente.
  */
 export async function init(chooseAfterOAuth) {
   for (const ev of ['account', 'trades', 'alerts', 'watchlist', 'settings']) store.on(ev, (detail) => {
@@ -68,16 +107,16 @@ export async function init(chooseAfterOAuth) {
     // Versiones anteriores guardaban la copia del servidor en las claves locales: con sesión, esa «Demo» no es tal
     // y empieza de cero. Se marca como lo más reciente para que no se importe una copia antigua de /api/data.
     if (store.settleUpgrade(Boolean(user))) touch();
-    if (user) await reconcile(fromOAuth && chooseAfterOAuth ? chooseAfterOAuth : async (remote) => remote.updatedAt * 1000 > modifiedAt());
+    if (user) await (fromOAuth || undecided() ? mergeOnLogin(chooseAfterOAuth) : refreshFromCloud());
   } catch { user = null; }
   changed();
   markReady();
   return { user, fromOAuth };
 }
 
-export async function login(email, password, choose) {
+export async function login(email, password, chooseDemo) {
   ({ user } = await api('/api/auth/login', { method: 'POST', body: { email, password } }));
-  await reconcile(choose);
+  await mergeOnLogin(chooseDemo);
   changed();
 }
 
@@ -107,8 +146,12 @@ export async function downloadMyData() {
 }
 
 /** Sube los últimos cambios, cierra la sesión y borra los datos de este navegador (ya están en la nube). */
+/** Hay dos Demos distintas y aún no se ha elegido: al cerrar sesión se perdería la de este navegador. */
+export const hasUndecidedDemo = () => Boolean(heldDemo);
+
 export async function logout() {
   await push().catch(() => {});
+  heldDemo = null;
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   user = null;
   applying = true;
@@ -120,6 +163,8 @@ export async function logout() {
 export async function deleteAccount(secret) {
   await api('/api/auth/me', { method: 'DELETE', body: user?.hasPassword ? { password: secret } : { confirm: secret } });
   user = null;
+  heldDemo = null;
+  setUndecided(false);
   changed();
 }
 
