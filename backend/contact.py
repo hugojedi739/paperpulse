@@ -23,6 +23,7 @@ PER_MINUTE = 3        # mensajes por minuto y por IP
 PER_HOUR_GLOBAL = 60  # tope de mensajes nuevos por hora entre todos
 HONEYPOT = "website"  # campo oculto en el formulario: si llega relleno, es un bot
 PAGE = 25
+RETENTION_DAYS = 365  # los mensajes se borran solos al año (lo dice la política de privacidad)
 
 
 def save(reason, message, user_id: Optional[int]) -> int:
@@ -143,6 +144,13 @@ async def api_message(request):
     if not await run_in_threadpool(mark):
         return error("El mensaje no existe.", 404)
     return ok({"ok": True, "read": body["read"]})
+
+
+def cleanup() -> dict:
+    """Para el cron diario: borra los mensajes de contacto con más de RETENTION_DAYS."""
+    limit = int(time.time()) - RETENTION_DAYS * 86400
+    with transaction() as conn:
+        return {"contactMessagesDeleted": conn.execute("DELETE FROM contact_messages WHERE created_at < ?", (limit,)).rowcount}
 
 
 routes = [

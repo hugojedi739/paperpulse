@@ -1,5 +1,5 @@
 // Páginas legales (aviso legal, privacidad, términos, cookies y normas). Texto en lib/legal-content.js.
-import { PAGES, pageById, LAST_UPDATED } from '../lib/legal-content.f4938d51.js';
+import { PAGES, pageById, LAST_UPDATED } from '../lib/legal-content.02fd2d81.js';
 import { h, svgIcon, mount as put } from '../lib/el.71f9edc9.js';
 import { on } from '../lib/dom.a575914e.js';
 import { go } from '../lib/router.de30a562.js';
