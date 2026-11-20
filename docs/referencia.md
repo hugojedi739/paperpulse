@@ -149,7 +149,7 @@ Visible solo para administradores (el backend lo comprueba en cada petición con
 Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel → variable de `.env` → valor por defecto. Los secretos nunca se devuelven al navegador (solo «configurado» y los 4 últimos caracteres). Están en claro en la base de datos: protege el token de Turso y, en local, `data/` (el archivo se crea con permisos 600).
 
 ## Asistente IA
-`/api/chat` hace streaming SSE con Claude. Antes de cada mensaje el frontend pide `/api/chat/challenge` (HMAC de un solo uso). Sin clave de Anthropic responde un modo de demostración.
+`/api/chat` hace streaming SSE con Claude. Como toda escritura, exige mismo origen (403) y JSON (415). Antes de cada mensaje el frontend pide `/api/chat/challenge` (HMAC de un solo uso); las dos llamadas usan `apiUrl()` de `lib/api.js`. Sin clave de Anthropic responde un modo de demostración.
 - **Respuestas fijas**: el texto exacto de los botones de sugerencia (`SUGGESTIONS`, igual en `ui/chat.js` y `backend/chat_fixed.py`; un test lo comprueba) se responde sin llamar a la IA: el resumen del mercado con las cotizaciones que envía el navegador y las educativas con texto propio y enlaces a Aprender. Cualquier otra pregunta, aunque se parezca, va a la IA. El chat solo convierte en enlace las rutas internas `[texto](#/ruta)` (`lib/markdown.js`).
 - **Uso y límites en la base de datos** (`backend/ai_usage.py`, migración `0010`), así que valen aunque Vercel reparta las peticiones entre instancias: 20 preguntas por minuto y cliente, `DAILY_USER_CHAT_REQUESTS` y `DAILY_USER_TOKEN_LIMIT` al día por cliente, tope global `DAILY_GLOBAL_TOKEN_LIMIT` y aviso en el log al 80 %. El cliente se identifica con un HMAC de su IP con sal diaria (la IP no se guarda) y el cron diario borra los contadores pasados.
 - `ai_usage` guarda una fila por respuesta (tokens de entrada, salida, razonamiento y caché; sin IP, usuario ni texto) durante 90 días. El Resumen del panel y `/api/health` muestran el consumo del día y la media por pregunta.
@@ -165,7 +165,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET | `/api/crypto/depth?symbol=BTCUSDT` | Libro de órdenes (20 niveles) |
 | GET | `/api/stocks/quotes` · `/api/stocks/sparks` | Cotizaciones de bolsa del catálogo · cierres de 1 mes |
 | GET | `/api/search?q=` | Búsqueda de cripto y acciones |
-| GET | `/api/markets` · `/api/rates` · `/api/news` | Estado de mercados · divisas · noticias |
+| GET | `/api/markets` · `/api/rates` · `/api/news` | Estado de mercados · divisas · noticias (`/api/markets` y `/api/rates`: 240/min por IP, como el resto de datos de mercado) |
 | GET | `/api/markets` → `alertRules` | Además del estado de las bolsas, las reglas activas de la luz roja: `[{symbol, name, window: "24h"\|"session", dropPct}]` |
 | GET | `/api/dividends` | Próximos dividendos del catálogo: `{data: {SÍMBOLO: {exDate, amount\|null, lastAmount\|null, currency}}, updatedAt}`; `data` vacío sin datos. Público, 60/min por IP, caché de 6 h |
 | GET | `/api/benchmark/sp500?since=` | Rentabilidad del S&P 500 desde `since` (epoch en segundos, desde 2020) para el comparador del Resumen: `{available, since, startDate, startClose, lastClose, asOf, returnPct, source}` o `{available: false}`. Público, 60/min por IP, caché de 1 h |
