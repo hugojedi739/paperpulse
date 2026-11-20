@@ -5,21 +5,28 @@
     "context": ".."
   },
   "features": {
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+    // Node fijado a 22, igual que "engines" de package.json y el workflow de tests
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    // gh para abrir pull requests desde el contenedor
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+  // node_modules en un volumen del contenedor: en carpetas compartidas con Windows
+  // npm falla al crear symlinks (EPERM) y es muy lento
+  "mounts": [
+    "source=paperpulse-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+  ],
   "forwardPorts": [8000],
   "portsAttributes": {
     "8000": { "label": "PaperPulse", "onAutoForward": "openBrowser" }
   },
   // Crea .env a partir de la plantilla la primera vez (nunca sobrescribe uno existente)
-  "postCreateCommand": "([ -f .env ] || cp .env.example .env) && npm install --no-audit --no-fund",
+  "postCreateCommand": "([ -f .env ] || cp .env.example .env) && sudo chown vscode:vscode node_modules && npm install --no-audit --no-fund",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.debugpy",
-        "dbaeumer.vscode-eslint"
+        "ms-python.debugpy"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
