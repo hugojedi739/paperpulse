@@ -70,6 +70,7 @@ def export_data(user_id: int) -> Dict:
                 "votesCast": _rows(conn, "SELECT post_id, value, created_at FROM votes WHERE user_id = ?", user_id),
                 "reportsMade": _rows(conn, "SELECT post_id, reason, details, status, created_at FROM reports WHERE reporter_id = ?", user_id),
             },
+            "assetVotes": _rows(conn, "SELECT symbol, value, created_at, updated_at FROM asset_votes WHERE user_id = ? ORDER BY symbol", user_id),
             "following": [r["alias"] for r in conn.execute("SELECT p.alias FROM follows f JOIN profiles p ON p.user_id = f.followee_id WHERE f.follower_id = ?", (user_id,))],
             "followersCount": one("SELECT COUNT(*) FROM follows WHERE followee_id = ?", user_id)[0],
             "contactMessages": _rows(conn, "SELECT reason, message, created_at FROM contact_messages WHERE user_id = ? ORDER BY id", user_id),
@@ -106,7 +107,7 @@ def delete_account(user_id: int) -> None:
         run("UPDATE posts SET body = '', status = 'deleted', updated_at = ? WHERE author_id = ?", now, user_id)
         run("UPDATE threads SET title = 'Hilo eliminado', status = 'deleted' WHERE author_id = ?", user_id)
         run("UPDATE reports SET post_body = NULL, post_author_alias = NULL WHERE post_author_id = ?", user_id)  # copia de sus textos
-        for table in ("profiles", "notifications", "achievements", "trading_days", "onboarding", "equity_snapshots", "leaderboard",
+        for table in ("profiles", "asset_votes", "notifications", "achievements", "trading_days", "onboarding", "equity_snapshots", "leaderboard",
                       "challenge_entries", "challenge_scores", "practice_data", "sessions", "identities"):
             run(f"DELETE FROM {table} WHERE user_id = ?", user_id)
         run("UPDATE users SET email = ?, name = 'Usuario eliminado', password_hash = '', disabled = 1, role = 'user', email_verified = 0, "

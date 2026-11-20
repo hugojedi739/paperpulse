@@ -12,7 +12,7 @@ import { sendVisit } from './lib/visit.c6cb5460.js';
 import { updateLive, assetIcon } from './lib/ui.ec7d5633.js';
 import { current, go } from './lib/router.de30a562.js';
 import * as dashboard from './views/dashboard.a35c5adc.js';
-import * as trade from './views/trade.871b428c.js';
+import * as trade from './views/trade.8aeac101.js';
 import * as markets from './views/markets.32b717b6.js';
 import * as newsView from './views/news.6a1229d4.js';
 import * as journal from './views/journal.278dd761.js';
