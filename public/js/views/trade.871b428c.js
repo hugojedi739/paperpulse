@@ -13,7 +13,7 @@ import { go } from '../lib/router.de30a562.js';
 import { watchScroll } from '../lib/scroll-hint.b6c0289f.js';
 import { closePositionDialog } from '../ui/dialogs.25a7e5ac.js';
 import { shareButton, shareDialog } from '../ui/share.1af81b2e.js';
-import { afterBuy } from '../ui/celebrate.c16acb3e.js';
+import { afterBuy } from '../ui/celebrate.ea10ed71.js';
 import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.1e314bd3.js';
 import { h, mount as put } from '../lib/el.71f9edc9.js';
 
