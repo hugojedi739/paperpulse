@@ -851,6 +851,9 @@
   .alloc-bar { display: flex; height: 12px; gap: 2px; margin-bottom: 12px; }
   .alloc-bar i { width: var(--w); border-radius: 3px; background: var(--c); min-width: 3px; }
   .alloc-legend { display: grid; gap: 8px; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+  /* Con ancho (junto a la Cartera, en la columna principal) la leyenda va en dos columnas */
+  @container (min-width: 560px) { .alloc-legend { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
+  #d-alloc { container-type: inline-size; }
   .alloc-legend div { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 8px; align-items: center; }
   .alloc-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
   .alloc-legend span:last-child { color: var(--text-3); min-width: 52px; text-align: right; }
