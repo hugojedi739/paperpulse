@@ -126,8 +126,11 @@ test('en modo servidor el store no se sube a /api/data y vuelve a local al salir
   const events = [];
   const off = store.on('account', (d) => events.push(d));
   store.applyServer({ capital: 10_000, cash: 9_000, positions: [], orders: [], trades: [] });
+  assert.equal(store.isServerMode(), false, 'la copia del servidor no se activa sola: la elige el selector');
+  store.useAccount('server');
   assert.equal(store.isServerMode(), true);
   assert.equal(store.cash(), 9_000);
+  store.applyServer({ capital: 10_000, cash: 8_000, positions: [], orders: [], trades: [] });
   assert.deepEqual(events.at(-1), { server: true });
   store.leaveServerMode();
   assert.equal(store.isServerMode(), false);

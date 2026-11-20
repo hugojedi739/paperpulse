@@ -140,7 +140,63 @@ const state = {
   settings: { ...DEFAULT_SETTINGS }, markets: [], notifications: [],
 };
 
+/* ---------- Dos cuentas que nunca se mezclan: Demo (este navegador) y Mi cuenta (copia del servidor) ---------- */
+// `state` tiene siempre los datos de la cuenta ACTIVA (la que se ve y con la que se opera). La otra espera en su
+// hueco. Demo se guarda en las claves de siempre (paperpulse_balance, _positions...); la copia del servidor NO se
+// guarda en ellas: solo vive en memoria, salvo su curva de patrimonio (clave server_equity_history), que es
+// un dibujo del navegador. Así Demo no hereda nunca saldos ni posiciones del servidor, ni al revés.
+const ACCOUNT_FIELDS = ['practice', 'capital', 'cash', 'initialInput', 'positions', 'orders', 'trades', 'equity'];
+const pick = (src) => Object.fromEntries(ACCOUNT_FIELDS.map((k) => [k, src[k]]));
+const emptyAccount = () => ({ practice: false, capital: 1000, cash: 0, initialInput: null, positions: [], orders: [], trades: [], equity: [] });
+let active = 'demo'; // 'demo' | 'server'
+let demoSlot = null; // datos de Demo cuando la activa es Mi cuenta
+let serverSlot = emptyAccount(); // copia del servidor cuando la activa es Demo
+const demoSrc = () => (active === 'demo' ? state : demoSlot);
+const serverSrc = () => (active === 'server' ? state : serverSlot);
+
+/** El motor local (lib/trading.js) solo puede tocar Demo: con Mi cuenta activa, ejecutar en el navegador es un error. */
+function assertDemo(what) {
+  if (active !== 'demo') throw new Error(`${what}: la cuenta activa es «Mi cuenta» y la gestiona el servidor.`);
+}
+
+export const activeAccount = () => active;
+
+/** Cambia la cuenta activa. Devuelve true si ha cambiado. Avisa a las vistas con { server: true } (no es un cambio de datos). */
+export function useAccount(mode) {
+  if (mode !== 'demo' && mode !== 'server') throw new Error(`Cuenta desconocida: ${mode}`);
+  if (mode === active) return false;
+  if (active === 'demo') { demoSlot = pick(state); Object.assign(state, serverSlot); }
+  else { serverSlot = pick(state); Object.assign(state, demoSlot); demoSlot = null; }
+  active = mode;
+  serverMode = mode === 'server';
+  emit('account', { server: true, switched: true });
+  emit('trades', { server: true, switched: true });
+  return true;
+}
+
+// Hasta esta versión, con sesión, la copia del servidor se guardaba en las claves locales. Al actualizar, si quien
+// tiene esos datos tenía la sesión abierta, lo guardado no es su Demo sino esa copia: Demo empieza de cero.
+const SPLIT_KEY = 'demo_split';
+let legacy = false;
+const hasStoredAccount = () => read('practice_active', false) === true || (read('trades', []) || []).length > 0;
+/** Lo llama auth.init en cuanto sabe si hay sesión (antes de reconciliar con /api/data). Devuelve true si vació Demo. */
+export function settleUpgrade(hasSession) {
+  if (!legacy) return false;
+  legacy = false;
+  write(SPLIT_KEY, 1);
+  if (!hasSession) return false;
+  const fresh = emptyAccount();
+  if (active === 'demo') Object.assign(state, fresh); else demoSlot = fresh;
+  persist('practice_active', 'initial_capital', 'initial_input', 'balance', 'positions', 'pending_orders', 'trades', 'equity_history');
+  if (active === 'demo') { emit('account', { server: true }); emit('trades', { server: true }); }
+  return true;
+}
+
 export function load() {
+  // Lo que se lee de las claves es Demo: la cuenta activa vuelve a ser Demo (la de Mi cuenta llega de /api/portfolio)
+  active = 'demo';
+  serverMode = false;
+  demoSlot = null;
   state.practice = read('practice_active', false) === true;
   state.capital = roundUsd(read('initial_capital', 1000)) || 1000;
   state.cash = state.practice ? roundUsd(read('balance', state.capital)) : 0;
@@ -155,21 +211,27 @@ export function load() {
   state.recent = (read('recent_searches', []) || []).slice(0, 8);
   state.settings = { ...DEFAULT_SETTINGS, ...(read('settings', {}) || {}) };
 
+  serverSlot = { ...emptyAccount(), equity: safeMap(read('server_equity_history', []), (e) => ({ time: Number(e.time), value: roundUsd(e.value) })).filter((e) => e.time > 0) };
+  legacy = read(SPLIT_KEY, 0) !== 1 && hasStoredAccount();
+  if (!legacy) write(SPLIT_KEY, 1);
+
   if (read('schema_version', 1) < APP.schema) {
     persist('positions', 'pending_orders', 'trades', 'alerts', 'watchlist');
     write('schema_version', APP.schema);
   }
 }
 
+// Las claves de la cuenta se escriben SIEMPRE desde Demo, aunque la activa sea Mi cuenta
 const PERSIST = {
-  practice_active: () => state.practice,
-  initial_capital: () => state.capital,
-  initial_input: () => (state.practice ? state.initialInput : null),
-  balance: () => (state.practice ? state.cash : null),
-  positions: () => (state.practice ? state.positions : null),
-  pending_orders: () => (state.practice ? state.orders : null),
-  equity_history: () => (state.practice ? state.equity : null),
-  trades: () => state.trades,
+  practice_active: () => demoSrc().practice,
+  initial_capital: () => demoSrc().capital,
+  initial_input: () => (demoSrc().practice ? demoSrc().initialInput : null),
+  balance: () => (demoSrc().practice ? demoSrc().cash : null),
+  positions: () => (demoSrc().practice ? demoSrc().positions : null),
+  pending_orders: () => (demoSrc().practice ? demoSrc().orders : null),
+  equity_history: () => (demoSrc().practice ? demoSrc().equity : null),
+  server_equity_history: () => (serverSrc().practice ? serverSrc().equity : null),
+  trades: () => demoSrc().trades,
   alerts: () => state.alerts,
   watchlist: () => state.watchlist,
   recent_searches: () => state.recent,
@@ -195,6 +257,7 @@ export const notifications = () => state.notifications;
 
 /* ---------- Cuenta de práctica ---------- */
 export function activate(capitalUsd, input = null) {
+  assertDemo('Crear la cuenta Demo');
   state.practice = true;
   state.capital = Math.max(10, roundUsd(capitalUsd) || 1000);
   state.initialInput = cleanInput(input);
@@ -207,6 +270,7 @@ export function activate(capitalUsd, input = null) {
 }
 
 export function closeAccount() {
+  assertDemo('Reiniciar la cuenta Demo');
   state.practice = false;
   state.initialInput = null;
   state.cash = 0;
@@ -218,12 +282,14 @@ export function closeAccount() {
 }
 
 export function setCash(usd) {
+  assertDemo('Cambiar el saldo');
   state.cash = Math.max(0, roundUsd(usd));
   persist('balance');
   emit('account');
 }
 
 export function addPosition(p) {
+  assertDemo('Abrir una posición');
   const pos = normalizePosition(p);
   state.positions = [pos, ...state.positions];
   persist('positions');
@@ -232,12 +298,14 @@ export function addPosition(p) {
 }
 
 export function updatePosition(id, patch) {
+  assertDemo('Cambiar una posición');
   state.positions = state.positions.map((p) => (p.id === id ? normalizePosition({ ...p, ...patch }) : p));
   persist('positions');
   emit('account');
 }
 
 export function removePosition(id) {
+  assertDemo('Cerrar una posición');
   const pos = state.positions.find((p) => p.id === id);
   state.positions = state.positions.filter((p) => p.id !== id);
   persist('positions');
@@ -246,6 +314,7 @@ export function removePosition(id) {
 }
 
 export function addOrder(o) {
+  assertDemo('Crear una orden');
   const order = normalizeOrder(o);
   state.orders = [...state.orders, order];
   persist('pending_orders');
@@ -254,6 +323,7 @@ export function addOrder(o) {
 }
 
 export function removeOrder(id) {
+  assertDemo('Quitar una orden');
   const order = state.orders.find((o) => o.id === id);
   state.orders = state.orders.filter((o) => o.id !== id);
   persist('pending_orders');
@@ -269,41 +339,47 @@ export function snapshotEquity(valueUsd) {
   if (last && time - last.time < 60) last.value = roundUsd(valueUsd);
   else state.equity.push({ time, value: roundUsd(valueUsd) });
   if (state.equity.length > MAX_EQUITY_POINTS) state.equity.splice(0, state.equity.length - MAX_EQUITY_POINTS);
-  persist('equity_history');
+  persist(active === 'demo' ? 'equity_history' : 'server_equity_history');
 }
 
 /* ---------- Cuenta del servidor (con sesión) ---------- */
 // Con sesión, saldo, posiciones, órdenes y operaciones cerradas vienen de /api/portfolio (lib/account.js) y el store
-// solo guarda una copia para pintar. Los eventos llevan { server: true } para que auth.js no los suba a /api/data.
-let serverMode = false;
+// guarda una copia en memoria para pintar (en `state` si la activa es Mi cuenta; si no, en su hueco). Nunca se
+// escribe en las claves de Demo. Los eventos llevan { server: true } para que auth.js no los suba a /api/data.
+let serverMode = false; // = la cuenta activa es Mi cuenta (ver useAccount)
 export const isServerMode = () => serverMode;
 
 /** Sustituye la cuenta por la del servidor. `snap` ya viene convertido a la forma del store (ver account.js). */
 export function applyServer(snap) {
-  serverMode = true;
-  Object.assign(state, {
+  const target = serverSrc();
+  Object.assign(target, {
     practice: true, capital: snap.capital, cash: snap.cash, initialInput: cleanInput(snap.initialInput),
     positions: snap.positions, orders: snap.orders, trades: snap.trades,
   });
-  if (!state.equity.length) state.equity = [{ time: Math.floor(Date.now() / 1000), value: snap.capital }];
-  persist('practice_active', 'initial_capital', 'initial_input', 'balance', 'positions', 'pending_orders', 'trades', 'equity_history');
+  if (!target.equity.length) target.equity = [{ time: Math.floor(Date.now() / 1000), value: snap.capital }];
+  persist('server_equity_history');
+  if (active !== 'server') return; // Demo activa: la copia espera en su hueco y no se pinta
   emit('account', { server: true });
   emit('trades', { server: true });
 }
 
 /** Con sesión pero sin cuenta de práctica todavía (hay que elegir el saldo inicial): modo servidor, sin cuenta. */
 export function noServerAccount() {
-  serverMode = true;
-  Object.assign(state, { practice: false, cash: 0, initialInput: null, positions: [], orders: [], equity: [] });
-  persist('practice_active', 'initial_input', 'balance', 'positions', 'pending_orders', 'equity_history');
-  emit('account', { server: true });
+  Object.assign(serverSrc(), emptyAccount());
+  persist('server_equity_history');
+  if (active === 'server') emit('account', { server: true });
 }
 
 /** Al cerrar sesión se vuelve al modo local (clearAll borra después la copia). */
-export function leaveServerMode() { serverMode = false; }
+export function leaveServerMode() {
+  useAccount('demo');
+  serverSlot = emptyAccount();
+  persist('server_equity_history');
+}
 
 /* ---------- Diario ---------- */
 export function addTrade(t) {
+  assertDemo('Anotar una operación');
   const trade = normalizeTrade(t);
   state.trades = [trade, ...state.trades];
   persist('trades');
@@ -311,11 +387,13 @@ export function addTrade(t) {
   return trade;
 }
 export function updateTrade(id, patch) {
+  assertDemo('Cambiar una operación');
   state.trades = state.trades.map((t) => (t.id === id ? normalizeTrade({ ...t, ...patch }) : t));
   persist('trades');
   emit('trades');
 }
 export function clearTrades() {
+  assertDemo('Borrar el diario');
   state.trades = [];
   persist('trades');
   emit('trades');
@@ -390,11 +468,12 @@ export function exportData() {
     version: APP.version,
     schemaVersion: APP.schema,
     exportedAt: new Date().toISOString(),
-    account: { hasPracticeAccount: state.practice, initialCapitalUsd: state.capital, balanceUsd: state.cash },
-    positions: state.positions,
-    pendingOrders: state.orders,
-    trades: state.trades,
-    equityHistory: state.equity,
+    // Solo Demo: la cuenta del servidor ya está en el servidor y no se copia aquí (ni en /api/data)
+    account: { hasPracticeAccount: demoSrc().practice, initialCapitalUsd: demoSrc().capital, balanceUsd: demoSrc().cash },
+    positions: demoSrc().positions,
+    pendingOrders: demoSrc().orders,
+    trades: demoSrc().trades,
+    equityHistory: demoSrc().equity,
     watchlist: state.watchlist,
     alerts: state.alerts,
     settings: state.settings,
@@ -421,7 +500,8 @@ export function importData(input) {
     cash: roundUsd(balance),
     positions: strict(data.positions, normalizePosition),
     orders: safeMap(data.pendingOrders, normalizeOrder),
-    trades: strict(data.trades, normalizeTrade),
+    // Las operaciones con id «f123» son copias de la cuenta del servidor que versiones anteriores guardaban aquí: no son de Demo
+    trades: strict(data.trades, normalizeTrade).filter((t) => !/^f\d+$/.test(String(t.id))),
     equity: safeMap(data.equityHistory, (e) => ({ time: Number(e.time), value: roundUsd(e.value) })).filter((e) => e.time > 0),
     alerts: safeMap(data.alerts, normalizeAlert),
     watchlist: Array.isArray(data.watchlist) ? [...new Set(data.watchlist.filter((s) => typeof s === 'string').map(symbolOf))].slice(0, 50) : state.watchlist,
@@ -433,10 +513,13 @@ export function importData(input) {
     ...(['auto', 'EUR', 'USD', 'GBP'].includes(s.currency) && { currency: s.currency }),
     ...(typeof s.privacyMode === 'boolean' && { privacyMode: s.privacyMode }),
   };
-  Object.assign(state, next);
+  const { alerts, watchlist, settings: newSettings, ...demoAccount } = next;
+  Object.assign(state, { alerts, watchlist, settings: newSettings });
+  Object.assign(demoSrc(), demoAccount); // la copia siempre va a Demo, aunque la activa sea Mi cuenta
   persist(...Object.keys(PERSIST));
-  for (const e of ['account', 'trades', 'alerts', 'watchlist', 'settings']) emit(e);
-  return { trades: state.trades.length, positions: state.positions.length };
+  for (const e of ['alerts', 'watchlist', 'settings']) emit(e);
+  if (active === 'demo') { emit('account'); emit('trades'); }
+  return { trades: demoSrc().trades.length, positions: demoSrc().positions.length };
 }
 
 /** Derecho de supresión: borra todas las claves paperpulse_* y restablece el estado. */
@@ -445,9 +528,11 @@ export function clearAll() {
     Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k));
   } catch { /* sin almacenamiento */ }
   Object.assign(state, {
-    practice: false, capital: 1000, cash: 0, positions: [], orders: [], trades: [], equity: [],
-    alerts: [], watchlist: [...DEFAULT_WATCHLIST], recent: [], settings: { ...DEFAULT_SETTINGS },
+    ...emptyAccount(), alerts: [], watchlist: [...DEFAULT_WATCHLIST], recent: [], settings: { ...DEFAULT_SETTINGS },
   });
+  if (active === 'server') demoSlot = emptyAccount(); else serverSlot = emptyAccount();
   write('schema_version', APP.schema);
+  write(SPLIT_KEY, 1);
+  legacy = false;
   for (const e of ['account', 'trades', 'alerts', 'watchlist', 'settings']) emit(e);
 }

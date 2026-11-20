@@ -5,19 +5,37 @@ import * as store from './store.js';
 import { api } from './api.js';
 import { findAsset } from './catalog.js';
 import * as notifications from './notifications.js';
+import * as mode from './account-mode.js';
 
-let active = false;
+let active = false; // hay sesión (la cuenta del servidor existe para esta persona)
 let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)
 let opened = null; // fecha de apertura de la cuenta del servidor (epoch en segundos), para el comparador del Resumen
 let timer = null;
 let cfg = { feeBps: 0, slippageBps: 0, minOrderCents: 500 };
 const POLL_MS = 20_000; // con órdenes pendientes, el servidor las resuelve en cada consulta
 
-export const isActive = () => active;
-export const needsSetup = () => active && needs;
+export const hasSession = () => active;
+/** ¿Se opera con la cuenta del servidor? Sesión Y «Mi cuenta» elegida en el selector. Con Demo, todo va al motor local
+ *  (lib/trading.js) aunque haya sesión; con Mi cuenta, nada se ejecuta en el navegador. */
+export const isActive = () => active && store.activeAccount() === 'server';
+export const needsSetup = () => isActive() && needs;
 export const config = () => cfg;
-/** Cuándo se abrió la cuenta del servidor (segundos), o null sin sesión o sin cuenta todavía. */
-export const openedAt = () => (active && !needs ? opened : null);
+/** Cuándo se abrió la cuenta del servidor (segundos), o null sin Mi cuenta activa o sin cuenta todavía. */
+export const openedAt = () => (isActive() && !needs ? opened : null);
+
+/** Cuenta activa según la preferencia del selector y la sesión. Si pasa a Mi cuenta, la refresca. */
+export function applyMode() {
+  const changed = store.useAccount(mode.effective(active));
+  if (changed && isActive()) refresh().catch(() => {});
+  return changed;
+}
+
+/** Elige «Demo» o «Mi cuenta». Sin sesión, «Mi cuenta» se recuerda y devuelve 'login' (hay que iniciar sesión). */
+export function choose(next) {
+  mode.setPreferred(next);
+  applyMode();
+  return next === mode.SERVER && !active ? 'login' : store.activeAccount();
+}
 
 const cents = (c) => (Number(c) || 0) / 100;
 const iso = (s) => new Date(s * 1000).toISOString();
@@ -85,7 +103,7 @@ export async function startAccount(amountEur) {
 function poll() {
   clearInterval(timer);
   timer = setInterval(() => {
-    if (document.visibilityState === 'visible' && store.orders().length) refresh().catch(() => {});
+    if (document.visibilityState === 'visible' && isActive() && store.orders().length) refresh().catch(() => {});
   }, POLL_MS);
 }
 
@@ -98,6 +116,7 @@ export async function setUser(user) {
     store.leaveServerMode();
     return;
   }
+  applyMode(); // con sesión: Mi cuenta si es la preferencia (por defecto), o Demo si se eligió
   poll();
   await refresh().catch((err) => console.warn('[account] No se pudo cargar la cuenta del servidor:', err.message));
 }

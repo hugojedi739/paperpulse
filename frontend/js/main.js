@@ -8,6 +8,8 @@ import { portfolio, checkTriggers } from './lib/trading.js';
 import { marketsInfo, fxRates } from './lib/marketdata.js';
 import { setRules as setAlertRules } from './lib/market-alert.js';
 import { initMarketAlert } from './ui/market-alert.js';
+import { initAccountSwitch } from './ui/account-switch.js';
+import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.js';
 import { sendVisit } from './lib/visit.js';
 import { updateLive, assetIcon } from './lib/ui.js';
 import { current, go } from './lib/router.js';
@@ -129,10 +131,10 @@ function renderAccountChip() {
   }
   const p = portfolio();
   chip.classList.remove('is-cta');
-  render(chip, auth.currentUser()
+  render(chip, account.isActive() // con Mi cuenta, el saldo lo enseña su diálogo; con Demo, el chip muestra el de Demo
     ? html`${icon('user', 'sm')}<span>Ir a mi cuenta</span>`
     : html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
-  render($('#user-pop-head'), html`<strong>Cuenta de práctica</strong><small>Efectivo: <span class="money">${money(p.cashUsd)}</span></small>`);
+  render($('#user-pop-head'), html`<strong>${ACCOUNT_LABELS[store.activeAccount()].tag}</strong><small>Efectivo: <span class="money">${money(p.cashUsd)}</span></small>`);
 }
 
 function renderAuth(user) {
@@ -358,6 +360,7 @@ renderFeedStatus(feed.getStatus());
 feed.start();
 renderTape(); // la cinta se pintó antes de que el feed sembrara los últimos precios conocidos (caché local)
 initMarketAlert();
+initAccountSwitch({ login: () => dialogs.authDialog('login'), welcome: () => openWelcome() });
 // Contador anónimo de visitas: después de cargar y de saber si hay sesión, sin cookies y sin frenar nada
 auth.ready.then(() => {
   const go = () => setTimeout(() => sendVisit({ signedIn: Boolean(auth.currentUser()) }), 0);

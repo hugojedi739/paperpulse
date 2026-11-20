@@ -319,6 +319,26 @@
   .account-chip.is-cta { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .account-chip small { color: var(--text-3); font-weight: 500; }
 
+  /* Selector «Demo / Mi cuenta» (ui/account-switch.js): grupo de radio compacto en la cabecera */
+  .acct-switch { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-1); }
+  .acct-opt { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: calc(var(--r-md) - 2px);
+    font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+  .acct-opt:hover { color: var(--text-1); }
+  .acct-opt[aria-checked='true'] { background: var(--accent); color: var(--on-accent); }
+  .acct-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Etiqueta siempre visible del modo activo (barra de estado) */
+  .statusbar-main { display: contents; }
+  .acct-tag { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 24px; padding: 0 var(--s-2); border-radius: 999px;
+    font-weight: 600; color: var(--text-1); border: 1px solid var(--border-strong); }
+  .acct-tag[data-mode='server'] { border-color: var(--accent); }
+  .acct-tag:empty { display: none; }
+  @media (max-width: 640px) {
+    /* En el móvil el selector solo enseña los iconos; el texto sigue ahí para el lector de pantalla */
+    .acct-opt { padding: 0; min-width: 36px; height: 32px; justify-content: center; }
+    .acct-opt-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .statusbar .mkt-badge b { display: none; }
+  }
+
   /* Tarjetas */
   .card {
     background: var(--surface-1); border: 1px solid var(--border);

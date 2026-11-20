@@ -142,6 +142,7 @@ test('sin sesión no hay botón de compartir: solo operaciones del servidor', ()
   const trade = { id: 'f42', symbol: 'BTC' };
   assert.equal(fillIdOf(trade), null); // modo local
   assert.equal(shareButton(trade), '');
+  store.useAccount('server'); // «Mi cuenta» elegida en el selector
   store.applyServer({ capital: 10000, cash: 10000, positions: [], orders: [], trades: [] });
   assert.equal(fillIdOf(trade), 42);
   assert.match(shareButton(trade), /data-share="42"/);
