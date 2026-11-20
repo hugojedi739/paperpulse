@@ -13,7 +13,7 @@ import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.c78c079a.js';
 import { updateLive, assetIcon } from './lib/ui.718834d3.js';
 import { current, go } from './lib/router.de30a562.js';
 import * as dashboard from './views/dashboard.f83486ab.js';
-import * as trade from './views/trade.eca45bec.js';
+import * as trade from './views/trade.b8d5a001.js';
 import * as markets from './views/markets.94c44718.js';
 import * as newsView from './views/news.c3519a7c.js';
 import * as journal from './views/journal.db5aeb2e.js';
@@ -29,7 +29,7 @@ import { openWelcome } from './ui/welcome.bbd5ca49.js';
 import { initPalette, openPalette } from './ui/palette.ac775a10.js';
 import { initChat, toggleChat } from './ui/chat.37364347.js';
 import { startTour } from './ui/tour.9f931b30.js';
-import { checkGoals } from './ui/celebrate.e152ced0.js';
+import { checkGoals } from './ui/celebrate.0b231b31.js';
 import { initTabbar } from './ui/tabbar.052b7f59.js';
 
 const VIEWS = { dashboard, trade, markets, news: newsView, journal, community, contact };

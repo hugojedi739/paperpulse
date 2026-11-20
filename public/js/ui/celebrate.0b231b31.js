@@ -43,7 +43,7 @@ const RECENT_MS = 120_000;
  */
 export function checkGoals(now = Date.now()) {
   if (!store.hasPractice()) return [];
-  const w = weekGoals(store.trades(), store.initialCapital());
+  const w = weekGoals(store.trades(), store.initialCapital(), now);
   const done = w.goals.filter((g) => g.state === 'done');
   const seen = read();
   const known = seen.week === w.start ? seen.goals ?? [] : [];

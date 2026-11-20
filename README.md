@@ -48,6 +48,7 @@ backend/                  API y lógica del servidor (Starlette)
   admin.py                /api/admin/*: métricas, usuarios, ajustes y prueba de OAuth
   admin_log.py            Registro de auditoría del panel
   admin_stats.py          Actividad de hoy para el Resumen del panel
+  visits.py               Contador anónimo de visitas de la portada (apagado por defecto; ajuste visits_enabled)
   ai_usage.py             Uso y límites del asistente IA (en la base de datos)
   chat.py                 /api/chat: asistente con Claude (SSE) y desafío anti-bot
   chat_fixed.py           Respuestas fijas para los botones de sugerencia del chat
