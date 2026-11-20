@@ -4,7 +4,7 @@
 import {
   createChart, CandlestickSeries, BarSeries, AreaSeries, LineSeries, HistogramSeries, BaselineSeries,
   createSeriesMarkers, createTextWatermark, CrosshairMode, LineStyle, LastPriceAnimationMode,
-} from '/vendor/lightweight-charts.7d001f7d.mjs';
+} from '/vendor/lightweight-charts.fd656c72.mjs';
 import { html, raw } from './dom.a575914e.js';
 import { num, pct, volume, trendClass } from './format.df74909c.js';
 import { alpha, sheenTones, drawCandleSheen, drawHalo, drawGlowLine, SHEEN_MAX_BARS } from './chart-fx.b6989451.js';

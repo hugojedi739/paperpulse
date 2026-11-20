@@ -13,9 +13,9 @@ import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.c78c079a.js';
 import { sendVisit } from './lib/visit.c6cb5460.js';
 import { updateLive, assetIcon } from './lib/ui.3d803e38.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.76f938ae.js';
-import * as trade from './views/trade.d22db4bf.js';
-import * as markets from './views/markets.c83f70b2.js';
+import * as dashboard from './views/dashboard.6877781a.js';
+import * as trade from './views/trade.51679209.js';
+import * as markets from './views/markets.5db5f166.js';
 import * as dialogs from './ui/dialogs.2ca290c8.js';
 import * as auth from './lib/auth.3d41218e.js';
 import * as account from './lib/account.200b05ac.js';
@@ -35,7 +35,7 @@ const VIEWS = { dashboard, trade, markets };
 // se descargan al entrar por primera vez
 const LAZY = {
   news: () => import('./views/news.1a880029.js'),
-  journal: () => import('./views/journal.44c147fb.js'),
+  journal: () => import('./views/journal.c5eca11d.js'),
   community: () => import('./views/community.24a9ca23.js'),
   contact: () => import('./views/contact.6e001db9.js'),
   stats: () => import('./views/stats.1f20b43d.js'),
