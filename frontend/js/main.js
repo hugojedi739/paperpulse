@@ -242,7 +242,10 @@ const ACTIONS = {
   login: () => dialogs.authDialog('login'),
   register: () => dialogs.authDialog('register'),
   logout: async () => {
-    if (!(await confirmDialog({ title: '¿Cerrar sesión?', body: 'Tus datos ya están guardados en tu cuenta. Se borrarán de este navegador y podrás recuperarlos al volver a entrar.', confirm: 'Cerrar sesión' }))) return;
+    const body = auth.hasUndecidedDemo()
+      ? 'Aún no has elegido qué Demo conservar. Si cierras sesión ahora, se borrará la Demo de este navegador y se quedará la guardada en tu cuenta. «Mi cuenta», tus favoritos, alertas y ajustes no se pierden.'
+      : 'Tus datos ya están guardados en tu cuenta. Se borrarán de este navegador y podrás recuperarlos al volver a entrar.';
+    if (!(await confirmDialog({ title: '¿Cerrar sesión?', body, confirm: 'Cerrar sesión', danger: auth.hasUndecidedDemo() }))) return;
     await auth.logout();
     toast('Sesión cerrada.', 'info');
   },
@@ -376,7 +379,7 @@ renderAccountChip();
 renderNotifications();
 renderTape();
 renderAuth(null);
-auth.init(dialogs.chooseCloudData).then(({ user, fromOAuth }) => {
+auth.init(dialogs.chooseDemo).then(({ user, fromOAuth }) => {
   if (fromOAuth && user) toast(`Hola, ${user.name}.`, 'success');
 });
 // Errores al volver de Google/Okta: ?auth_error=código

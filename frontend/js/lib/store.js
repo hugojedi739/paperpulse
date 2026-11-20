@@ -512,6 +512,8 @@ export function importData(input) {
     ...(['dark', 'light'].includes(s.theme) && { theme: s.theme }),
     ...(['auto', 'EUR', 'USD', 'GBP'].includes(s.currency) && { currency: s.currency }),
     ...(typeof s.privacyMode === 'boolean' && { privacyMode: s.privacyMode }),
+    // La visita guiada vista en otro navegador no vuelve a anunciarse (solo se activa, nunca se desactiva al importar)
+    ...(s.tourDone === true && { tourDone: true }),
   };
   const { alerts, watchlist, settings: newSettings, ...demoAccount } = next;
   Object.assign(state, { alerts, watchlist, settings: newSettings });

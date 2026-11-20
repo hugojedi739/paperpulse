@@ -188,3 +188,21 @@ class NoEmailsTest(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RetentionTest(Base):
+    def test_el_cron_borra_mensajes_y_registros_de_mas_de_un_ano_o_dos(self):
+        from backend import admin_log
+        old = int(time.time()) - (contact.RETENTION_DAYS + 1) * 86400
+        old_log = int(time.time()) - (admin_log.RETENTION_DAYS + 1) * 86400
+        with closing(db.connect()) as conn:
+            conn.execute("INSERT INTO contact_messages (user_id, reason, message, created_at) VALUES (NULL, 'viejo', 'mensaje antiguo', ?)", (old,))
+            conn.execute("INSERT INTO contact_messages (user_id, reason, message, created_at) VALUES (NULL, 'nuevo', 'mensaje reciente', ?)", (int(time.time()),))
+            conn.execute("INSERT INTO admin_log (action, created_at) VALUES ('viejo', ?)", (old_log,))
+            conn.execute("INSERT INTO admin_log (action, created_at) VALUES ('nuevo', ?)", (int(time.time()),))
+            conn.execute("INSERT INTO moderation_log (action, target_type, target_id, created_at) VALUES ('viejo', 'post', 1, ?)", (old_log,))
+        out = {**contact.cleanup(), **admin_log.cleanup()}
+        self.assertEqual((out["contactMessagesDeleted"], out["adminLogDeleted"], out["moderationLogDeleted"]), (1, 1, 1))
+        self.assertEqual(self.count(), 1)
+        with closing(db.connect()) as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM admin_log WHERE action = 'nuevo'").fetchone()[0], 1)
