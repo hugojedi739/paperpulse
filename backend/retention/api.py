@@ -10,7 +10,7 @@ from contextlib import closing
 from starlette.concurrency import run_in_threadpool
 from starlette.routing import Route
 
-from backend import ai_usage, db, visits
+from backend import admin_log, ai_usage, contact, db, visits
 from backend.community import ranking
 from backend.community.api import MAX_PAGE, _guard, _int, _run
 from backend.community.common import CommunityError
@@ -152,7 +152,8 @@ def daily_job() -> dict:
         challenges.ensure_current(conn)
         conn.execute("DELETE FROM oauth_states WHERE expires_at < ?", (ranking.now(),))
         conn.execute("DELETE FROM sessions WHERE expires_at < ?", (ranking.now(),))
-    return {"ranking": True, "notificationsDeleted": notifications.cleanup(), **ai_usage.cleanup(), **visits.cleanup()}
+    return {"ranking": True, "notificationsDeleted": notifications.cleanup(), **ai_usage.cleanup(), **visits.cleanup(),
+            **contact.cleanup(), **admin_log.cleanup()}
 
 
 async def api_cron_daily(request):
