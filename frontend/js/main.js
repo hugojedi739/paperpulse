@@ -127,13 +127,14 @@ function renderAccountChip() {
   chip.hidden = !store.hasPractice() && !auth.currentUser();
   if (!store.hasPractice()) {
     chip.classList.remove('is-cta');
+    chip.removeAttribute('aria-label');
     return render(chip, html`${icon('user', 'sm')}<span>Ir a mi cuenta</span>`);
   }
   const p = portfolio();
   chip.classList.remove('is-cta');
-  render(chip, account.isActive() // con Mi cuenta, el saldo lo enseña su diálogo; con Demo, el chip muestra el de Demo
-    ? html`${icon('user', 'sm')}<span>Ir a mi cuenta</span>`
-    : html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
+  // El saldo de la cuenta activa (Demo o Mi cuenta): en el móvil es lo único de la cuenta que queda en la cabecera
+  render(chip, html`${icon('wallet', 'sm')}<span class="money">${money(p.equityUsd)}</span><small class="${trendClass(p.returnPct)}">${pct(p.returnPct)}</small>`);
+  chip.setAttribute('aria-label', `${ACCOUNT_LABELS[store.activeAccount()].tag}: patrimonio. Abrir la cuenta`);
   render($('#user-pop-head'), html`<strong>${ACCOUNT_LABELS[store.activeAccount()].tag}</strong><small>Efectivo: <span class="money">${money(p.cashUsd)}</span></small>`);
 }
 
@@ -191,9 +192,18 @@ const NOTIF_ICON = { alert: 'bell-ring', order: 'circle-check', error: 'triangle
   reply: 'message-square', follower: 'user-plus', hidden: 'eye-off', achievement: 'trophy', challenge: 'flame' };
 /** Campana con sesión: notificaciones del servidor. Sus textos incluyen alias y títulos de otros usuarios, así que
  *  se construyen con nodos de texto (nunca con plantillas HTML). */
+/** Avisos sin leer: punto en la campana (escritorio) y en el perfil, y número en «Notificaciones» del menú (móvil). */
+function setUnread(n) {
+  $('#notif-badge').hidden = n === 0;
+  $('#avatar-badge').hidden = n === 0;
+  const count = $('#menu-notif-count');
+  count.hidden = n === 0;
+  count.textContent = n > 99 ? '99+' : String(n);
+  $('#avatar-btn').setAttribute('aria-label', n ? `Menú de cuenta (${n} ${n === 1 ? 'notificación sin leer' : 'notificaciones sin leer'})` : 'Menú de cuenta');
+}
 function renderServerNotifications() {
   const { items, unread, hasMore } = notifs.state();
-  $('#notif-badge').hidden = unread === 0;
+  setUnread(unread);
   const box = $('#notif-list');
   if (!items.length) return putNodes(box, h('p', { class: 'hint menu-head' }, 'Sin notificaciones. Aquí verás respuestas, seguidores, órdenes ejecutadas, alertas y logros.'));
   putNodes(box, items.map((n) => h('div', { class: `notif ${n.read ? '' : 'unread'}` },
@@ -207,7 +217,7 @@ function renderServerNotifications() {
 function renderNotifications() {
   if (notifs.active()) return renderServerNotifications();
   const list = store.notifications();
-  $('#notif-badge').hidden = !list.some((n) => !n.read);
+  setUnread(list.filter((n) => !n.read).length);
   render($('#notif-list'), list.length ? list.map((n) => html`<div class="notif ${n.read ? '' : 'unread'}">${icon(NOTIF_ICON[n.type] ?? 'info')}
     <div><strong>${n.title}</strong><small>${n.body}</small><small>${timeAgo(n.time)}</small></div></div>`)
     : html`<p class="hint menu-head">Sin notificaciones. Crea alertas de precio para que te avisemos.</p>`);
@@ -247,6 +257,8 @@ const ACTIONS = {
   shortcuts: () => dialogs.shortcutsDialog(),
   tour: () => startTour(),
   chat: () => toggleChat(),
+  // Móvil: la campana vive en el menú de perfil; se abre bajo la cabecera
+  notifications: () => { $('#user-pop')?.hidePopover?.(); $('#notif-pop')?.showPopover?.(); },
   privacy: () => store.setSetting('privacyMode', !store.settings().privacyMode),
   'read-all': () => (notifs.active() ? notifs.markRead('all').catch(() => {}) : store.markNotificationsRead()),
   'collapse-nav': () => {
@@ -279,6 +291,25 @@ initPalette([
 ]);
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+// Franja de estado: en el móvil el estado de las bolsas se pliega (recordado en este navegador); en escritorio, siempre a la vista
+{
+  const bar = $('#statusbar');
+  const btn = $('#strip-toggle');
+  const KEY = 'paperpulse_strip_open';
+  const set = (open) => {
+    bar.dataset.open = String(open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Ocultar el estado de las bolsas' : 'Mostrar el estado de las bolsas');
+  };
+  let saved = false;
+  try { saved = localStorage.getItem(KEY) === '1'; } catch { /* sin almacenamiento */ }
+  set(saved);
+  btn.addEventListener('click', () => {
+    const open = bar.dataset.open !== 'true';
+    set(open);
+    try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  });
+}
 initDismiss(); // los menús se cierran al elegir, al tocar fuera y al cambiar de vista
 
 /* ---------- Atajos de teclado ---------- */

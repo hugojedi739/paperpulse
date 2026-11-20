@@ -19,6 +19,7 @@ import { goalsCard } from '../ui/goals-card.js';
 import { countTo } from '../lib/motion.js';
 import * as account from '../lib/account.js';
 import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.js';
+import { dashboardFocus, orderLabel } from '../lib/dashboard-focus.js';
 import { holdingRows, holdingTotals, allocation, ALLOCATION_TABS } from '../lib/holdings.js';
 import { upcomingDividends, forPositions, exDateLabel, amountText, daysUntil, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 
@@ -75,9 +76,24 @@ function renderAll() {
   equity = null;
   minis.forEach((m) => m.destroy());
   minis = [];
+  const focus = dashboardFocus({ signedIn: Boolean(user), practice, positions: store.positions().length, orders: store.orders().length });
   render(root, html`
-    <div id="d-retention" class="stack"></div>
-    <div class="dash">
+    ${focus.setupFirst ? html`
+    <section class="card focus-card" aria-labelledby="d-start-title">
+      <h2 class="card-title" id="d-start-title">${icon('wallet')} Crea tu cuenta de práctica</h2>
+      <p class="hero-sub">Elige con cuánto dinero virtual quieres empezar y practica con cotizaciones reales. Es el primer paso: después podrás operar, ver tu patrimonio y entrar en la clasificación.</p>
+      <div class="hero-actions"><button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Elegir mi saldo</button></div>
+    </section>` : ''}
+    ${focus.orders ? ordersCard() : ''}
+    ${focus.firstBuy ? html`
+    <section class="card focus-card" aria-labelledby="d-first-title">
+      <h2 class="card-title" id="d-first-title">${icon('chart-candlestick')} Haz tu primera compra</h2>
+      <p class="hero-sub">Aún no tienes posiciones. Elige un activo y compra una pequeña cantidad con tu saldo virtual: así verás cómo se mueve tu patrimonio. Sin dinero real.</p>
+      <div class="hero-actions"><a class="btn btn-primary" href="#/trade">${icon('chart-candlestick', 'sm')} Ir a Operar</a>
+        <button type="button" class="btn btn-ghost" data-action="palette">${icon('search', 'sm')} Buscar un activo</button></div>
+    </section>` : ''}
+    <div id="d-retention" class="stack" ${focus.minimal ? 'hidden' : ''}></div>
+    <div class="dash${focus.minimal ? ' dash-minimal' : ''}">
       <div class="stack">
         ${user ? greeting(user, practice) : ''}
         ${practice ? html`
@@ -106,12 +122,7 @@ function renderAll() {
           ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
-          <section class="card" aria-labelledby="d-start-title">
-            <h2 class="card-title" id="d-start-title">${icon('wallet')} Crea tu cuenta de práctica</h2>
-            <p class="hero-sub">Elige con cuánto dinero virtual quieres empezar y practica con cotizaciones reales.</p>
-            <div class="hero-actions"><button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Elegir mi saldo</button></div>
-          </section>
-          <div class="kpis" id="d-tiles"></div>` : html`
+          <div class="kpis" id="d-tiles" hidden></div>` : html`
           <section class="card cta" aria-labelledby="d-cta-title">
             <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
             <h2 id="d-cta-title">Practica con precios y costes reales. <span>Averigua si de verdad te compensa operar.</span></h2>
@@ -145,16 +156,16 @@ function renderAll() {
           </section>
           <div id="d-pulse"></div>
           <div class="kpis" id="d-tiles"></div>`}
-        <section class="card">
+        <section class="card" ${focus.minimal ? 'hidden' : ''}>
           <div class="card-head"><h2 class="card-title">${icon('globe')} Sesiones de mercado</h2><span class="card-sub">Tu hora local</span></div>
           <div class="sessions" id="d-sessions"></div>
         </section>
-        <section class="card">
+        <section class="card" ${focus.minimal ? 'hidden' : ''}>
           <div class="card-head"><h2 class="card-title">${icon('newspaper')} Últimas noticias</h2><a class="link" href="#/news">Ver todas</a></div>
           <div class="news-mini" id="d-news">${skeletonRows(4)}</div>
         </section>
       </div>
-      <div class="stack">
+      <div class="stack" ${focus.minimal ? 'hidden' : ''}>
         <section class="card">
           <div class="card-head"><h2 class="card-title">${icon('star')} Favoritos</h2>
             <button class="icon-btn sm" data-action="palette" aria-label="Añadir favorito">${icon('plus')}</button></div>
@@ -419,6 +430,19 @@ function renderBreadth() {
     <div class="gap-8"><span class="breadth-value ${mood[1]}">${share}&nbsp;%</span><span class="muted">de los activos suben · ${mood[0]}</span></div>
     <div class="breadth-bar" role="img" aria-label="${ups} suben y ${list.length - ups} bajan"><i class="b-up" data-w="${share}"></i><i class="b-down" data-w="${100 - share}"></i></div>
     <div class="breadth-legend"><span class="up">${ups} suben</span><span class="down">${list.length - ups} bajan</span></div></div>`);
+}
+
+/* ---------- Órdenes pendientes (arriba del Resumen mientras las haya) ---------- */
+function ordersCard() {
+  const list = store.orders();
+  const shown = list.slice(0, 5);
+  return html`<section class="card focus-card" aria-labelledby="d-orders-title">
+    <div class="card-head"><h2 class="card-title" id="d-orders-title">${icon('clock')} Órdenes pendientes</h2><span class="card-sub">${list.length}</span></div>
+    <div class="rows">${shown.map((o) => html`<a class="row" href="#/trade/${o.symbol}">${assetIcon(o.symbol)}
+      <div><strong>${o.name || o.symbol}</strong><small>${orderLabel(o)} · ${units(o.amount)} ${o.symbol}</small></div>
+      <div class="row-end"><span class="num">${price(o.limitPrice, o.quote)}</span><small><span class="money">${money(o.reservedUsd)}</span> reservado</small></div></a>`)}</div>
+    ${list.length > shown.length ? html`<a class="link" href="#/trade">Ver las ${list.length} en Operar ${icon('arrow-right', 'sm')}</a>` : ''}
+  </section>`;
 }
 
 /* ---------- Cartera y distribución (solo presentación de portfolio()) ---------- */
