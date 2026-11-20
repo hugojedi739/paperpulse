@@ -3,7 +3,7 @@ import * as store from '../lib/store.js';
 import { tick } from '../lib/feed.js';
 import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, render, on, $ } from '../lib/dom.js';
-import { money, price, pct, trendClass, timeAgo } from '../lib/format.js';
+import { money, price, pct, units, trendClass, timeAgo } from '../lib/format.js';
 import { portfolio } from '../lib/trading.js';
 import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.js';
 import { currentUser, onAuth, ready as authReady } from '../lib/auth.js';
@@ -19,6 +19,7 @@ import { goalsCard } from '../ui/goals-card.js';
 import { countTo } from '../lib/motion.js';
 import * as account from '../lib/account.js';
 import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.js';
+import { holdingRows, holdingTotals, allocation, ALLOCATION_TABS } from '../lib/holdings.js';
 import { upcomingDividends, forPositions, exDateLabel, amountText, daysUntil, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 
 const RANGES = [['1D', '1D'], ['1W', '1S'], ['1M', '1M'], ['3M', '3M'], ['ALL', 'Todo']];
@@ -31,7 +32,7 @@ const SESSIONS = {
   tyo: { tz: 'Asia/Tokyo', open: [9, 0], close: [15, 30], name: 'Tokio', sub: 'TSE' },
 };
 
-let root, equity, range = '1M', movers = 'gainers', timer;
+let root, equity, range = '1M', movers = 'gainers', allocBy = 'asset', timer;
 let minis = []; // minigráficos de las tarjetas de cotización
 let alias = null; // alias del perfil de comunidad para el saludo (null = aún no se sabe o no hay perfil)
 let lastEquity; // último patrimonio pintado, para animar la cifra desde ahí
@@ -48,6 +49,7 @@ export function mount(el) {
   root = el;
   on(root, 'click', '[data-seg="range"] button', (_, b) => { range = b.dataset.value; pressSeg(root, 'range', range); drawEquity(); });
   on(root, 'click', '[data-seg="movers"] button', (_, b) => { movers = b.dataset.value; pressSeg(root, 'movers', movers); renderMovers(); });
+  on(root, 'click', '[data-seg="alloc"] button', (_, b) => { allocBy = b.dataset.value; pressSeg(root, 'alloc', allocBy); renderAllocation(); });
   on(root, 'click', '[data-asset]', (_, el2) => go(`/trade/${el2.dataset.asset}`));
   store.on('account', () => root.isConnected && !root.hidden && renderAll());
   let seenUser = currentUser()?.id ?? null; // la home cambia con la sesión: se repinta cuando entra o sale alguien (onAuth también salta en cada sincronización)
@@ -61,7 +63,7 @@ export function mount(el) {
 export function show() {
   renderAll();
   clearInterval(timer);
-  timer = setInterval(() => { renderSummary(); renderCompare(); renderMovers(); renderBreadth(); renderAllocation(); renderSessions(); }, 3000);
+  timer = setInterval(() => { renderSummary(); renderCompare(); renderMovers(); renderBreadth(); renderHoldings(); renderAllocation(); renderSessions(); }, 3000);
 }
 export function hide() { clearInterval(timer); }
 export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); }
@@ -92,6 +94,11 @@ function renderAll() {
             <div class="hero-chart" id="d-chart"></div>
           </section>
           <div class="kpis" id="d-kpis"></div>
+          ${store.positions().length ? html`
+          <section class="card" aria-labelledby="d-hold-title">
+            <div class="card-head"><h2 class="card-title" id="d-hold-title">${icon('wallet')} Cartera</h2><a class="link" href="#/trade">Operar</a></div>
+            <div class="table-wrap" id="d-hold"></div>
+          </section>` : ''}
           ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
           <div id="d-goals">${goalsCard({ compact: true })}</div>
           ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
@@ -151,7 +158,7 @@ function renderAll() {
         </section>
         ${practice && store.positions().length ? html`
           <section class="card">
-            <div class="card-head"><h2 class="card-title">${icon('layers')} Distribución</h2></div>
+            <div class="card-head"><h2 class="card-title">${icon('layers')} Distribución</h2>${seg('alloc', ALLOCATION_TABS, allocBy)}</div>
             <div id="d-alloc"></div>
           </section>` : ''}
         <section class="card">
@@ -179,6 +186,7 @@ function renderAll() {
   renderWatchlist();
   renderMovers();
   renderBreadth();
+  renderHoldings();
   renderAllocation();
   renderSessions();
   renderNews();
@@ -414,21 +422,41 @@ function renderBreadth() {
     <div class="breadth-legend"><span class="up">${ups} suben</span><span class="down">${list.length - ups} bajan</span></div></div>`);
 }
 
-/* ---------- Distribución de cartera (barra apilada + leyenda) ---------- */
+/* ---------- Cartera y distribución (solo presentación de portfolio()) ---------- */
+const signedMoney = (usd) => html`<span class="money">${money(usd, { signed: true })}</span>`;
+
+function renderHoldings() {
+  const box = $('#d-hold', root);
+  if (!box) return;
+  const list = holdingRows(portfolio().rows, findAsset);
+  const t = holdingTotals(list);
+  // En el móvil no caben cuatro columnas: el resultado se pinta bajo el valor (y su columna se oculta)
+  const result = (usd, pctValue) => html`<td class="r hold-pnl hide-sm ${trendClass(usd)}">${signedMoney(usd)}<small>${pct(pctValue)}</small></td>`;
+  const value = (usd, pnl, pctValue) => html`<td class="r"><span class="money">${money(usd)}</span>
+    <small class="show-sm hold-pnl-sm ${trendClass(pnl)}"><span class="money">${money(pnl, { signed: true })}</span> · ${pct(pctValue)}</small></td>`;
+  render(box, html`<table class="table holdings" aria-labelledby="d-hold-title">
+    <thead><tr><th scope="col">Activo</th><th scope="col" class="r hide-sm">Coste</th><th scope="col" class="r">Valor</th><th scope="col" class="r hide-sm">Ganancia / pérdida</th></tr></thead>
+    <tbody>${list.map((r) => html`<tr>
+      <td><a class="hold-asset" href="#/trade/${r.symbol}">${assetIcon(r.symbol)}<span><strong>${r.name}</strong><small>${units(r.amount)} ${r.symbol}</small></span></a></td>
+      <td class="r hide-sm"><span class="money">${money(r.costUsd)}</span></td>
+      ${value(r.valueUsd, r.pnlUsd, r.pnlPct)}
+      ${result(r.pnlUsd, r.pnlPct)}</tr>`)}</tbody>
+    ${list.length > 1 ? html`<tfoot><tr><th scope="row">Total</th><td class="r hide-sm"><span class="money">${money(t.costUsd)}</span></td>
+      ${value(t.valueUsd, t.pnlUsd, t.pnlPct)}${result(t.pnlUsd, t.pnlPct)}</tr></tfoot>` : ''}
+  </table>`);
+}
+
+/* Distribución: barra apilada + leyenda, por activo, tipo o divisa */
 function renderAllocation() {
   const box = $('#d-alloc', root);
   if (!box) return;
   const p = portfolio();
   if (!(p.equityUsd > 0)) return;
-  const rows = [...p.rows].sort((a, b) => b.valueUsd - a.valueUsd);
-  const top = rows.slice(0, 5).map((r, i) => ({ label: r.symbol, usd: r.valueUsd, cls: `c-${i + 1}` }));
-  const rest = rows.slice(5).reduce((s, r) => s + r.valueUsd, 0);
-  if (rest > 0) top.push({ label: 'Otros', usd: rest, cls: 'c-6' });
-  top.push({ label: 'Efectivo', usd: p.cashUsd + p.reservedUsd, cls: 'c-6' });
-  const share = (usd) => (usd / p.equityUsd) * 100;
-  render(box, html`<div class="alloc-bar" role="img" aria-label="Distribución de la cartera">
-      ${top.filter((s) => s.usd > 0).map((s) => html`<i class="${s.cls}" data-w="${share(s.usd).toFixed(2)}"></i>`)}</div>
-    <div class="alloc-legend">${top.map((s) => html`<div><i class="${s.cls}"></i><span>${s.label}</span><span class="money">${money(s.usd)}</span><span>${pct(share(s.usd), { signed: false, decimals: 1 })}</span></div>`)}</div>`);
+  const parts = allocation(holdingRows(p.rows, findAsset), p.cashUsd + p.reservedUsd, allocBy);
+  const label = ALLOCATION_TABS.find(([k]) => k === allocBy)?.[1].toLowerCase() ?? '';
+  render(box, html`<div class="alloc-bar" role="img" aria-label="Distribución de la cartera por ${label}">
+      ${parts.filter((s) => s.usd > 0).map((s) => html`<i class="${s.cls}" data-w="${s.share.toFixed(2)}"></i>`)}</div>
+    <div class="alloc-legend">${parts.map((s) => html`<div><i class="${s.cls}"></i><span>${s.label}</span><span class="money">${money(s.usd)}</span><span>${pct(s.share, { signed: false, decimals: 1 })}</span></div>`)}</div>`);
 }
 
 /* ---------- Sesiones en una línea de 24 h ---------- */
