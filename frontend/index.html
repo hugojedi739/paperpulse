@@ -202,6 +202,16 @@
     </footer>
   </dialog>
 
+  <!-- Al iniciar sesión, si la Demo de este navegador y la guardada en la cuenta tienen operaciones distintas -->
+  <dialog id="demo-dialog" class="dlg dlg-sm" aria-labelledby="demo-dialog-title">
+    <div class="dlg-body" id="demo-dialog-body"></div>
+    <footer class="dlg-foot demo-dialog-foot">
+      <button type="button" class="btn btn-ghost" data-close>Decidir más tarde</button>
+      <button type="button" class="btn btn-ghost" data-pick="local">Quedarme con la de este navegador</button>
+      <button type="button" class="btn btn-primary" data-pick="cloud">Usar la guardada en mi cuenta</button>
+    </footer>
+  </dialog>
+
   <dialog id="dlg" class="dlg"><div id="dlg-content"></div></dialog>
 
   <div class="tour" id="tour" hidden>

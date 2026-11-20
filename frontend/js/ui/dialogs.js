@@ -12,6 +12,7 @@ import { assetIcon, seg, pressSeg } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { openWelcome } from './welcome.js';
 import { startedWith, startedAmount, whatIfParts } from '../lib/starting-balance.js';
+import { demoSummary } from '../lib/cloud-merge.js';
 
 const dlg = () => document.getElementById('dlg');
 
@@ -203,17 +204,21 @@ export function alertsDialog(preset) {
 /* ---------- Ajustes y datos ---------- */
 export function settingsDialog() {
   const s = store.settings();
-  const d = show(html`${head('Ajustes', 'Preferencias y datos guardados en este navegador.')}
+  const signedIn = Boolean(auth.currentUser());
+  const d = show(html`${head('Ajustes', signedIn ? 'Preferencias de la aplicación y tus datos.' : 'Preferencias y datos guardados en este navegador.')}
     <div class="dlg-body">
       <div class="field"><span class="label">Tema</span>${seg('theme', [['dark', 'Oscuro'], ['light', 'Claro']], document.documentElement.dataset.theme)}</div>
       <div class="field"><span class="label">Divisa de la cuenta</span>${seg('currency', [['auto', 'Auto'], ['EUR', 'EUR €'], ['USD', 'USD $'], ['GBP', 'GBP £']], s.currency)}</div>
       <hr>
       <span class="label">Tus datos</span>
-      <div class="gap-8">
+      ${signedIn ? html`<div class="gap-8">
+        <button class="btn btn-ghost btn-sm" data-act="my-data">${icon('download', 'sm')} Descargar mis datos (JSON)</button>
+      </div>
+      <p class="hint">Sesión iniciada como ${auth.currentUser().email}. «Mi cuenta» vive en el servidor, y tu Demo, favoritos, alertas y ajustes se guardan también en tu cuenta. «Descargar mis datos» incluye todo lo que el servidor guarda de ti.</p>` : html`<div class="gap-8">
         <button class="btn btn-ghost btn-sm" data-act="export">${icon('download', 'sm')} Exportar copia (JSON)</button>
         <label class="btn btn-ghost btn-sm">${icon('upload', 'sm')} Importar copia<input type="file" accept="application/json,.json" hidden id="imp-file"></label>
       </div>
-      <p class="hint">${auth.currentUser() ? `Sesión iniciada como ${auth.currentUser().email}: tus datos se guardan también en el servidor.` : 'Sin sesión, todo se guarda solo en este navegador. Inicia sesión para guardarlo en el servidor.'}</p>
+      <p class="hint">Sin sesión, todo se guarda solo en este navegador. Exporta una copia para no perderlo, o inicia sesión para guardarlo en tu cuenta.</p>`}
       <div class="gap-8">
         <button class="btn btn-danger btn-sm" data-act="wipe">${icon('trash-2', 'sm')} Borrar datos de este navegador</button>
         ${auth.currentUser() ? html`<button class="btn btn-danger btn-sm" data-act="delete-account">${icon('trash-2', 'sm')} Eliminar mi cuenta</button>` : ''}
@@ -232,10 +237,14 @@ export function settingsDialog() {
     setCurrencyPreference(b.dataset.value);
     store.setSetting('currency', b.dataset.value);
   };
-  d.querySelector('[data-act="export"]').onclick = () => {
+  const myData = d.querySelector('[data-act="my-data"]');
+  if (myData) myData.onclick = () => auth.downloadMyData().then(() => toast('Datos descargados.', 'success', 2500)).catch((ex) => toast(ex.message, 'error'));
+  const exp = d.querySelector('[data-act="export"]');
+  if (exp) exp.onclick = () => {
     download(`paperpulse_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(store.exportData(), null, 2), 'application/json');
   };
-  d.querySelector('#imp-file').onchange = async (e) => {
+  const imp = d.querySelector('#imp-file');
+  if (imp) imp.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5_000_000) return toast('El archivo es demasiado grande (máx. 5 MB).', 'error');
@@ -298,7 +307,7 @@ export async function authDialog(mode = 'login') {
     try {
       if (reg && (f.acceptTerms !== 'on' || f.ageConfirmed !== 'on')) throw new Error('Para crear la cuenta acepta los términos y la política de privacidad y confirma que tienes al menos 14 años.');
       if (reg) await auth.register(f.name, f.email, f.password, { acceptTerms: true, ageConfirmed: true });
-      else await auth.login(f.email, f.password, chooseCloudData);
+      else await auth.login(f.email, f.password, chooseDemo);
       d.close();
       toast(reg ? 'Cuenta creada. Tus datos se guardan en el servidor.' : `Hola de nuevo, ${auth.currentUser().name}.`, 'success');
     } catch (ex) {
@@ -309,16 +318,30 @@ export async function authDialog(mode = 'login') {
   d.querySelector(reg ? '#a-name' : '#a-email').focus();
 }
 
-/** Pregunta qué datos conservar si la cuenta y el navegador tienen datos distintos. */
-export function chooseCloudData(remote) {
-  // La alternativa no es «cancelar»: rechazar sustituye los datos de la cuenta por los del navegador
-  const alt = $('#confirm-dialog [data-close]');
-  alt.textContent = 'Usar los de este navegador';
-  return confirmDialog({
-    title: 'Hay datos guardados en tu cuenta',
-    body: `Tu cuenta tiene datos guardados el ${new Date(remote.updatedAt * 1000).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}. ¿Los cargas aquí o los sustituyes por los de este navegador?`,
-    confirm: 'Cargar los de mi cuenta',
-  }).finally(() => { alt.textContent = 'Cancelar'; });
+/**
+ * Solo si la Demo de este navegador y la guardada en la cuenta tienen operaciones distintas. Favoritos, alertas y
+ * ajustes ya se han juntado, y «Mi cuenta» no cambia. Resuelve 'cloud', 'local' o null (cerrar = decidir más tarde:
+ * no se pierde ninguna). Cada botón dice qué Demo se sustituye.
+ */
+export function chooseDemo({ local, remote, updatedAt }) {
+  const d = document.getElementById('demo-dialog');
+  const n = (x) => demoSummary(x);
+  const ops = ({ trades, positions }) => `${trades} ${trades === 1 ? 'operación cerrada' : 'operaciones cerradas'} y ${positions} ${positions === 1 ? 'posición abierta' : 'posiciones abiertas'}`;
+  const when = new Date(updatedAt * 1000).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+  render($('#demo-dialog-body', d), html`<h2 id="demo-dialog-title">Tienes dos Demos distintas</h2>
+    <ul class="demo-choice">
+      <li><strong>Tu Demo de este navegador</strong><span>${ops(n(local))}</span></li>
+      <li><strong>Tu Demo guardada en tu cuenta</strong><span>${ops(n(remote))} · guardada el ${when}</span></li>
+    </ul>
+    <p class="muted">Elige con cuál te quedas: la otra se sustituye. Tus favoritos y alertas ya se han juntado, y «Mi cuenta» no cambia.</p>
+    <p class="hint">Si cierras sin elegir no se pierde ninguna: sigues con la de este navegador, la guardada no se toca y te lo volveremos a preguntar.</p>`);
+  openDialog(d);
+  return new Promise((resolve) => {
+    let pick = null;
+    const onClick = (e) => { const b = e.target.closest('[data-pick]'); if (b) { pick = b.dataset.pick; d.close(); } };
+    d.addEventListener('click', onClick);
+    d.addEventListener('close', () => { d.removeEventListener('click', onClick); resolve(pick); }, { once: true });
+  });
 }
 
 function deleteAccountDialog() {

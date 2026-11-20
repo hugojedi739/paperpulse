@@ -338,6 +338,10 @@
   .acct-help:hover, .acct-help[aria-expanded='true'] { color: var(--accent-text); background: var(--surface-2); }
   .acct-tag:empty + .acct-help { display: none; }
   .acct-info { gap: var(--s-2); padding: var(--s-3); font-size: var(--fs-md); }
+  .demo-choice { list-style: none; margin: var(--s-3) 0; padding: 0; display: grid; gap: var(--s-2); }
+  .demo-choice li { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-md); }
+  .demo-choice span { color: var(--text-2); font-size: var(--fs-sm); }
+  .demo-dialog-foot { flex-wrap: wrap; }
   .acct-info:popover-open { display: grid; } /* solo abierta: un display propio pisaría el ocultado del popover cerrado */
   /* En el móvil, con margen a los dos lados (anchorPopover la alinea a la izquierda de la etiqueta con estilos en línea) */
   @media (max-width: 767px) { .acct-info { left: 8px !important; right: 8px !important; width: auto; } }
