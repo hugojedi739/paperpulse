@@ -29,6 +29,7 @@ import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
 import { initTabbar } from './ui/tabbar.js';
 import { initDismiss } from './ui/dismiss.js';
+import { VISIBLE_SECTIONS, isVisible, isReachable } from './lib/sections.js';
 
 const VIEWS = { dashboard, trade, markets };
 // Vistas que no hacen falta para arrancar (la portada es el Resumen, y Operar y Mercados se abren a menudo desde él):
@@ -60,10 +61,19 @@ store.recentSearches().forEach((r) => { const a = toAsset(r); if (a) register(a)
 applyTheme(document.documentElement.dataset.theme);
 applyPrivacy();
 
+/* ---------- Secciones visibles (lib/sections.js) ---------- */
+// Se quitan del menú, de la barra inferior y del menú de perfil los enlaces a secciones ocultas (antes de initTabbar,
+// que mide las pestañas). Administración sale del menú pero sigue abriéndose por URL con sus permisos de siempre.
+$$('.nav a[data-route], .top-nav a[data-route], .tabbar a[data-route], #user-pop a[href^="#/"]').forEach((a) => {
+  const target = a.dataset.route ?? a.getAttribute('href').replace(/^#\/?/, '').split('/')[0];
+  if (!isVisible(target)) a.remove();
+});
+
 /* ---------- Enrutado ---------- */
 async function route() {
   const { route: name, param } = current();
   const view = VIEWS[name] || LAZY[name] ? name : 'dashboard';
+  if (!isReachable(view)) { location.replace('#/trade'); return; } // sección oculta: a Operar (sin dejarla en el historial)
   const boot = $('#boot');
   if (!VIEWS[view]) {
     // Vista perezosa: si tarda en llegar se enseña el esqueleto (con un pequeño retardo para que una descarga rápida no parpadee)
@@ -79,17 +89,19 @@ async function route() {
     if (current().route !== name) return; // se cambió de vista mientras se descargaba: ya la gestiona otro route()
   }
   const swap = () => {
+    // El título va primero: si mount()/show() fallan, la pestaña no se queda con el de la sección anterior
+    document.title = `${VIEWS[view].title} — PaperPulse`;
     boot.hidden = true;
     if (active && active !== view) VIEWS[active].hide?.();
     for (const section of $$('.view')) section.hidden = section.dataset.view !== view;
     const section = $(`.view[data-view="${view}"]`);
     if (!mounted.has(view)) { VIEWS[view].mount(section); mounted.add(view); }
     VIEWS[view].show(param);
+    if (view === 'trade' && trade.currentAsset()) document.title = `${trade.currentAsset().symbol} · ${VIEWS[view].title} — PaperPulse`;
     active = view;
     feed.setPollRate(view === 'trade'); // 5 s en Operar, 10 s en el resto (solo afecta al respaldo REST)
     $$('[data-route]').forEach((a) => (a.dataset.route === view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     $('#page-title').textContent = VIEWS[view].title;
-    document.title = `${view === 'trade' && trade.currentAsset() ? `${trade.currentAsset().symbol} · ` : ''}${VIEWS[view].title} — PaperPulse`;
     announce(`${VIEWS[view].title}`);
   };
   const changing = active !== view;
@@ -115,6 +127,11 @@ store.on('settings', (detail) => {
   const { key, value } = detail ?? {};
   const s = store.settings();
   if (!key || key === 'theme') applyTheme(value ?? s.theme ?? document.documentElement.dataset.theme);
+  if (!key || key === 'accent') {
+    const teal = (value ?? s.accent) === 'teal';
+    if (teal) document.documentElement.dataset.accent = 'teal'; else delete document.documentElement.dataset.accent;
+    if (key) for (const v of mounted) VIEWS[v].theme?.(); // los gráficos leen los colores al pintarse
+  }
   if (!key || key === 'privacyMode') applyPrivacy();
   if (!key) setCurrencyPreference(s.currency);
   if (!key || key === 'currency') { renderAccountChip(); if (active) VIEWS[active].show(current().param); }
@@ -275,20 +292,21 @@ on(document, 'click', '[data-action]', (e, el) => {
 });
 
 initPalette([
-  { label: 'Ir a Resumen', icon: 'layout-dashboard', keywords: 'inicio dashboard', run: () => go('/dashboard') },
-  { label: 'Ir a Operar', icon: 'chart-candlestick', keywords: 'trading grafico', run: () => go('/trade') },
-  { label: 'Ir a Mercados', icon: 'coins', keywords: 'tabla', run: () => go('/markets') },
-  { label: 'Ir a Noticias', icon: 'newspaper', run: () => go('/news') },
-  { label: 'Ir al Diario', icon: 'book-open', keywords: 'journal historial', run: () => go('/journal') },
-  { label: 'Ir a Estadísticas', icon: 'chart-column', keywords: 'aciertos perdida maxima rendimiento semanal drawdown', run: () => go('/stats') },
+  { section: 'dashboard', label: 'Ir a Resumen', icon: 'layout-dashboard', keywords: 'inicio dashboard', run: () => go('/dashboard') },
+  { section: 'trade', label: 'Ir a Operar', icon: 'chart-candlestick', keywords: 'trading grafico', run: () => go('/trade') },
+  { section: 'markets', label: 'Ir a Mercados', icon: 'coins', keywords: 'tabla', run: () => go('/markets') },
+  { section: 'learn', label: 'Ir a Aprender', icon: 'graduation-cap', keywords: 'lecciones glosario', run: () => go('/learn') },
+  { section: 'news', label: 'Ir a Noticias', icon: 'newspaper', run: () => go('/news') },
+  { section: 'journal', label: 'Ir al Diario', icon: 'book-open', keywords: 'journal historial', run: () => go('/journal') },
+  { section: 'stats', label: 'Ir a Estadísticas', icon: 'chart-column', keywords: 'aciertos perdida maxima rendimiento semanal drawdown', run: () => go('/stats') },
   { label: 'Cuenta de práctica', icon: 'wallet', keywords: 'saldo capital reiniciar', run: ACTIONS.account },
   { label: 'Alertas de precio', icon: 'bell-ring', run: ACTIONS.alerts },
   { label: 'Cambiar tema claro/oscuro', icon: 'sun', keywords: 'theme modo', run: ACTIONS.theme },
   { label: 'Ajustes y copia de seguridad', icon: 'settings', keywords: 'exportar importar divisa', run: ACTIONS.settings },
-  { label: 'Panel de administración', icon: 'shield-check', keywords: 'admin usuarios google okta claves', run: () => go('/admin') },
+  { section: 'admin', label: 'Panel de administración', icon: 'shield-check', keywords: 'admin usuarios google okta claves', run: () => go('/admin') },
   { label: 'Abrir asistente', icon: 'sparkles', keywords: 'chat ia ayuda', run: () => toggleChat(true) },
   { label: 'Manual de operativa', icon: 'graduation-cap', keywords: 'guia ayuda', run: ACTIONS.guide },
-]);
+].filter((c) => !c.section || isVisible(c.section)));
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
 initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
 // Franja de estado: en el móvil el estado de las bolsas se pliega (recordado en este navegador); en escritorio, siempre a la vista
@@ -318,11 +336,12 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('#chat').hidden) { toggleChat(false); return; }
   if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable], dialog')) return;
   const key = e.key.toLowerCase();
-  const routes = { 1: '/dashboard', 2: '/trade', 3: '/markets', 4: '/news', 5: '/journal' };
-  if (routes[key]) go(routes[key]);
+  const section = /^[1-9]$/.test(key) ? VISIBLE_SECTIONS[key - 1] : null; // 1, 2, 3… = secciones visibles, en orden
+  if (section) go(`/${section}`);
   else if (key === '/') { e.preventDefault(); openPalette(); }
   else if (key === '?') dialogs.shortcutsDialog();
   else if (key === 't') ACTIONS.theme();
+  else if (key === 'a') toggleChat();
   else if (key === 'b' || key === 's') {
     go(`/trade/${trade.currentAsset()?.symbol ?? 'BTC'}`);
     setTimeout(() => $(`#t-ticket [data-side="${key === 'b' ? 'buy' : 'sell'}"]`)?.click(), 50);

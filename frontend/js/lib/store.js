@@ -61,6 +61,10 @@ function normalizePosition(p) {
     entryPrice,
     investedUsd: roundUsd(finite(p.investedUsd) && p.investedUsd > 0 ? p.investedUsd : toUsd(amount * entryPrice, quote)),
     openedAt: Number(p.openedAt) || Date.parse(p.createdAt) || Date.now(),
+    // Dirección: las posiciones anteriores (solo compra) y las del servidor son largas
+    side: p.side === 'short' ? 'short' : 'long',
+    stopLoss: Number(p.stopLoss) > 0 ? Number(p.stopLoss) : null,
+    takeProfit: Number(p.takeProfit) > 0 ? Number(p.takeProfit) : null,
   };
 }
 
@@ -89,6 +93,7 @@ function normalizeTrade(t) {
     setup: str(t.setup, 80),
     emotion: str(t.emotion, 40),
     notes: str(t.notes ?? t.reflection, 1000),
+    side: t.side === 'short' ? 'short' : 'long',
   };
 }
 
@@ -130,7 +135,7 @@ const cleanInput = (x) => (x && Number(x.amount) > 0 && x.currency === 'EUR' ? {
 
 const safeMap = (list, fn) => (Array.isArray(list) ? list : []).flatMap((x) => { try { return [fn(x)]; } catch { return []; } });
 
-const DEFAULT_SETTINGS = { theme: null, currency: 'auto', privacyMode: false, interval: '1h', chartType: 'candles', indicators: ['volume'], advanced: false, tourDone: false };
+const DEFAULT_SETTINGS = { theme: null, currency: 'auto', privacyMode: false, interval: '1h', chartType: 'candles', indicators: ['volume'], advanced: false, tourDone: false, maPeriod: 20, emaPeriod: 50, logScale: false, accent: 'neutral' };
 
 /* ---------- Estado ---------- */
 const state = {

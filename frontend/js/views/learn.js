@@ -3,6 +3,7 @@ import { LESSONS, GLOSSARY } from '../lib/learn-content.js';
 import { h, svgIcon, mount as put } from '../lib/el.js';
 import { on } from '../lib/dom.js';
 import { go } from '../lib/router.js';
+import { isVisible } from '../lib/sections.js';
 
 export const title = 'Aprender';
 let root;
@@ -45,7 +46,7 @@ function showLesson(l) {
     h('div', { class: 'cm-thread-top' }, h('button', { type: 'button', class: 'btn btn-ghost btn-sm', dataset: { learn: '' } }, svgIcon('chevron-left', 'sm'), ' Lecciones')),
     h('h2', { class: 'cm-thread-h' }, l.title), h('small', { class: 'muted' }, `Lección ${i + 1} de ${LESSONS.length} · ${l.minutes} min`),
     l.body.map((p) => h('p', { class: 'learn-p' }, p)),
-    h('div', { class: 'cm-notice' }, svgIcon('graduation-cap', 'sm'), h('span', {}, l.tip), h('a', { class: 'link', href: l.link[0] }, l.link[1])),
+    h('div', { class: 'cm-notice' }, svgIcon('graduation-cap', 'sm'), h('span', {}, l.tip), isVisible(l.link[0].replace(/^#\/?/, '').split('/')[0]) ? h('a', { class: 'link', href: l.link[0] }, l.link[1]) : null),
     aside(),
     h('div', { class: 'pager' },
       h('button', { type: 'button', class: 'btn btn-ghost btn-sm', dataset: { learn: prev?.id ?? '' }, disabled: !prev }, svgIcon('chevron-left', 'sm'), ' Anterior'),

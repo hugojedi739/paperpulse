@@ -5,11 +5,11 @@ import { go } from '../lib/router.js';
 
 const STEPS = [
   { sel: '.search-trigger', title: 'Busca cualquier activo', text: 'Bitcoin, Santander, NVIDIA… Pulsa Ctrl + K desde cualquier pantalla. También sirve para lanzar acciones.' },
-  { sel: '.nav, .tabbar', title: 'Cinco secciones', text: 'Resumen de tu cartera, Operar con gráficos en vivo, Mercados, Noticias y tu Diario de operaciones.' },
+  { sel: '.nav, .tabbar', title: 'Tres secciones', text: 'Operar con gráficos en vivo, Mercados con todos los activos y Aprender con lecciones y glosario.' },
   { sel: '#account-chip', title: 'Tu cuenta de práctica', text: 'Activa un saldo virtual para comprar y vender con precios reales. Puedes reiniciarlo cuando quieras.' },
   { sel: '#t-chart-card', route: '/trade/BTC', title: 'Gráfico profesional', text: 'Cambia la temporalidad y el tipo de gráfico, y añade indicadores como medias móviles, Bollinger o RSI.' },
-  { sel: '#t-ticket', route: '/trade/BTC', title: 'Panel de órdenes', text: 'Compra a mercado o deja órdenes límite y stop. Al vender, anota qué aprendiste para tu diario.' },
-  { sel: '.fab', title: 'Asistente', text: 'Pregunta por conceptos o por cómo cotiza un activo. Explica, no recomienda.' },
+  { sel: '#t-ticket', route: '/trade/BTC', title: 'Panel de órdenes', text: 'Abre una posición Long o Short a mercado, o deja órdenes límite y stop. Puedes fijar Stop Loss y Take Profit.' },
+  { sel: '.chat-open', title: 'Asistente', text: 'Pregunta por conceptos o por cómo cotiza un activo (atajo: A). Explica, no recomienda.' },
 ];
 
 let i = 0;

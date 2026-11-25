@@ -15,7 +15,7 @@ from starlette.responses import JSONResponse
 from backend.security import IP_STOCK_CALLS, check_ip_rate_limit, get_client_ip
 
 # ==============================================================================
-# Feed de Noticias Financieras Reales (CoinDesk + Google News Economía/Bolsa)
+# Feed de Noticias Financieras Reales (Google News en español: cripto y Economía/Bolsa)
 # ==============================================================================
 MAX_FEED_BYTES = 3_000_000  # un feed mayor se corta (y el XML truncado se descarta): acota memoria ante un origen anómalo
 NEWS_CACHE = {
@@ -52,9 +52,11 @@ def parse_rss_datetime(date_str: str) -> str:
 # ==============================================================================
 FINANCIAL_TOPICS = {
     "crypto": [
-        r"\bbitcoin\b", r"\bbtc\b", r"\bethereum\b", r"\beth\b", r"\bsolana\b", r"\bsol\b",
-        r"\bcripto\b", r"\bcrypto\b", r"\bcriptomoneda[s]?\b", r"\bblockchain\b",
-        r"\bbinance\b", r"\bcoinbase\b", r"\bhalving\b", r"\betf[s]?\b", r"\btoken[s]?\b",
+        # Solo palabras inequívocamente cripto ("sol" o "etf" también son otra cosa: el sol, ETF de bolsa)
+        r"\bbitcoin[s]?\b", r"\bbtc\b", r"\bethereum\b", r"\beth\b", r"\bether\b", r"\bsolana\b",
+        r"\bcripto\b", r"\bcrypto\b", r"\bcriptomoneda[s]?\b", r"\bcriptoactivo[s]?\b", r"\bcriptodivisa[s]?\b",
+        r"\bstablecoin[s]?\b", r"\bblockchain\b",
+        r"\bbinance\b", r"\bcoinbase\b", r"\bhalving\b", r"\btoken[s]?\b",
         r"\bcardano\b", r"\bripple\b", r"\bxrp\b", r"\bdogecoin\b"
     ],
     "stocks": [
@@ -90,6 +92,10 @@ FINANCIAL_FEED_CATEGORIES = {
     "economy": {"business", "economy", "economics", "finance", "finanzas", "economía", "macro"}
 }
 
+def is_crypto_text(text: str) -> bool:
+    """True solo si el texto menciona algo cripto de forma clara (bitcoin, ethereum, blockchain, token...)."""
+    return any(re.search(p, text or "", re.IGNORECASE) for p in FINANCIAL_TOPICS["crypto"])
+
 def is_financial_headline(title: str, feed_categories: List[str] = None) -> Tuple[bool, str]:
     """Determina si un titular es genuinamente financiero utilizando temas permitidos y categorías oficiales."""
     if not title:
@@ -118,49 +124,50 @@ def is_financial_headline(title: str, feed_categories: List[str] = None) -> Tupl
     return False, "economy"
 
 def fetch_real_news_sync() -> List[Dict[str, Any]]:
-    """Consulta feeds RSS oficiales de información financiera (CoinDesk + Google News Economía/Bolsa).
+    """Consulta feeds RSS oficiales de información financiera (Google News en español: cripto y Economía/Bolsa).
     Cero noticias inventadas, solo titulares reales, medio oficial, enlace original y fecha verificada."""
     articles = []
     seen_urls = set()
     art_id = 1
 
-    # 1. Criptomonedas: CoinDesk RSS Oficial
+    # 1. Criptomonedas en español: búsqueda de Google News (es-ES). Cada titular se clasifica por su texto:
+    # solo es "crypto" si menciona algo cripto de forma clara; si no, bolsa/economía o se descarta.
     try:
         req = urllib.request.Request(
-            "https://www.coindesk.com/arc/outboundfeeds/rss/",
+            "https://news.google.com/rss/search?q=criptomonedas+OR+bitcoin+OR+ethereum+when:3d&hl=es&gl=ES&ceid=ES:es",
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PaperPulseTerminal/2.4"}
         )
         with urllib.request.urlopen(req, timeout=6) as resp:
             root = ET.fromstring(resp.read(MAX_FEED_BYTES))
-            items = root.findall(".//item")
-            for item in items[:20]:
+            for item in root.findall(".//item")[:20]:
                 title = clean_html_text(item.findtext("title", ""))
                 link = item.findtext("link", "").strip()
                 pub_date = parse_rss_datetime(item.findtext("pubDate", ""))
-                desc = clean_html_text(item.findtext("description", ""))
-                creator = clean_html_text(item.findtext("{http://purl.org/dc/elements/1.1/}creator", "")) or "CoinDesk"
-
-                img_url = ""
-                media_content = item.find("{http://search.yahoo.com/mrss/}content")
-                if media_content is not None and media_content.get("url"):
-                    img_url = media_content.get("url")
-
+                source_el = item.find("source")
+                source_name = source_el.text.strip() if (source_el is not None and source_el.text) else "Google News"
+                if " - " in title:
+                    title = title.rsplit(" - ", 1)[0].strip()
+                cat = "crypto" if is_crypto_text(title) else None
+                if cat is None:
+                    is_fin, cat = is_financial_headline(title)
+                    if not is_fin:
+                        continue
                 if title and link and link not in seen_urls:
                     seen_urls.add(link)
                     articles.append({
                         "id": art_id,
                         "title": title,
-                        "excerpt": desc[:220] + ("..." if len(desc) > 220 else ""),
-                        "category": "crypto",
-                        "source": "CoinDesk",
-                        "author": creator,
+                        "excerpt": f"Actualidad de criptomonedas y mercados reportada por {source_name}.",
+                        "category": cat,
+                        "source": source_name,
+                        "author": source_name,
                         "date": pub_date,
                         "url": safe_http_url(link),
-                        "imageUrl": safe_http_url(img_url)
+                        "imageUrl": ""
                     })
                     art_id += 1
     except Exception as e:
-        print(f"[News] Error consultando feed de CoinDesk: {e}", file=sys.stderr)
+        print(f"[News] Error consultando feed de criptomonedas: {e}", file=sys.stderr)
 
     # 2. Bolsa y Economía en Español: Google News Business España
     try:
@@ -243,9 +250,10 @@ async def api_news(request):
     else:
         filtered = articles
 
+    # Titulares públicos que se renuevan cada 15 min: caché corta en el navegador y en el CDN, refresco por detrás
     return JSONResponse({
         "status": "success",
         "count": len(filtered),
         "updated_at": NEWS_CACHE["timestamp"],
         "articles": filtered
-    })
+    }, headers={"Cache-Control": "public, max-age=120, s-maxage=600, stale-while-revalidate=1800"} if filtered else None)

@@ -121,8 +121,10 @@ async def api_candles(request):
     historical = end is not None and end < time.time() - 2 * bar_seconds
     ttl = 3600 if historical else (5 if bar_seconds < 900 else 30 if kind == "crypto" else 60)
     key = ("candles", kind, symbol, interval, limit, end)
+    # Las velas cerradas de una página antigua no cambian: el navegador y el CDN pueden guardarlas una hora / un día
+    headers = {"Cache-Control": "public, max-age=3600, s-maxage=86400"} if historical else None
     if (hit := cached(key, ttl)) is not None:
-        return JSONResponse({**hit, "source": "cache"})
+        return JSONResponse({**hit, "source": "cache"}, headers=headers)
 
     try:
         if kind == "stock":
@@ -139,4 +141,4 @@ async def api_candles(request):
     result = {"symbol": symbol, "type": kind, "interval": interval, "candles": candles, "hasMore": more}
     if candles:
         remember(key, result)
-    return JSONResponse({**result, "source": "live"})
+    return JSONResponse({**result, "source": "live"}, headers=headers)

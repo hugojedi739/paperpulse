@@ -4,6 +4,25 @@ import { CRYPTO, findAsset } from './catalog.js';
 import { getJson } from './api.js';
 
 const cache = new Map();
+
+/* ---------- Copia local para pintar al instante (stale-while-revalidate) ---------- */
+// Lo último que llegó del servidor se guarda en este navegador; al volver se pinta enseguida y se refresca por detrás.
+const SAVED_KEY = 'paperpulse_md_cache';
+const SAVED_MAX_AGE = 24 * 3600_000;
+function readSaved(key) {
+  try {
+    const hit = JSON.parse(localStorage.getItem(SAVED_KEY) || '{}')?.[key];
+    return hit && Date.now() - hit.at < SAVED_MAX_AGE ? hit.value : null;
+  } catch { return null; }
+}
+function save(key, value) {
+  try {
+    const all = JSON.parse(localStorage.getItem(SAVED_KEY) || '{}') || {};
+    all[key] = { at: Date.now(), value };
+    localStorage.setItem(SAVED_KEY, JSON.stringify(all));
+  } catch { /* sin almacenamiento o cuota llena */ }
+}
+
 async function cached(key, ttlMs, loader) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.time < ttlMs) return hit.value;
@@ -15,14 +34,21 @@ async function cached(key, ttlMs, loader) {
 }
 
 /** Capitalización, volumen, variación 7d y sparkline 7d de las cripto del catálogo. */
+const marketsMap = (rows) => new Map(rows.map((r) => [findAsset(r.id)?.symbol ?? r.symbol, {
+  cap: r.cap, volume: r.volume, change7d: r.change7d, spark: r.spark, rank: r.rank,
+}]));
 export function cryptoMarkets() {
   const ids = CRYPTO.map((a) => a.id).join(',');
   return cached('cg', 5 * 60_000, async () => {
     const rows = (await getJson(`/api/crypto/markets?ids=${ids}`)).data ?? [];
-    return new Map(rows.map((r) => [findAsset(r.id)?.symbol ?? r.symbol, {
-      cap: r.cap, volume: r.volume, change7d: r.change7d, spark: r.spark, rank: r.rank,
-    }]));
+    if (rows.length) save('cg', rows);
+    return marketsMap(rows);
   }).catch(() => new Map());
+}
+/** Lo último guardado de CoinGecko (o null), para pintar Mercados antes de que llegue lo nuevo. */
+export function savedCryptoMarkets() {
+  const rows = readSaved('cg');
+  return Array.isArray(rows) && rows.length ? marketsMap(rows) : null;
 }
 
 /* ---------- Velas ---------- */
@@ -87,13 +113,25 @@ export const mergeCandles = (older, current) => cleanCandles([...older, ...curre
 
 /** Cierres diarios del último mes de todas las acciones del catálogo (una sola petición). */
 function stockSparks() {
-  return cached('sparks', 30 * 60_000, async () => (await getJson('/api/stocks/sparks')).data ?? {});
+  return cached('sparks', 30 * 60_000, async () => {
+    const data = (await getJson('/api/stocks/sparks')).data ?? {};
+    if (Object.keys(data).length) save('sparks', data);
+    return data;
+  });
 }
+/** Cierres de 1 mes guardados (o {}), para las minigráficas de bolsa antes de que lleguen los nuevos. */
+export const savedStockSparks = () => readSaved('sparks') ?? {};
 export const stockSpark = (asset) => stockSparks().then((d) => d[asset.symbol] ?? null).catch(() => null);
 
 export function news() {
-  return cached('news', 5 * 60_000, async () => (await getJson('/api/news')).articles ?? []);
+  return cached('news', 5 * 60_000, async () => {
+    const list = (await getJson('/api/news')).articles ?? [];
+    if (list.length) save('news', list.slice(0, 8));
+    return list;
+  });
 }
+/** Los últimos titulares guardados (o []), para la portada mientras llegan los nuevos. */
+export const savedNews = () => readSaved('news') ?? [];
 
 /** Estado de las bolsas y reglas de la luz roja de la cabecera (lib/market-alert.js), en una sola petición. */
 export function marketsInfo() {

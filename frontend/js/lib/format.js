@@ -52,14 +52,20 @@ const digits = (v) => {
   return a >= 1 || a === 0 ? [2, 2] : a >= 0.01 ? [4, 4] : [6, 8];
 };
 
+/** Importe compacto con el símbolo de la divisa de la cuenta detrás: «31,6 mil M €». */
+function compactCurrency(v) {
+  const symbol = numberFormat({ style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol' })
+    .formatToParts(0).find((x) => x.type === 'currency')?.value ?? currency();
+  return compactFn(v, symbol);
+}
+
 /** Importe en la divisa de la cuenta (convierte desde `from`, USD por defecto). */
 export function money(amount, { from = 'USD', signed = false, compact = false } = {}) {
   const v = convert(amount, from, currency());
   const [min, max] = digits(v);
-  const s = numberFormat(compact
-    ? { style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol', notation: 'compact', maximumFractionDigits: 2 }
-    : { style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol', minimumFractionDigits: min, maximumFractionDigits: max },
-  ).format(Math.abs(v));
+  const s = compact
+    ? compactCurrency(Math.abs(v)) // misma escala que el resto de la app: «31,6 mil M €»
+    : numberFormat({ style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol', minimumFractionDigits: min, maximumFractionDigits: max }).format(Math.abs(v));
   if (!signed) return v < 0 ? `−${s}` : s;
   return v > 0 ? `+${s}` : v < 0 ? `−${s}` : s;
 }
@@ -98,16 +104,27 @@ export function pct(value, { signed = true, decimals = 2 } = {}) {
   return `${sign}${s} %`;
 }
 
-/** Volumen compacto: 35,8 M · 520,0 K */
+/**
+ * Cifra grande en escala española, el único formato compacto de la app: 999 · 1,5 K · 1,5 M · 1,5 mil M · 1,1 B
+ * (B = billón = 10¹²). Con `unit` la añade detrás: «1,5 mil M USDT».
+ */
+export function compact(value, unit = '') { return compactFn(value, unit); }
+function compactFn(value, unit = '') {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  const v = Math.abs(n);
+  const NB = '\u00a0'; // espacio duro: la cifra y su unidad nunca se separan en dos líneas
+  const f = (x, suffix) => `${numberFormat({ maximumFractionDigits: 1 }).format(x)}${NB}${suffix}`;
+  const s = v >= 1e12 ? f(v / 1e12, 'B') : v >= 1e9 ? f(v / 1e9, `mil${NB}M`) : v >= 1e6 ? f(v / 1e6, 'M') : v >= 1e3 ? f(v / 1e3, 'K')
+    : numberFormat({ maximumFractionDigits: v >= 1 ? 2 : 6 }).format(v);
+  return `${n < 0 ? '−' : ''}${s}${unit ? `${NB}${unit}` : ''}`;
+}
+
+/** Volumen compacto (sin unidad: quien lo pinta añade la suya). */
 export function volume(value) {
   const v = Math.abs(Number(value));
   if (!Number.isFinite(v) || v <= 0) return '—';
-  const f = (n, unit) => `${numberFormat({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n)} ${unit}`;
-  if (v >= 1e12) return f(v / 1e12, 'T');
-  if (v >= 1e9) return f(v / 1e9, 'B');
-  if (v >= 1e6) return f(v / 1e6, 'M');
-  if (v >= 1e3) return f(v / 1e3, 'K');
-  return numberFormat({ maximumFractionDigits: 2 }).format(v);
+  return compact(v);
 }
 
 /** Equivalencia aproximada en la divisa de la cuenta, vacía si coincide. */

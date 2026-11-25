@@ -76,3 +76,9 @@ export function updateLive(symbols) {
     el.classList.add(trendClass(v));
   }
 }
+
+/** Función que existe con cuenta gratuita: candado, texto breve y «Crear cuenta gratis». Sin popups ni cortes. */
+export function lockedNote(what) {
+  return html`<div class="locked" role="note">${icon('lock', 'sm')}<span><strong>${what}</strong> · Disponible con cuenta gratuita</span>
+    <button type="button" class="btn btn-sm btn-ghost" data-action="register">Crear cuenta gratis</button></div>`;
+}

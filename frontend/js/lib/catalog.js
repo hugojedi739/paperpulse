@@ -17,7 +17,7 @@ export const ASSETS = [
   crypto('avalanche-2', 'AVAX', 'Avalanche'),
   crypto('chainlink', 'LINK', 'Chainlink'),
   crypto('tron', 'TRX', 'TRON'),
-  crypto('polygon', 'POL', 'Polygon'),
+  crypto('polygon-ecosystem-token', 'POL', 'Polygon'), // id de CoinGecko de POL (antes MATIC: matic-network)
   stock('nvidia', 'NVDA', 'NVIDIA', 'NVDA', 'us'),
   stock('apple', 'AAPL', 'Apple', 'AAPL', 'us'),
   stock('tesla', 'TSLA', 'Tesla', 'TSLA', 'us'),
@@ -37,7 +37,7 @@ export const ASSETS = [
 export const CRYPTO = ASSETS.filter((a) => a.type === 'crypto');
 export const DEFAULT_WATCHLIST = ['BTC', 'ETH', 'SOL', 'NVDA', 'AAPL', 'SAN'];
 
-const ALIASES = { MATIC: 'POL', IBEX35: 'IBEX', '^IBEX': 'IBEX', BTCUSDT: 'BTC' };
+const ALIASES = { MATIC: 'POL', POLYGON: 'POL', IBEX35: 'IBEX', '^IBEX': 'IBEX', BTCUSDT: 'BTC' };
 const index = new Map();
 for (const a of ASSETS) {
   for (const k of [a.id, a.symbol, a.ticker, a.pair].filter(Boolean)) index.set(k.toUpperCase(), a);
