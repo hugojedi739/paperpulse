@@ -313,7 +313,7 @@ export function start() {
       changed.clear();
       emit('prices', symbols);
     }
-  }, 400);
+  }, 500); // como mucho 2 repintados de precios por segundo
   setInterval(updateStatus, 2000);
   const revive = () => {
     delay = 1000;

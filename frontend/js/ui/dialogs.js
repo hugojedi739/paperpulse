@@ -13,6 +13,7 @@ import { go } from '../lib/router.js';
 import { openWelcome } from './welcome.js';
 import { startedWith, startedAmount, whatIfParts } from '../lib/starting-balance.js';
 import { demoSummary } from '../lib/cloud-merge.js';
+import { isVisible } from '../lib/sections.js';
 
 const dlg = () => document.getElementById('dlg');
 
@@ -74,7 +75,7 @@ export function accountDialog() {
         <div><dt>Capital inicial</dt><dd class="money">${startedAmount(store.initialInput()) || money(store.initialCapital())}</dd></div>
         <div><dt>Rentabilidad</dt><dd class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</dd></div></dl>
       ${whatIfHint(p)}
-      <p class="hint">${icon('info', 'sm')} Reiniciar cierra posiciones y órdenes y te deja elegir otro saldo. Tu diario, favoritos y alertas se conservan.</p>
+      <p class="hint">${icon('info', 'sm')} Reiniciar cierra posiciones y órdenes y te deja elegir otro saldo. Tu historial, favoritos y alertas se conservan.</p>
     </div>
     <footer class="dlg-foot">
       <button class="btn btn-danger" data-act="close-account">Cerrar cuenta</button>
@@ -84,7 +85,7 @@ export function accountDialog() {
 
   d.querySelector('[data-act="restart"]').onclick = () => openWelcome({ reset: true });
   d.querySelector('[data-act="close-account"]')?.addEventListener('click', async () => {
-    if (!(await confirmDialog({ title: '¿Cerrar la cuenta de práctica?', body: 'Volverás al modo consulta: se borran saldo, posiciones y órdenes. El diario y tus favoritos se mantienen.', confirm: 'Cerrar cuenta', danger: true }))) return;
+    if (!(await confirmDialog({ title: '¿Cerrar la cuenta de práctica?', body: 'Volverás al modo consulta: se borran saldo, posiciones y órdenes. El historial y tus favoritos se mantienen.', confirm: 'Cerrar cuenta', danger: true }))) return;
     store.closeAccount();
     d.close();
     toast('Cuenta cerrada. Estás en modo consulta.', 'info');
@@ -100,30 +101,33 @@ export function closePositionDialog(id, amount) {
   const fee = account.isActive() ? account.estimateFeeUsd(v.valueUsd) : 0; // con sesión el servidor cobra comisión
   const pnl = v.valueUsd - fee - pos.investedUsd * (qty / pos.amount);
   const d = show(html`
-    ${head(`Vender ${pos.symbol}`, qty < pos.amount ? `Venta parcial de ${units(qty, pos.symbol)} de ${units(pos.amount, pos.symbol)}` : 'Cierre completo de la posición')}
+    ${head(`Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${pos.symbol}`, qty < pos.amount ? `Venta parcial de ${units(qty, pos.symbol)} de ${units(pos.amount, pos.symbol)}` : 'Cierre completo de la posición')}
     <div class="dlg-body">
       <dl class="summary">
         <div><dt>Precio de entrada</dt><dd>${price(pos.entryPrice, pos.quote)}</dd></div>
         <div><dt>Precio actual</dt><dd>${price(v.price, pos.quote)}</dd></div>
-        <div><dt>Recibirás${fee ? ' aprox.' : ''}</dt><dd class="money">${money(v.valueUsd - fee)}</dd></div>
+        <div><dt>${pos.side === 'short' ? 'Vuelve a tu saldo' : `Recibirás${fee ? ' aprox.' : ''}`}</dt><dd class="money">${money(v.valueUsd - fee)}</dd></div>
         ${fee ? html`<div><dt>Comisión estimada</dt><dd class="money">${money(fee)}</dd></div>` : ''}
         <div><dt>Resultado</dt><dd class="money delta ${trendClass(pnl)}">${money(pnl, { signed: true })}</dd></div>
       </dl>
-      <div class="field"><label for="cp-setup">Estrategia</label><select id="cp-setup">${options(SETUPS)}</select></div>
-      <div class="field"><label for="cp-emotion">¿Cómo te sentiste?</label><select id="cp-emotion">${options(EMOTIONS)}</select></div>
-      <div class="field"><label for="cp-notes">Lección aprendida <span class="muted">(opcional)</span></label>
-        <textarea id="cp-notes" maxlength="1000" placeholder="¿Respetaste tu plan? ¿Qué harías distinto?"></textarea></div>
+      ${isVisible('journal') ? html`<details class="cp-notes"><summary>Añadir notas para el diario <span class="muted">(opcional)</span></summary>
+        <div class="field"><label for="cp-setup">Estrategia</label><select id="cp-setup">${options(SETUPS)}</select></div>
+        <div class="field"><label for="cp-emotion">¿Cómo te sentiste?</label><select id="cp-emotion">${options(EMOTIONS)}</select></div>
+        <div class="field"><label for="cp-notes">Lección aprendida</label>
+          <textarea id="cp-notes" maxlength="1000" placeholder="¿Respetaste tu plan? ¿Qué harías distinto?"></textarea></div>
+      </details>` : ''}
     </div>
     <footer class="dlg-foot"><button class="btn btn-ghost" data-close>Cancelar</button>
-      <button class="btn btn-down" data-act="sell">Confirmar venta</button></footer>`);
+      <button class="btn btn-down" data-act="sell">Confirmar cierre</button></footer>`);
   d.querySelector('[data-act="sell"]').onclick = async (e) => {
     e.currentTarget.disabled = true;
     try {
+      // Con el Diario oculto no hay campos de notas: se cierra sin ellas
       const t = await trading.closePosition(id, {
-        amount: qty, setup: d.querySelector('#cp-setup').value, emotion: d.querySelector('#cp-emotion').value, notes: d.querySelector('#cp-notes').value.trim(),
+        amount: qty, setup: d.querySelector('#cp-setup')?.value ?? '', emotion: d.querySelector('#cp-emotion')?.value ?? '', notes: d.querySelector('#cp-notes')?.value.trim() ?? '',
       });
       d.close();
-      toast(`Venta registrada en tu diario: ${money(t.pnl, { signed: true })}`, t.pnl >= 0 ? 'success' : 'info');
+      toast(`${isVisible('journal') ? 'Cierre registrado en tu diario' : 'Posición cerrada'}: ${money(t.pnl, { signed: true })}`, t.pnl >= 0 ? 'success' : 'info');
     } catch (err) {
       toast(err.message, 'error');
       e.currentTarget.disabled = false;
@@ -208,6 +212,7 @@ export function settingsDialog() {
   const d = show(html`${head('Ajustes', signedIn ? 'Preferencias de la aplicación y tus datos.' : 'Preferencias y datos guardados en este navegador.')}
     <div class="dlg-body">
       <div class="field"><span class="label">Tema</span>${seg('theme', [['dark', 'Oscuro'], ['light', 'Claro']], document.documentElement.dataset.theme)}</div>
+      <div class="field"><span class="label">Acento</span>${seg('accent', [['neutral', 'Neutro'], ['teal', 'Teal']], s.accent === 'teal' ? 'teal' : 'neutral')}</div>
       <div class="field"><span class="label">Divisa de la cuenta</span>${seg('currency', [['auto', 'Auto'], ['EUR', 'EUR €'], ['USD', 'USD $'], ['GBP', 'GBP £']], s.currency)}</div>
       <hr>
       <span class="label">Tus datos</span>
@@ -229,6 +234,12 @@ export function settingsDialog() {
     if (!b) return;
     pressSeg(d, 'theme', b.dataset.value);
     store.setSetting('theme', b.dataset.value);
+  };
+  d.querySelector('[data-seg="accent"]').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    pressSeg(d, 'accent', b.dataset.value);
+    store.setSetting('accent', b.dataset.value);
   };
   d.querySelector('[data-seg="currency"]').onclick = (e) => {
     const b = e.target.closest('button');
@@ -255,7 +266,7 @@ export function settingsDialog() {
     } catch (err) { toast(err.message, 'error'); }
   };
   d.querySelector('[data-act="wipe"]').onclick = async () => {
-    if (!(await confirmDialog({ title: '¿Borrar todos tus datos?', body: 'Se eliminarán diario, posiciones, alertas, favoritos y ajustes de este navegador. No se puede deshacer. Si quieres conservarlos, exporta antes una copia.', confirm: 'Borrar definitivamente', danger: true }))) return;
+    if (!(await confirmDialog({ title: '¿Borrar todos tus datos?', body: 'Se eliminarán historial, posiciones, alertas, favoritos y ajustes de este navegador. No se puede deshacer. Si quieres conservarlos, exporta antes una copia.', confirm: 'Borrar definitivamente', danger: true }))) return;
     store.clearAll();
     d.close();
     toast('Datos eliminados.', 'info');
@@ -288,7 +299,7 @@ export async function authDialog(mode = 'login') {
       <button class="btn btn-primary" type="submit">${icon(reg ? 'user' : 'log-in', 'sm')} ${reg ? 'Crear cuenta' : 'Entrar'}</button>
       ${opts.registration ? html`<p class="hint">${reg ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'} <button type="button" class="link" data-act="switch">${reg ? 'Inicia sesión' : 'Crea una gratis'}</button></p>` : ''}`
     : opts.providers.length ? '' : html`<p class="hint">El inicio de sesión no está disponible ahora mismo.</p>`;
-  const d = show(html`${head(reg ? 'Crear cuenta' : 'Iniciar sesión', 'Guarda tu cuenta de práctica y tu diario en el servidor y recupéralos en cualquier dispositivo.')}
+  const d = show(html`${head(reg ? 'Crear cuenta' : 'Iniciar sesión', 'Guarda tu cuenta de práctica y tu historial en el servidor y recupéralos en cualquier dispositivo.')}
     <form class="dlg-body" id="auth-form" novalidate>${sso}${form}
       <p class="hint">PaperPulse es un simulador educativo con dinero virtual. ${reg ? 'Si entras con Google, te pediremos aceptar los términos al terminar.' : ''}
         <a href="#/legal/aviso-legal" target="_blank" rel="noopener">Aviso legal</a> · <a href="#/legal/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="#/legal/terminos" target="_blank" rel="noopener">Términos</a> · <a href="#/legal/cookies" target="_blank" rel="noopener">Cookies</a> · <a href="#/legal/normas" target="_blank" rel="noopener">Normas</a></p></form>`, 'dlg-sm');
@@ -427,7 +438,7 @@ export function shortcutsDialog() {
   show(html`${head('Atajos de teclado')}
     <div class="dlg-body shortcuts">
       ${k(['Ctrl', 'K'], 'Buscar activos y comandos')} ${k(['/'], 'Buscar')}
-      ${k(['1'], 'Resumen')} ${k(['2'], 'Operar')} ${k(['3'], 'Mercados')} ${k(['4'], 'Noticias')} ${k(['5'], 'Diario')}
-      ${k(['B'], 'Comprar el activo actual')} ${k(['S'], 'Vender el activo actual')} ${k(['T'], 'Cambiar tema')} ${k(['?'], 'Esta ayuda')}
+      ${k(['1'], 'Operar')} ${k(['2'], 'Mercados')} ${k(['3'], 'Aprender')}
+      ${k(['B'], 'Comprar el activo actual')} ${k(['S'], 'Vender el activo actual')} ${k(['A'], 'Abrir o cerrar el asistente')} ${k(['T'], 'Cambiar tema')} ${k(['?'], 'Esta ayuda')}
     </div>`, 'dlg-sm');
 }

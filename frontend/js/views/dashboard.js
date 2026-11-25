@@ -1,25 +1,29 @@
 // Vista Resumen: patrimonio, KPIs, sesiones de bolsa, favoritos, movimientos, amplitud y cartera.
 import * as store from '../lib/store.js';
 import { tick } from '../lib/feed.js';
-import { ASSETS, findAsset } from '../lib/catalog.js';
+import { ASSETS, CRYPTO, findAsset } from '../lib/catalog.js';
 import { html, icon, render, on, $ } from '../lib/dom.js';
-import { money, price, pct, units, trendClass, timeAgo } from '../lib/format.js';
-import { portfolio } from '../lib/trading.js';
-import { createEquityChart, createMiniChart, sparkline } from '../lib/charts.js';
+import { money, price, pct, units, num, trendClass, timeAgo } from '../lib/format.js';
+import { portfolio, valuePosition } from '../lib/trading.js';
+import { createEquityChart, createMiniChart, createAreaChart, sparkline } from '../lib/charts.js';
 import { currentUser, onAuth, ready as authReady } from '../lib/auth.js';
 import * as notifs from '../lib/notifications.js';
 import * as community from '../lib/community.js';
 import { h, mount as put } from '../lib/el.js';
-import { cryptoMarkets, stockSpark, news, safeUrl } from '../lib/marketdata.js';
-import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml } from '../lib/ui.js';
+import { cryptoMarkets, stockSpark, news, savedNews, safeUrl, candles, savedCryptoMarkets, savedStockSparks } from '../lib/marketdata.js';
+import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml, lockedNote } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { mountCard } from '../ui/retention-card.js';
 import { whatIfParts } from '../lib/starting-balance.js';
 import { goalsCard } from '../ui/goals-card.js';
+import { isVisible } from '../lib/sections.js';
+import { can } from '../lib/capabilities.js';
 import { countTo } from '../lib/motion.js';
 import * as account from '../lib/account.js';
 import { sp500Since, comparison, sinceLabel } from '../lib/benchmark.js';
 import { dashboardFocus, orderLabel } from '../lib/dashboard-focus.js';
+import { lessonsRead, nextLesson, firstSteps, moversList, tickerFor, heatClass } from '../lib/home.js';
+import { closePositionDialog } from '../ui/dialogs.js';
 import { holdingRows, holdingTotals, allocation, ALLOCATION_TABS } from '../lib/holdings.js';
 import { upcomingDividends, forPositions, exDateLabel, amountText, daysUntil, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 
@@ -33,7 +37,7 @@ const SESSIONS = {
   tyo: { tz: 'Asia/Tokyo', open: [9, 0], close: [15, 30], name: 'Tokio', sub: 'TSE' },
 };
 
-let root, equity, range = '1M', movers = 'gainers', allocBy = 'asset', timer;
+let root, equity, range = '1M', movers = 'gainers', moversKind = 'all', heatKind = 'es', allocBy = 'asset', timer;
 let minis = []; // minigráficos de las tarjetas de cotización
 let alias = null; // alias del perfil de comunidad para el saludo (null = aún no se sabe o no hay perfil)
 let lastEquity; // último patrimonio pintado, para animar la cifra desde ahí
@@ -50,6 +54,36 @@ export function mount(el) {
   root = el;
   on(root, 'click', '[data-seg="range"] button', (_, b) => { range = b.dataset.value; pressSeg(root, 'range', range); drawEquity(); });
   on(root, 'click', '[data-seg="movers"] button', (_, b) => { movers = b.dataset.value; pressSeg(root, 'movers', movers); renderMovers(); });
+  on(root, 'click', '[data-seg="mkind"] button', (_, b) => { moversKind = b.dataset.value; pressSeg(root, 'mkind', moversKind); renderMovers(); });
+  on(root, 'click', '[data-seg="heat"] button', (_, b) => { heatKind = b.dataset.value; pressSeg(root, 'heat', heatKind); renderHeat(); });
+  on(root, 'click', '[data-close-pos]', (e, b) => { e.stopPropagation(); closePositionDialog(b.dataset.closePos); });
+  on(root, 'keydown', 'tr[data-asset]', (e, tr) => { if (e.key === 'Enter') go(`/trade/${tr.dataset.asset}`); });
+  // Tarjeta destacada: BTC o IBEX 35; el precio grande y el último punto del gráfico siguen la cotización en vivo
+  on(root, 'click', '[data-seg="feat"] button', (_, b) => {
+    if (b.dataset.value === featSym) return;
+    featSym = b.dataset.value;
+    const card = $('.home-feature', root);
+    if (!card) return;
+    card.outerHTML = String(featureCard());
+    loadFeature();
+  });
+  // Cifras en vivo: el feed agrupa los precios cada 500 ms, así que esto pinta como mucho 2 veces por segundo
+  store.on('prices', (symbols) => {
+    if (root.hidden) return;
+    if ($('#d-movers .skeleton', root)) renderMovers();
+    if ($('#d-heat-card', root)?.hidden) renderHeat(); // aparece en cuanto hay variaciones (sin datos, no se muestra)
+    for (const el of root.querySelectorAll('[data-num-px]')) {
+      if (!symbols.has(el.dataset.numPx)) continue;
+      const px = tick(el.dataset.numPx)?.price;
+      if (px) el.textContent = num(px);
+    }
+    if (store.hasPractice()) { renderSummary(); renderPositionsLive(); }
+    if (!symbols.has(featSym)) return;
+    const px = tick(featSym)?.price;
+    const el = $('#d-feat-value', root);
+    if (el && px) el.textContent = num(px);
+    feat?.update(px);
+  });
   on(root, 'click', '[data-seg="alloc"] button', (_, b) => { allocBy = b.dataset.value; pressSeg(root, 'alloc', allocBy); renderAllocation(); });
   on(root, 'click', '[data-asset]', (_, el2) => go(`/trade/${el2.dataset.asset}`));
   store.on('account', () => root.isConnected && !root.hidden && renderAll());
@@ -64,10 +98,10 @@ export function mount(el) {
 export function show() {
   renderAll();
   clearInterval(timer);
-  timer = setInterval(() => { renderSummary(); renderCompare(); renderMovers(); renderBreadth(); renderHoldings(); renderAllocation(); renderSessions(); }, 3000);
+  timer = setInterval(() => { renderCompare(); renderMovers(); renderSessions(); renderHeat(); }, 3000);
 }
 export function hide() { clearInterval(timer); }
-export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); }
+export function theme() { equity?.theme(); drawEquity(); minis.forEach((m) => m.theme()); feat?.theme(); }
 
 function renderAll() {
   const practice = store.hasPractice();
@@ -76,130 +110,231 @@ function renderAll() {
   equity = null;
   minis.forEach((m) => m.destroy());
   minis = [];
+  feat?.destroy();
+  feat = null;
   const focus = dashboardFocus({ signedIn: Boolean(user), practice, positions: store.positions().length, orders: store.orders().length });
+  const steps = practice ? firstSteps({ practice, trades: store.trades().length, positions: store.positions().length, orders: store.orders().length,
+    lessonsDone: lessonsRead().size }) : null;
   render(root, html`
+    ${!practice && !user ? html`
+    <section class="card cta" aria-labelledby="d-cta-title">
+      <span class="chip accent">Simulador educativo</span>
+      <h2 id="d-cta-title">Aprende trading en español, con euros y el IBEX 35. <span>Sin registrarte.</span></h2>
+      <p class="hero-sub">Saldo virtual en euros, cotizaciones reales y lecciones en tu idioma, pensado para quien empieza en España y sin dinero real.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-action="account">Probar sin registrarme</button>
+        <button class="btn btn-ghost" data-action="register">Crear cuenta gratis</button>
+      </div>
+      <p class="hero-note muted" role="note">${icon('info', 'sm')} Simulador educativo con dinero virtual. No es asesoramiento financiero.</p>
+    </section>` : ''}
     ${focus.setupFirst ? html`
-    <section class="card focus-card" aria-labelledby="d-start-title">
-      <h2 class="card-title" id="d-start-title">${icon('wallet')} Crea tu cuenta de práctica</h2>
-      <p class="hero-sub">Elige con cuánto dinero virtual quieres empezar y practica con cotizaciones reales. Es el primer paso: después podrás operar, ver tu patrimonio y entrar en la clasificación.</p>
-      <div class="hero-actions"><button class="btn btn-primary btn-lg" data-action="account">${icon('play')} Elegir mi saldo</button></div>
+    <section class="card cta focus-card" aria-labelledby="d-start-title">
+      <h2 id="d-start-title">Crea tu cuenta de práctica</h2>
+      <p class="hero-sub">Elige tu saldo virtual en euros (de 50 a 1.000.000 €) y practica con cotizaciones reales, sin arriesgar dinero.</p>
+      <div class="hero-actions"><button class="btn btn-primary" data-action="account">Elegir mi saldo y empezar</button></div>
     </section>` : ''}
-    ${focus.orders ? ordersCard() : ''}
-    ${focus.firstBuy ? html`
-    <section class="card focus-card" aria-labelledby="d-first-title">
-      <h2 class="card-title" id="d-first-title">${icon('chart-candlestick')} Haz tu primera compra</h2>
-      <p class="hero-sub">Aún no tienes posiciones. Elige un activo y compra una pequeña cantidad con tu saldo virtual: así verás cómo se mueve tu patrimonio. Sin dinero real.</p>
-      <div class="hero-actions"><a class="btn btn-primary" href="#/trade">${icon('chart-candlestick', 'sm')} Ir a Operar</a>
-        <button type="button" class="btn btn-ghost" data-action="palette">${icon('search', 'sm')} Buscar un activo</button></div>
-    </section>` : ''}
-    <div id="d-retention" class="stack" ${focus.minimal ? 'hidden' : ''}></div>
-    <div class="dash${focus.minimal ? ' dash-minimal' : ''}">
-      <div class="stack">
-        ${user ? greeting(user, practice) : ''}
+    <div class="home${focus.minimal ? ' home-minimal' : ''}">
+      ${practice ? html`<section class="home-metrics" aria-label="Tu cuenta">
+        ${metric('d-m-eq', 'Patrimonio')}${metric('d-m-day', 'P&L de hoy')}${metric('d-m-total', 'P&L total')}${metric('d-m-cash', 'Disponible')}
+      </section>` : ''}
+      <div class="home-main">
         ${practice ? html`
-          <section class="card">
-            <div class="hero-top">
-              ${user ? html`<span class="hero-label">${icon('activity', 'sm')} Evolución del patrimonio</span>` : html`<div>
-                <span class="hero-label">${icon('wallet', 'sm')} Patrimonio total</span>
-                <div class="hero-value money" id="d-equity"></div>
-                <div class="hero-delta" id="d-delta"></div>
-                <p class="whatif" id="d-whatif" hidden></p>
-              </div>`}
-              ${seg('range', RANGES, range)}
-            </div>
-            <div class="hero-chart" id="d-chart"></div>
-          </section>
-          <div class="kpis" id="d-kpis"></div>
-          ${store.positions().length ? html`
-          <section class="card" aria-labelledby="d-hold-title">
-            <div class="card-head"><h2 class="card-title" id="d-hold-title">${icon('wallet')} Cartera</h2><a class="link" href="#/trade">Operar</a></div>
-            <div class="table-wrap" id="d-hold"></div>
-          </section>
-          <section class="card" aria-labelledby="d-alloc-title">
-            <div class="card-head"><h2 class="card-title" id="d-alloc-title">${icon('layers')} Distribución</h2>${seg('alloc', ALLOCATION_TABS, allocBy)}</div>
-            <div id="d-alloc"></div>
-          </section>` : ''}
+        <section class="card home-equity" aria-labelledby="d-eq-title">
+          <div class="card-head"><h2 class="card-title" id="d-eq-title">Patrimonio</h2>${seg('range', RANGES, range)}</div>
+          <p class="whatif" id="d-whatif" hidden></p>
+          <div class="hero-chart" id="d-chart"></div>
+        </section>
+        ${steps && !steps.complete ? stepsCard(steps) : ''}
+        ${focus.orders ? ordersCard() : ''}
+        <section class="card home-pos" aria-labelledby="d-pos-title">
+          <div class="card-head"><h2 class="card-title" id="d-pos-title">Posiciones abiertas</h2><a class="see-all" href="#/trade">Ver todas ›</a></div>
+          <div id="d-pos"></div>
+        </section>
+        <section class="card home-learn" id="d-learn" aria-labelledby="d-learn-title"></section>
           ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
-          <div id="d-goals">${goalsCard({ compact: true })}</div>
-          ${user ? '' : html`<div id="d-pulse"></div>`}` : user ? html`
-          <div class="kpis" id="d-tiles" hidden></div>` : html`
-          <section class="card cta" aria-labelledby="d-cta-title">
-            <span class="chip accent">${icon('graduation-cap', 'sm')} Simulador educativo</span>
-            <h2 id="d-cta-title">Practica con precios y costes reales. <span>Averigua si de verdad te compensa operar.</span></h2>
-            <p class="hero-sub">Saldo virtual y cotizaciones reales de cripto, Wall Street e IBEX 35. Con tu cuenta gratuita, cada operación paga comisión y deslizamiento, y comparas tu resultado con no invertir y con el S&amp;P 500. Sin dinero real.</p>
-            <div class="hero-actions">
-              <button class="btn btn-primary btn-lg" data-action="register">Empezar gratis</button>
-              <button class="btn btn-ghost btn-lg" data-action="account">Probar demo</button>
-              <button class="btn btn-lg btn-link" data-action="tour">Ver cómo funciona</button>
-            </div>
-            <p class="disclaimer" role="note">${icon('info', 'sm')} Simulador educativo con dinero virtual. No es asesoramiento financiero.</p>
-          </section>
-          <section class="features" aria-label="Qué hace diferente a PaperPulse">
-            <a class="card feature" href="#/community/forum">
-              <span class="feature-icon">${icon('users')}</span>
-              <h3>Comunidad de traders</h3>
-              <p>Foro, perfiles y operaciones compartidas para aprender de otros.</p>
-              <span class="feature-link">Ir al foro ${icon('arrow-right', 'sm')}</span>
-            </a>
-            <a class="card feature" href="#/community/ranking">
-              <span class="feature-icon">${icon('trophy')}</span>
-              <h3>Ranking y retos mensuales</h3>
-              <p>Compite cada mes con el mismo saldo y sube en la clasificación.</p>
-              <span class="feature-link">Ver clasificación ${icon('arrow-right', 'sm')}</span>
-            </a>
-            <a class="card feature" href="#/markets">
-              <span class="feature-icon">${icon('chart-candlestick')}</span>
-              <h3>Mercado real, saldo virtual</h3>
-              <p>Cripto, Wall Street e IBEX 35 en vivo. Nunca dinero real.</p>
-              <span class="feature-link">Ver mercados ${icon('arrow-right', 'sm')}</span>
-            </a>
-          </section>
-          <div id="d-pulse"></div>
-          <div class="kpis" id="d-tiles"></div>`}
-        <section class="card" ${focus.minimal ? 'hidden' : ''}>
-          <div class="card-head"><h2 class="card-title">${icon('globe')} Sesiones de mercado</h2><span class="card-sub">Tu hora local</span></div>
+          ${can('compareSp500', Boolean(user)) ? '' : html`<section class="card compare-locked" aria-label="Comparación con el S&amp;P 500">
+            <h2 class="card-title">¿Te ha compensado operar?</h2>
+            <p class="muted">Compara tu rentabilidad, ya con comisiones, con no invertir y con el S&amp;P 500 desde el día en que empezaste.</p>
+            ${lockedNote('Comparación con el S&P 500')}</section>`}` : focus.minimal ? '' : featureCard()}
+      </div>
+      <aside class="home-side" ${focus.minimal ? 'hidden' : ''}>
+        <section class="card home-list" aria-labelledby="d-watch-title">
+          <div class="card-head"><h2 class="card-title" id="d-watch-title">Favoritos</h2>
+            <button class="icon-btn sm" data-action="palette" aria-label="Añadir favorito" title="Añadir favorito">${icon('plus')}</button></div>
+          <div id="d-watch"></div>
+          <a class="see-all" href="#/markets">Ver todos ›</a>
+        </section>
+      </aside>
+      <div class="home-bottom" ${focus.minimal ? 'hidden' : ''}>
+        <section class="card home-movers" aria-labelledby="d-movers-title">
+          <div class="card-head"><h2 class="card-title" id="d-movers-title">Mayores movimientos</h2>
+            ${seg('movers', [['gainers', 'Suben'], ['losers', 'Bajan']], movers)}</div>
+          ${seg('mkind', [['all', 'Todos'], ['crypto', 'Cripto'], ['stock', 'Acciones']], moversKind)}
+          <div id="d-movers"></div>
+        </section>
+        <section class="card home-news" aria-labelledby="d-news-title">
+          <div class="card-head"><h2 class="card-title" id="d-news-title">Noticias</h2>${isVisible('news') ? html`<a class="see-all" href="#/news">Ver todas ›</a>` : ''}</div>
+          <div class="news-list" id="d-news">${skeletonRows(4)}</div>
+        </section>
+        <section class="card home-sessions" aria-labelledby="d-sess-title">
+          <div class="card-head"><h2 class="card-title" id="d-sess-title">Sesiones de mercado</h2><span class="card-sub">Tu hora local</span></div>
           <div class="sessions" id="d-sessions"></div>
         </section>
-        <section class="card" ${focus.minimal ? 'hidden' : ''}>
-          <div class="card-head"><h2 class="card-title">${icon('newspaper')} Últimas noticias</h2><a class="link" href="#/news">Ver todas</a></div>
-          <div class="news-mini" id="d-news">${skeletonRows(4)}</div>
+        <section class="card home-heat" id="d-heat-card" aria-labelledby="d-heat-title" hidden>
+          <div class="card-head"><h2 class="card-title" id="d-heat-title">Mapa de calor</h2>${seg('heat', [['es', 'España'], ['crypto', 'Cripto']], heatKind)}</div>
+          <p class="card-sub heat-sub" id="d-heat-sub"></p>
+          <div class="heat" id="d-heat"></div>
         </section>
       </div>
-      <div class="stack" ${focus.minimal ? 'hidden' : ''}>
-        <section class="card">
-          <div class="card-head"><h2 class="card-title">${icon('star')} Favoritos</h2>
-            <button class="icon-btn sm" data-action="palette" aria-label="Añadir favorito">${icon('plus')}</button></div>
-          <div class="rows" id="d-watch"></div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 class="card-title">${icon('flame')} Mayores movimientos</h2>
-            ${seg('movers', [['gainers', 'Suben'], ['losers', 'Bajan']], movers)}</div>
-          <div class="rows" id="d-movers"></div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 class="card-title">${icon('activity')} Amplitud del mercado</h2><span class="card-sub">24 h</span></div>
-          <div id="d-breadth"></div>
-        </section>
-      </div>
+      ${!practice && !user ? html`
+      <section class="home-why" aria-labelledby="d-why-title">
+        <h2 class="features-title" id="d-why-title">Por qué PaperPulse</h2>
+        <a class="card feature" href="#/learn"><h3>Todo en español</h3><p>Interfaz, lecciones y glosario en tu idioma.</p></a>
+        <a class="card feature" href="#/markets"><h3>En euros, con el IBEX 35</h3><p>Bolsa española junto a Bitcoin y Wall Street, con tu saldo en euros.</p></a>
+        <a class="card feature" href="#/trade"><h3>Empieza sin registrarte</h3><p>Sin email ni tarjeta: la Demo se guarda solo en tu navegador.</p></a>
+      </section>` : ''}
     </div>`);
 
   if (practice) {
     equity = createEquityChart($('#d-chart', root), { formatter: (v) => money(v) });
     drawEquity();
+    renderSummary();
+    renderPositions();
+    renderLearn();
+  } else if ($('#d-feat-chart', root)) {
+    loadFeature();
   }
-  mountCard($('#d-retention', root));
-  if (user) { renderHello(user); renderNotifCount(); } else renderPulse(practice);
-  if (!practice) renderTiles();
-  renderSummary();
+  const retention = $('#d-retention', root);
+  if (retention && isVisible('community')) mountCard(retention);
   renderCompare();
   renderDividends();
   renderWatchlist();
   renderMovers();
-  renderBreadth();
-  renderHoldings();
-  renderAllocation();
   renderSessions();
   renderNews();
+  renderHeat();
+}
+
+/* ---------- Franja de métricas ---------- */
+const metric = (id, label) => html`<div class="card metric"><span class="metric-label">${label}</span>
+  <strong class="metric-value money" id="${id}"><span class="skeleton sk-line"></span></strong><span class="metric-sub" id="${id}-sub"></span></div>`;
+
+/* ---------- Primeros pasos (sustituye al aviso «Haz tu primera compra») ---------- */
+function stepsCard(st) {
+  return html`<section class="card home-steps" aria-labelledby="d-steps-title">
+    <div class="card-head"><h2 class="card-title" id="d-steps-title">Primeros pasos</h2><span class="card-sub">${st.done} de ${st.total}</span></div>
+    <div class="progress" role="progressbar" aria-label="Primeros pasos completados" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}"><i data-w="${st.pct}"></i></div>
+    <ol class="steps">${st.steps.map((x, i) => html`<li class="${x.done ? 'done' : ''}">
+      <span class="step-mark" aria-hidden="true">${x.done ? icon('circle-check', 'sm') : String(i + 1)}</span>
+      <span class="step-label">${x.label}${x.done ? html`<span class="sr-only"> (hecho)</span>` : ''}</span>
+      ${x.done ? html`<span class="muted step-state">Hecho</span>` : x.href ? html`<a class="btn btn-sm btn-ghost" href="${x.href}">${x.cta}</a>`
+        : html`<button type="button" class="btn btn-sm btn-ghost" data-action="${x.action}">${x.cta}</button>`}</li>`)}</ol>
+  </section>`;
+}
+
+/* ---------- Continuar aprendiendo ---------- */
+let lessonsMod = null; // lib/learn-content.js, descargado la primera vez que hace falta
+async function renderLearn() {
+  const box = $('#d-learn', root);
+  if (!box) return;
+  if (!lessonsMod) {
+    render(box, html`<div class="card-head"><h2 class="card-title" id="d-learn-title">Continuar aprendiendo</h2></div><div class="skeleton sk-line"></div>`);
+    try { lessonsMod = await import('../lib/learn-content.js'); } catch { box.hidden = true; return; }
+    if (!box.isConnected) return;
+  }
+  const n = nextLesson(lessonsMod.LESSONS, lessonsRead());
+  render(box, html`<div class="card-head"><h2 class="card-title" id="d-learn-title">Continuar aprendiendo</h2><span class="card-sub">${n.done} de ${n.total} lecciones</span></div>
+    <div class="progress" role="progressbar" aria-label="Lecciones completadas" aria-valuemin="0" aria-valuemax="${n.total}" aria-valuenow="${n.done}"><i data-w="${n.pct}"></i></div>
+    ${n.lesson ? html`<a class="learn-next" href="#/learn/${n.lesson.id}"><span><strong>${n.lesson.title}</strong>
+        <small>${n.lesson.minutes} min · ${n.lesson.summary}</small></span><span aria-hidden="true">›</span></a>`
+      : html`<p class="muted learn-done">Has completado todas las lecciones. <a class="link" href="#/learn/glosario">Repasa el glosario</a>.</p>`}`);
+}
+
+/* ---------- Posiciones abiertas (compactas, con cierre) ---------- */
+const POS_MAX = 5;
+function renderPositions() {
+  const box = $('#d-pos', root);
+  if (!box) return;
+  const list = store.positions();
+  if (!list.length) {
+    return render(box, html`<div class="home-empty"><p><strong>No tienes posiciones abiertas.</strong> Abre una Long o Short con tu saldo virtual y la verás aquí, con su resultado en vivo.</p>
+      <a class="btn btn-sm btn-primary" href="#/trade">Ir a Operar</a></div>`);
+  }
+  render(box, html`<table class="table pos-mini" aria-labelledby="d-pos-title">
+    <thead><tr><th scope="col">Activo</th><th scope="col">Dirección</th><th scope="col" class="r">P&amp;L</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead>
+    <tbody>${list.slice(0, POS_MAX).map((p) => html`<tr>
+      <th scope="row"><a class="pm-asset" href="#/trade/${p.symbol}">${assetIcon(p.symbol)}<span><strong>${p.symbol}</strong><small>${units(p.amount)}</small></span></a></th>
+      <td>${p.side === 'short' ? html`<span class="chip down">Short</span>` : html`<span class="chip up">Long</span>`}</td>
+      <td class="r"><span class="money pm-pnl" data-pm="${p.id}"></span><small class="pm-pct" data-pm-pct="${p.id}"></small></td>
+      <td class="r"><button type="button" class="btn btn-ghost btn-sm" data-close-pos="${p.id}">Cerrar</button></td></tr>`)}</tbody>
+  </table>${list.length > POS_MAX ? html`<p class="muted pos-more">Y ${list.length - POS_MAX} más en Operar.</p>` : ''}`);
+  renderPositionsLive();
+}
+/** Solo cambia las cifras (como mucho 2 veces por segundo, con los precios): la tabla no se repinta. */
+function renderPositionsLive() {
+  for (const p of store.positions()) {
+    const el = $(`[data-pm="${p.id}"]`, root);
+    if (!el) continue;
+    const v = valuePosition(p);
+    el.textContent = money(v.pnlUsd, { signed: true });
+    el.className = `money pm-pnl delta ${trendClass(v.pnlUsd)}`;
+    const pc = $(`[data-pm-pct="${p.id}"]`, root);
+    if (pc) { pc.textContent = pct(v.pnlPct); pc.className = `pm-pct ${trendClass(v.pnlUsd)}`; }
+  }
+}
+
+/* ---------- Mapa de calor (España o Cripto). Sin datos, la tarjeta no aparece ---------- */
+function renderHeat() {
+  const card = $('#d-heat-card', root);
+  if (!card) return;
+  const pool = heatKind === 'es' ? ASSETS.filter((a) => a.market === 'es' && a.symbol !== 'IBEX') : CRYPTO;
+  const items = pool.map((a) => ({ a, c: tick(a.symbol)?.change24h })).filter((x) => Number.isFinite(x.c));
+  card.hidden = items.length < 3;
+  if (card.hidden) return;
+  $('#d-heat-sub', root).textContent = heatKind === 'es' ? `Valores del IBEX 35 en el catálogo (${items.length}) · variación de la sesión` : 'Cripto del catálogo · variación en 24 h';
+  render($('#d-heat', root), items.map(({ a, c }) => html`<a class="heat-tile ${heatClass(c)}" href="#/trade/${a.symbol}" aria-label="${a.name}: ${pct(c)}">
+    <strong>${a.symbol}</strong><span>${pct(c)}</span></a>`));
+}
+
+/* ---------- Tarjeta destacada: BTC o IBEX 35 con su gráfico de área (sin cuenta de práctica) ---------- */
+const FEATURED = [['BTC', 'Bitcoin'], ['IBEX', 'IBEX 35']];
+let featSym = 'BTC';
+let feat = null;
+let featLoad = 0;
+
+function featureCard() {
+  const a = findAsset(featSym);
+  const t = tick(a.symbol);
+  return html`<section class="card home-feature" aria-labelledby="d-feat-title">
+    <div class="feat-head">
+      <div class="feat-name"><h2 id="d-feat-title">${a.name}</h2><span class="chip">${a.symbol}</span></div>
+      ${seg('feat', FEATURED, featSym)}
+    </div>
+    <div class="feat-price"><span class="feat-value" id="d-feat-value">${t?.price ? num(t.price) : '—'}</span><span class="feat-unit">${a.quote}</span>${liveChange(a, 'span')}</div>
+    <div class="feat-chart" id="d-feat-chart"><div class="skeleton feat-sk" aria-hidden="true"></div></div>
+    <p class="muted feat-note">Últimas 24 h${a.type === 'stock' ? ' · última sesión' : ''} · <a class="link" href="#/trade/${a.symbol}">Abrir en Operar</a></p>
+  </section>`;
+}
+
+async function loadFeature() {
+  const id = ++featLoad;
+  const a = findAsset(featSym);
+  const box = $('#d-feat-chart', root);
+  feat?.destroy();
+  feat = null;
+  let list = [];
+  try {
+    list = (await candles(a, a.type === 'crypto' ? '15m' : '5m', { limit: a.type === 'crypto' ? 96 : 110 })).candles;
+  } catch { /* sin datos */ }
+  if (id !== featLoad || !box.isConnected) return;
+  if (a.type !== 'crypto' && list.length) { // bolsa: solo la última sesión
+    const lastDay = new Date(list.at(-1).time * 1000).toDateString();
+    list = list.filter((c) => new Date(c.time * 1000).toDateString() === lastDay);
+  }
+  box.textContent = '';
+  if (list.length < 2) return render(box, empty('chart-area', 'Sin datos ahora mismo', 'Vuelve a intentarlo en unos minutos.'));
+  feat = createAreaChart(box);
+  feat.setData(list.map((c) => ({ time: c.time, value: c.close })));
 }
 
 /* ---------- Patrimonio ---------- */
@@ -210,31 +345,37 @@ function drawEquity() {
   let points = store.equityHistory().filter((p) => p.time >= cutoff);
   if (points.length < 2) points = store.equityHistory();
   box.querySelector('.empty')?.remove();
-  if (points.length < 2) {
-    box.insertAdjacentHTML('beforeend', String(empty('chart-area', 'Tu curva está por dibujar', 'Se añade un punto cada minuto mientras tienes la app abierta.')));
+  const values = points.map((p) => p.value);
+  const flat = points.length >= 2 && Math.max(...values) - Math.min(...values) < Math.max(0.01, store.initialCapital() * 0.0001);
+  box.classList.toggle('is-empty', points.length < 2 || flat);
+  if (points.length < 2 || flat) {
+    box.insertAdjacentHTML('beforeend', String(empty('chart-area', points.length < 2 ? 'Tu curva está por dibujar' : 'Tu patrimonio aún no se ha movido',
+      points.length < 2 ? 'Se añade un punto cada minuto mientras tienes la app abierta.' : 'Cuando abras una posición, aquí verás cómo sube o baja.')));
   }
   equity.setData(points, store.initialCapital());
 }
 
 function renderSummary() {
-  if (store.hasPractice()) {
-    const p = portfolio();
-    const total = p.equityUsd - store.initialCapital();
-    if (!$('#d-equity', root)) return; // la cuenta se acaba de activar y la vista aún no se ha repintado (lo hace el evento de cuenta)
-    countTo($('#d-equity', root), lastEquity, p.equityUsd, (v) => money(v)); // la cifra cuenta hasta su nuevo valor
-    lastEquity = p.equityUsd;
-    render($('#d-delta', root), html`${changeChip(p.returnPct)}
-      <span class="money delta ${trendClass(total)}">${money(total, { signed: true })}</span> desde el inicio
-      ${p.rows.length ? html`· <span class="money delta ${trendClass(p.change24hUsd)}">${money(p.change24hUsd, { signed: true })}</span> hoy` : ''}`);
-    const t = store.trades();
-    renderWhatIf(p, t.length > 0);
-    const wins = t.filter((x) => x.pnl > 0).length;
-    render($('#d-kpis', root), html`
-      ${kpi('Efectivo disponible', moneyHtml(p.cashUsd), p.reservedUsd ? html`<span class="money">${money(p.reservedUsd)}</span> en órdenes` : 'Listo para operar')}
-      ${kpi('Invertido', moneyHtml(p.holdingsUsd), `${p.rows.length} ${p.rows.length === 1 ? 'posición' : 'posiciones'}`)}
-      ${kpi('P&L no realizado', html`<span class="money delta ${trendClass(p.unrealizedUsd)}">${money(p.unrealizedUsd, { signed: true })}</span>`, p.investedUsd ? pct((p.unrealizedUsd / p.investedUsd) * 100) : '—')}
-      ${kpi('Tasa de acierto', t.length ? pct((wins / t.length) * 100, { signed: false, decimals: 0 }) : '—', `${t.length} operaciones cerradas`)}`);
-  }
+  if (!store.hasPractice()) return;
+  const p = portfolio();
+  const total = p.equityUsd - store.initialCapital();
+  const eq = $('#d-m-eq', root);
+  if (!eq) return; // la cuenta se acaba de activar y la vista aún no se ha repintado (lo hace el evento de cuenta)
+  // Si cambia el patrimonio, la cifra cuenta hasta él; si no, se repinta igual (puede haber cambiado el tipo de cambio)
+  if (lastEquity != null && !eq.querySelector('.skeleton') && Math.abs(p.equityUsd - lastEquity) >= 0.005) countTo(eq, lastEquity, p.equityUsd, (v) => money(v));
+  else eq.textContent = money(p.equityUsd);
+  lastEquity = p.equityUsd;
+  const set = (id, value, sub, trend) => {
+    const v = $(`#${id}`, root), s = $(`#${id}-sub`, root);
+    if (value != null) { v.textContent = value; v.className = `metric-value money${trend != null ? ` delta ${trendClass(trend)}` : ''}`; }
+    if (s) render(s, sub);
+  };
+  set('d-m-eq', null, html`<span class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</span> desde el inicio`);
+  const dayPct = p.equityUsd - p.change24hUsd > 0 ? (p.change24hUsd / (p.equityUsd - p.change24hUsd)) * 100 : 0;
+  set('d-m-day', money(p.change24hUsd, { signed: true }), p.rows.length ? html`<span class="delta ${trendClass(p.change24hUsd)}">${pct(dayPct)}</span> en 24 h` : 'Sin posiciones abiertas', p.change24hUsd);
+  set('d-m-total', money(total, { signed: true }), html`<span class="delta ${trendClass(total)}">${pct(p.returnPct)}</span> sobre ${money(store.initialCapital())}`, total);
+  set('d-m-cash', money(p.cashUsd), p.reservedUsd ? html`${money(p.reservedUsd)} en órdenes` : 'Listo para operar');
+  renderWhatIf(p, store.trades().length > 0);
 }
 
 /** «Si hubieras invertido tus X € de verdad…»: solo si la persona eligió su saldo (las cuentas anteriores no lo tienen). */
@@ -306,8 +447,8 @@ function greeting(user, practice) {
     </div>
     <nav class="quick" aria-label="Accesos rápidos">
       <a class="quick-link" href="#/trade">${icon('chart-candlestick')}<span>Operar</span></a>
-      <a class="quick-link" href="#/community">${icon('users')}<span>Comunidad</span></a>
-      <a class="quick-link" href="#/community/challenge">${icon('flame')}<span>Reto del mes</span></a>
+      <a class="quick-link" href="#/markets">${icon('coins')}<span>Mercados</span></a>
+      <a class="quick-link" href="#/learn">${icon('graduation-cap')}<span>Aprender</span></a>
     </nav>
   </section>`;
 }
@@ -387,23 +528,33 @@ async function renderTiles() {
 
 const kpi = (label, value, sub) => html`<div class="card kpi"><span>${label}</span><strong>${value}</strong><small>${sub}</small></div>`;
 
-/* ---------- Favoritos con sparklines ---------- */
+/* ---------- Favoritos: agrupados en Cripto y Acciones, con minigráfico ---------- */
+/** Precio en vivo con la unidad aparte (pequeña y gris); lo actualiza el oyente de precios de la vista. */
+const liveNum = (a) => html`<span class="num" data-num-px="${a.symbol}">${tick(a.symbol)?.price ? num(tick(a.symbol).price) : '—'}</span><small class="unit">${a.quote}</small>`;
+
 async function renderWatchlist() {
   const box = $('#d-watch', root);
   if (!box) return;
   const list = store.watchlist().map(findAsset).filter(Boolean);
-  if (!list.length) return render(box, empty('star', 'Aún no sigues ningún activo', 'Pulsa + o la estrella de cualquier activo y lo tendrás aquí, a un vistazo.'));
-  const row = (a, spark) => html`<button class="row" data-asset="${a.symbol}">
-      ${assetIcon(a)}
-      <div class="asset-cell"><div><strong>${a.symbol}</strong><small>${a.name}</small></div><span class="hide-sm">${spark ?? ''}</span></div>
-      <div class="row-end">${livePrice(a)}${liveChange(a)}</div></button>`;
-  render(box, list.map((a) => row(a)));
+  if (!list.length) return render(box, empty('star', 'Aún no sigues ningún activo', 'Pulsa + o la estrella de cualquier activo y lo tendrás aquí.'));
+  const row = (a, spark) => html`<tr data-asset="${a.symbol}" tabindex="0">
+    <th scope="row"><span class="wl-sym">${assetIcon(a)}<span><strong>${a.symbol}</strong><small>${a.name}</small></span></span></th>
+    <td class="wl-spark">${spark ?? ''}</td><td class="r">${liveNum(a)}</td><td class="r">${liveChange(a, 'span')}</td></tr>`;
+  const paint = (sparks) => render(box, html`<table class="table home-watch" aria-labelledby="d-watch-title">
+    <thead><tr><th scope="col">Símbolo</th><th scope="col"><span class="sr-only">Tendencia</span></th><th scope="col" class="r">Última</th><th scope="col" class="r">Cambio</th></tr></thead>
+    ${[['Cripto', list.filter((a) => a.type === 'crypto')], ['Acciones e índices', list.filter((a) => a.type !== 'crypto')]].filter(([, g]) => g.length)
+      .map(([t, g]) => html`<tbody><tr class="wl-group"><th scope="colgroup" colspan="4">${t}</th></tr>${g.map((a) => row(a, sparks?.get(a.symbol)))}</tbody>`)}
+  </table>`);
+  // Al instante con las minigráficas guardadas; después, las nuevas
+  const savedCg = savedCryptoMarkets(), savedSt = savedStockSparks();
+  const fromSaved = new Map(list.map((a) => [a.symbol, sparkline(a.type === 'crypto' ? savedCg?.get(a.symbol)?.spark : savedSt[a.symbol])]));
+  paint(fromSaved);
   const cg = await cryptoMarkets();
   const sparks = await Promise.all(list.map(async (a) => (a.type === 'crypto' ? cg.get(a.symbol)?.spark : stockSpark(a))));
-  if (box.isConnected) render(box, list.map((a, i) => row(a, sparkline(sparks[i]))));
+  if (box.isConnected) paint(new Map(list.map((a, i) => [a.symbol, sparks[i]?.length ? sparkline(sparks[i]) : fromSaved.get(a.symbol)])));
 }
 
-/* ---------- Movimientos y amplitud ---------- */
+/* ---------- Mayores movimientos (Suben / Bajan; Todos / Cripto / Acciones) ---------- */
 function withChange() {
   return ASSETS.map((a) => ({ a, t: tick(a.symbol) })).filter((x) => Number.isFinite(x.t?.change24h) && x.t.price > 0);
 }
@@ -411,11 +562,13 @@ function withChange() {
 function renderMovers() {
   const box = $('#d-movers', root);
   if (!box) return;
-  const list = withChange().sort((x, y) => (movers === 'gainers' ? y.t.change24h - x.t.change24h : x.t.change24h - y.t.change24h)).slice(0, 5);
-  if (!list.length) return render(box, skeletonRows(5, 'No hay datos ahora mismo, reintentando…'));
-  render(box, list.map(({ a }) => html`<button class="row" data-asset="${a.symbol}">${assetIcon(a)}
-    <div class="asset-cell"><div><strong>${a.symbol}</strong><small>${a.name}</small></div></div>
-    <div class="row-end">${livePrice(a)}${liveChange(a)}</div></button>`));
+  const list = moversList(withChange().map(({ a, t }) => ({ a, change: t.change24h })), { dir: movers, kind: moversKind });
+  if (!list.length) return render(box, skeletonRows(5, 'Esperando cotizaciones…'));
+  render(box, html`<table class="table home-movers-t" aria-labelledby="d-movers-title">
+    <thead><tr><th scope="col">Activo</th><th scope="col" class="r">Última</th><th scope="col" class="r">24 h</th></tr></thead>
+    <tbody>${list.map(({ a }) => html`<tr data-asset="${a.symbol}" tabindex="0">
+      <th scope="row"><span class="wl-sym">${assetIcon(a)}<span><strong>${a.symbol}</strong><small>${a.name}</small></span></span></th>
+      <td class="r">${liveNum(a)}</td><td class="r">${liveChange(a, 'span')}</td></tr>`)}</tbody></table>`);
 }
 
 function renderBreadth() {
@@ -524,13 +677,22 @@ function renderSessions() {
 /* ---------- Noticias ---------- */
 async function renderNews() {
   const box = $('#d-news', root);
+  if (!box) return;
+  const paint = (list) => render(box, list.map((n) => {
+    const a = tickerFor(n.title, ASSETS);
+    const url = safeUrl(n.url);
+    const body = html`<strong>${n.title}</strong><small><span>${n.source}</span> · <span>${timeAgo(n.date)}</span>${a ? html` <span class="chip">${a.symbol}</span>` : ''}</small>`;
+    return url ? html`<a class="news-row" href="${url}" target="_blank" rel="noopener noreferrer">${body}</a>` : html`<div class="news-row">${body}</div>`;
+  }));
+  const saved = savedNews().slice(0, 5);
+  if (saved.length) paint(saved); // al instante lo último guardado; lo nuevo lo sustituye al llegar
   try {
     const list = (await news()).slice(0, 5);
     if (!box.isConnected) return;
-    render(box, list.length ? list.map((n) => html`<a href="${safeUrl(n.url) ?? '#/news'}" target="_blank" rel="noopener noreferrer">
-      <strong>${n.title}</strong><small>${n.source} · ${timeAgo(n.date)}</small></a>`) : empty('newspaper', 'Los mercados están callados', 'Las fuentes no han publicado titulares financieros recientes.'));
+    if (list.length) paint(list);
+    else if (!saved.length) render(box, empty('newspaper', 'Los mercados están callados', 'Las fuentes no han publicado titulares financieros recientes.'));
   } catch {
-    render(box, empty('wifi-off', 'No hay noticias ahora mismo', 'No se pudo conectar con las fuentes. Vuelve a abrir el Resumen en unos minutos.'));
+    if (!saved.length) render(box, empty('wifi-off', 'No hay noticias ahora mismo', 'No se pudo conectar con las fuentes. Vuelve a abrir el Resumen en unos minutos.'));
   }
 }
 

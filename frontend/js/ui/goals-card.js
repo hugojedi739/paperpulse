@@ -3,6 +3,7 @@ import * as store from '../lib/store.js';
 import { html, icon } from '../lib/dom.js';
 import { weekGoals, lastWeek, STATE_LABEL } from '../lib/goals.js';
 import { weekLabel } from '../lib/stats.js';
+import { isVisible } from '../lib/sections.js';
 
 const STATE_ICON = { pending: 'clock', ontrack: 'trending-up', done: 'circle-check', missed: 'rotate-ccw' };
 const es = (v) => String(v).replace('.', ',');
@@ -34,6 +35,6 @@ export function goalsCard({ compact = false } = {}) {
       </li>`)}
     </ul>
     ${prev ? html`<p class="hint goals-prev">${icon('history', 'sm')} La semana pasada (${weekLabel(prev)}) cumpliste ${prev.done} de ${prev.total} retos.</p>` : ''}
-    ${compact ? html`<a class="link" href="#/stats">Ver mis estadísticas ${icon('arrow-right', 'sm')}</a>` : ''}
+    ${compact && isVisible('stats') ? html`<a class="link" href="#/stats">Ver mis estadísticas ${icon('arrow-right', 'sm')}</a>` : ''}
   </section>`;
 }

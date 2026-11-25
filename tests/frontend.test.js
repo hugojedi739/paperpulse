@@ -27,7 +27,7 @@ test('formatea porcentajes y volúmenes en español', () => {
   assert.equal(fmt.pct(2.31), '+2,31 %');
   assert.equal(fmt.pct(-1.45), '−1,45 %');
   assert.equal(fmt.volume(35_800_000), '35,8 M');
-  assert.equal(fmt.volume(520_000), '520,0 K');
+  assert.equal(fmt.volume(520_000), '520 K');
 });
 
 test('convierte divisas sin distorsión', () => {

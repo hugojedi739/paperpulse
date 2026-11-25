@@ -73,9 +73,9 @@ test('portada: titular, costes honestos y aviso educativo, sin promesas de ganan
   const src = readFileSync(new URL('../frontend/js/views/dashboard.js', import.meta.url), 'utf8');
   const cta = src.slice(src.indexOf('<section class="card cta"'), src.indexOf('</section>', src.indexOf('<section class="card cta"')));
   const text = cta.replace(/<[^>]+>/g, ' ').replace(/\$\{[^}]+\}/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
-  assert.ok(text.includes('Practica con precios y costes reales. Averigua si de verdad te compensa operar.'), text);
-  for (const part of ['Saldo virtual', 'cotizaciones reales', 'comisión y deslizamiento', 'Sin dinero real', 'Simulador educativo', 'No es asesoramiento financiero']) {
-    assert.ok(text.includes(part), `falta «${part}»`);
+  assert.ok(text.includes('Aprende trading en español, con euros y el IBEX 35. Sin registrarte.'), text);
+  for (const part of ['Saldo virtual', 'cotizaciones reales', 'sin dinero real', 'Simulador educativo', 'No es asesoramiento financiero']) {
+    assert.ok(text.toLowerCase().includes(part.toLowerCase()), `falta «${part}»`);
   }
   for (const word of ['gana dinero', 'ganar dinero', 'hazte rico', 'garantizad', 'beneficios seguros']) assert.ok(!text.toLowerCase().includes(word), word);
 });

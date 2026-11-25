@@ -5,14 +5,14 @@ import { ASSETS } from '../lib/catalog.js';
 import { html, icon, render, on, $, debounce } from '../lib/dom.js';
 import { money, price, pct, trendClass, toUsd } from '../lib/format.js';
 import { sparkline } from '../lib/charts.js';
-import { cryptoMarkets, stockSpark } from '../lib/marketdata.js';
+import { cryptoMarkets, stockSpark, savedCryptoMarkets, savedStockSparks } from '../lib/marketdata.js';
 import { assetCell, empty, seg, pressSeg, liveChange } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 
 const CATEGORIES = [['all', 'Todos'], ['crypto', 'Cripto'], ['es', 'España'], ['us', 'EE. UU.'], ['fav', 'Favoritos']];
 const COLUMNS = [
   ['rank', '#'], ['name', 'Activo'], ['price', 'Precio', 'r'], ['change', '24 h', 'r hide-sm'], ['change7d', '7 d', 'r hide-sm'],
-  ['cap', 'Capitalización', 'r hide-sm'], ['volume', 'Volumen 24 h', 'r hide-sm'], [null, 'Tendencia', 'hide-sm'], [null, '', 'hide-sm'],
+  ['cap', 'Capitalización', 'r hide-sm'], ['volume', 'Vol. 24 h · mercado global', 'r hide-sm'], [null, 'Tendencia', 'hide-sm'], [null, '', 'hide-sm'],
 ];
 
 /** Precio en vivo que parpadea al cambiar (data-flash); vacío = esqueleto hasta la primera cotización. */
@@ -51,10 +51,14 @@ export function mount(el) {
 }
 
 export async function show() {
+  // Primero lo último guardado (capitalización, 7 d, minigráficas) y después lo nuevo, por detrás
+  if (!cg.size) cg = savedCryptoMarkets() ?? cg;
+  if (!sparks.size) for (const [sym, v] of Object.entries(savedStockSparks())) sparks.set(sym, v);
   draw();
-  cg = await cryptoMarkets();
+  const fresh = await cryptoMarkets();
+  if (fresh.size) cg = fresh; // si CoinGecko falla, se queda lo guardado en vez de vaciar la tabla
   draw();
-  await Promise.all(ASSETS.filter((a) => a.type === 'stock').map(async (a) => sparks.set(a.symbol, await stockSpark(a))));
+  await Promise.all(ASSETS.filter((a) => a.type === 'stock').map(async (a) => { const v = await stockSpark(a); if (v) sparks.set(a.symbol, v); }));
 
   if (!root.hidden) draw();
 }
@@ -68,7 +72,8 @@ function rows() {
       a, fav: fav.has(a.symbol),
       rank: m.rank ?? 100 + i, name: a.name, price: t?.price ? toUsd(t.price, a.quote) : null,
       change: t?.change24h ?? null, change7d: m.change7d ?? null, cap: m.cap ?? null,
-      volume: m.volume ?? (t?.volume24h && t?.price ? toUsd(t.volume24h * t.price, a.quote) : null),
+      // En cripto, volume24h ya viene en la divisa de cotización (USDT); en bolsa, en acciones
+      volume: m.volume ?? (t?.volume24h && t?.price ? toUsd(a.type === 'crypto' ? t.volume24h : t.volume24h * t.price, a.quote) : null),
       spark: m.spark ?? sparks.get(a.symbol),
     };
   });
