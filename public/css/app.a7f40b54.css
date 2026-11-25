@@ -2156,7 +2156,12 @@ a.info-news:hover { background: var(--surface-2); }
 .wl-spark { width: 72px; }
 .wl-spark svg { width: 64px; height: 24px; display: block; }
 .home-list { container-type: inline-size; }
-@container (max-width: 360px) { .wl-spark { display: none; } .home-watch .wl-sym small { display: none; } }
+@container (max-width: 360px) { .wl-spark { display: none; } .home-watch .wl-sym small { display: none; } .home-watch .wl-sym .asset { display: none; } } /* lateral estrecho: el icono repite el símbolo, así que sale él y el símbolo se lee entero */ /* el encabezado de la minigráfica también (.wl-spark): si no, la columna seguía ocupando sitio */
+/* La columna del activo se queda con el espacio sobrante y recorta el nombre: Última y Cambio nunca se cortan */
+.home .home-watch tbody th[scope='row'], .home .home-movers-t tbody th[scope='row'] { width: 100%; max-width: 0; overflow: hidden; }
+.home .wl-sym { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.home .wl-sym > span { min-width: 0; }
+.home .wl-sym strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pm-asset { display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; min-width: 0; }
 .pm-asset strong { font-weight: 600; }
 .pm-pct { display: block; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
@@ -2207,7 +2212,7 @@ section.cta[aria-labelledby='d-cta-title'] .hero-actions { margin-bottom: var(--
 /* Móvil: una columna en este orden — métricas 2×2, patrimonio, primeros pasos o posiciones, favoritos,
    movimientos, noticias, aprender (y lo demás después) */
 @media (max-width: 767px) {
-  .home { display: flex; flex-direction: column; gap: 16px; }
+  .home { display: flex; flex-direction: column; gap: 16px; align-items: stretch; } /* stretch: cada tarjeta a todo lo ancho (Favoritos es un contenedor de consultas y, sin esto, encogía a 34 px) */
   .home-main, .home-side, .home-bottom { display: contents; }
   .home-metrics { order: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .home-equity, .home-feature { order: 2; }

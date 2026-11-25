@@ -541,7 +541,7 @@ async function renderWatchlist() {
     <th scope="row"><span class="wl-sym">${assetIcon(a)}<span><strong>${a.symbol}</strong><small>${a.name}</small></span></span></th>
     <td class="wl-spark">${spark ?? ''}</td><td class="r">${liveNum(a)}</td><td class="r">${liveChange(a, 'span')}</td></tr>`;
   const paint = (sparks) => render(box, html`<table class="table home-watch" aria-labelledby="d-watch-title">
-    <thead><tr><th scope="col">Símbolo</th><th scope="col"><span class="sr-only">Tendencia</span></th><th scope="col" class="r">Última</th><th scope="col" class="r">Cambio</th></tr></thead>
+    <thead><tr><th scope="col">Símbolo</th><th scope="col" class="wl-spark"><span class="sr-only">Tendencia</span></th><th scope="col" class="r">Última</th><th scope="col" class="r">Cambio</th></tr></thead>
     ${[['Cripto', list.filter((a) => a.type === 'crypto')], ['Acciones e índices', list.filter((a) => a.type !== 'crypto')]].filter(([, g]) => g.length)
       .map(([t, g]) => html`<tbody><tr class="wl-group"><th scope="colgroup" colspan="4">${t}</th></tr>${g.map((a) => row(a, sparks?.get(a.symbol)))}</tbody>`)}
   </table>`);

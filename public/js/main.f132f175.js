@@ -13,7 +13,7 @@ import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.c78c079a.js';
 import { sendVisit } from './lib/visit.c6cb5460.js';
 import { updateLive, assetIcon } from './lib/ui.75895f97.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.b12c5d97.js';
+import * as dashboard from './views/dashboard.dfb71d78.js';
 import * as trade from './views/trade.2ef9418b.js';
 import * as markets from './views/markets.b7ee07eb.js';
 import * as dialogs from './ui/dialogs.958094ec.js';
