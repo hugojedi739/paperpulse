@@ -2432,3 +2432,34 @@ a, button, .seg button, .card, .acct-opt, .mega-item, .mega-link { transition: b
   .pos-table .asset-cell strong { max-width: 11ch; overflow: hidden; text-overflow: ellipsis; }
   .pos-actions .btn { padding-inline: 8px; }
 }
+
+/* ---- Tarjeta del S&P 500 sin sesión: vista previa borrosa de la comparativa ---- */
+.compare-locked { display: grid; gap: var(--s-3); }
+.compare-preview { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
+.compare-sample { display: grid; gap: var(--s-2); padding: var(--s-4); filter: blur(5px); opacity: 0.7; user-select: none; pointer-events: none; }
+.compare-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 70px; gap: var(--s-3); align-items: center; font-variant-numeric: tabular-nums; }
+.compare-row i { display: block; height: 10px; border-radius: 999px; background: var(--text-3); }
+.compare-row i.up { background: var(--up); }
+.compare-row strong { text-align: right; }
+.compare-cta { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s-2) var(--s-4); padding: var(--s-3); background: color-mix(in srgb, var(--surface-1) 55%, transparent); text-align: center; }
+.compare-cta p { margin: 0; max-width: 46ch; color: var(--text-1); font-size: var(--fs-sm); }
+
+/* ---- Barra del gráfico: «Ajustes del gráfico» agrupa las herramientas (en móvil se despliega) ---- */
+.tb-group { display: contents; }
+.tb-settings { display: none; }
+@media (max-width: 767px) {
+  .chart-card .toolbar .tb-settings { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+  .tb-settings[aria-expanded='true'] .icon:last-child { transform: rotate(180deg); }
+  .chart-card .toolbar .tb-group { display: none; }
+  .chart-card .toolbar.tools-open .tb-group { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+  .chart-card .toolbar > #t-intervals { flex: 1 1 100%; }
+  .chart-card .toolbar .tb-label { display: inline; }
+}
+
+/* ---- Avisos: simulador educativo junto al botón y «con retraso» en bolsa ---- */
+.edu-note { margin: var(--s-2) 0 0; text-align: center; font-size: var(--fs-xs); color: var(--text-3); }
+.delay-chip { color: var(--warn); border-color: var(--warn); background: var(--warn-fill); }
+.delay-banner { display: flex; align-items: center; gap: var(--s-2); padding: 6px var(--s-4); border-bottom: 1px solid var(--border); background: var(--warn-fill); color: var(--text-1); font-size: var(--fs-sm); }
+.delay-banner[hidden] { display: none; }
+.delay-banner .icon { flex: none; color: var(--warn); }
+.compare-cta { flex-direction: column; background: color-mix(in srgb, var(--surface-1) 78%, transparent); }

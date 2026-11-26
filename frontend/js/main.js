@@ -205,6 +205,7 @@ function maybeWelcome(user) {
   if (!user || user.termsVersion == null || welcomedFor === user.id) return;
   setTimeout(() => {
     if (!account.needsSetup() || welcomedFor === user.id) return;
+    if (location.hash.startsWith('#/admin')) return; // en Administración no se abre ni tapa el panel; se ofrece al salir (hashchange)
     welcomedFor = user.id; // una vez por sesión: si la cierra, puede volver a abrirla con «Empezar a practicar»
     openWelcome();
   }, 400);
@@ -215,6 +216,7 @@ auth.onAuth((user) => {
   account.setUser(user).then(() => maybeWelcome(user));
   if (user) { notifs.refresh().catch(() => {}); maybeAskTerms(user); } else { notifs.reset(); welcomedFor = null; }
 });
+addEventListener('hashchange', () => { const u = auth.currentUser(); if (u && welcomedFor !== u.id && !location.hash.startsWith('#/admin')) maybeWelcome(u); });
 auth.onAuth(() => $$('[data-admin-only]').forEach((el) => { el.hidden = !auth.isAdmin(); }));
 
 function renderFeedStatus(state) {
@@ -384,6 +386,7 @@ store.on('account', renderAccountChip);
 store.on('trades', () => checkGoals()); // celebra un reto de la semana recién cumplido
 store.on('notifications', renderNotifications);
 store.on('feed', renderFeedStatus);
+store.on('feed-delay', (delayed) => { $('#delay-banner').hidden = !delayed; });
 
 let marketsAt = 0;
 let ratesAt = 0;

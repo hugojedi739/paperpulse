@@ -21,6 +21,22 @@ let reqId = 1;
 let lastCryptoTick = 0;
 let lastPoll = 0;
 let status = 'connecting';
+// Fuentes de datos: si una (Binance, CoinGecko o la bolsa) lleva 8 s fallando sin recuperarse se avisa con «Datos con
+// retraso», en vez de dejar precios congelados sin explicación. Un solo acierto la recupera. Un fallo suelto no avisa.
+const failingSince = { crypto: 0, coingecko: 0, stocks: 0 };
+const DELAY_AFTER_MS = 8000;
+let delayedShown = false;
+/** ¿Alguna fuente lleva fallando un rato? El WebSocket de cripto en vivo anula el aviso de Binance. */
+export const isDelayed = () => navigator.onLine !== false && Object.entries(failingSince)
+  .some(([key, since]) => since && Date.now() - since >= DELAY_AFTER_MS && !(key === 'crypto' && status === 'live'));
+function syncDelay() {
+  const now = isDelayed();
+  if (now !== delayedShown) { delayedShown = now; emit('feed-delay', now); }
+}
+export function reportSource(key, ok) {
+  failingSince[key] = ok ? 0 : (failingSince[key] || Date.now());
+  syncDelay();
+}
 let polling = false; // una ronda a la vez: si la anterior sigue en curso no se lanza otra
 let noRealtime = false; // el servidor dice que no hay tiempo real (/api/health): se queda en REST sin reconectar
 let lastStocksFrame = 0; // última trama de bolsa recibida por WebSocket (si dejan de llegar, se piden por REST)
@@ -161,7 +177,8 @@ function pollCrypto() {
       if (mine && !mine.seeded && mine.live && Date.now() - mine.time < 1500) return; // el WebSocket ya entregó uno más reciente
       route(`${t.s.toLowerCase()}@ticker`, t, true);
     }))
-    .catch(() => { /* servidor no disponible: llegará por el WebSocket o en la siguiente ronda */ })
+    .then(() => reportSource('crypto', true))
+    .catch(() => reportSource('crypto', false)) // servidor o Binance no disponibles: llegará por el WebSocket o en la siguiente ronda
     .then(() => { cryptoRequest = null; cryptoAt = Date.now(); });
   return cryptoRequest;
 }
@@ -180,7 +197,8 @@ function pollStocks() {
   if (!stocksRequest && Date.now() - stocksAt < 2000) return Promise.resolve();
   stocksRequest ??= getJson('/api/stocks/quotes')
     .then((j) => applyStocks(j.data))
-    .catch(() => { /* servidor no disponible */ })
+    .then(() => reportSource('stocks', true))
+    .catch(() => reportSource('stocks', false)) // servidor o proveedor de bolsa no disponibles
     .then(() => { stocksRequest = null; stocksAt = Date.now(); });
   return stocksRequest;
 }
@@ -289,6 +307,7 @@ function updateStatus() {
       : pollTimer && Date.now() - lastPoll < pollMs * 3 ? 'polling'
         : 'connecting';
   if (next !== status) { status = next; emit('feed', status); }
+  syncDelay();
 }
 
 let started = false;

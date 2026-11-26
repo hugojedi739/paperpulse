@@ -147,8 +147,16 @@ function renderAll() {
         ${user ? html`<div id="d-compare"></div>` : ''}
         ${can('compareSp500', Boolean(user)) ? '' : html`<section class="card compare-locked" aria-label="Comparación con el S&amp;P 500">
             <h2 class="card-title">¿Te ha compensado operar?</h2>
-            <p class="muted">Compara tu rentabilidad, ya con comisiones, con no invertir y con el S&amp;P 500 desde el día en que empezaste.</p>
-            ${lockedNote('Comparación con el S&P 500')}</section>`}
+            <div class="compare-preview">
+              <div class="compare-sample" aria-hidden="true">
+                ${[['Tu cuenta', '+4,2 %', 62, 'up'], ['No invertir', '0 %', 4, ''], ['S&P 500', '+2,1 %', 34, 'up']].map(([l, v, w, c]) => html`<div class="compare-row"><span>${l}</span><i data-w="${w}" class="${c}"></i><strong>${v}</strong></div>`)}
+              </div>
+              <div class="compare-cta">
+                <p>Ejemplo ilustrativo. Con una cuenta gratuita ves tu rentabilidad real, con comisiones, frente a no invertir y al S&amp;P 500.</p>
+                <button type="button" class="btn btn-primary btn-sm" data-action="register">Crear cuenta gratis</button>
+              </div>
+            </div>
+          </section>`}
         <section class="card home-equity" aria-labelledby="d-eq-title">
           <div class="card-head"><h2 class="card-title" id="d-eq-title">Patrimonio</h2>${seg('range', RANGES, range)}</div>
           <p class="whatif" id="d-whatif" hidden></p>

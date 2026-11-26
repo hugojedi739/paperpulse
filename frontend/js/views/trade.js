@@ -75,11 +75,14 @@ export function mount(el) {
         <section class="card chart-card" id="t-chart-card">
           <div class="toolbar">
             <div class="gap-4" id="t-intervals"></div>
+            <button type="button" class="btn btn-ghost btn-sm tb-settings" data-t="tb-settings" aria-expanded="false" aria-controls="t-tools">${icon('sliders-horizontal', 'sm')} Ajustes del gráfico ${icon('chevron-down', 'sm')}</button>
+            <div class="tb-group" id="t-tools">
             ${seg('ctype', TYPES, store.settings().chartType)}
             <button class="btn btn-ghost btn-sm" popovertarget="ind-pop" aria-label="Indicadores" title="Indicadores">${icon('chart-line', 'sm')}<span class="tb-label">Indicadores</span></button>
             <button class="btn btn-ghost btn-sm" popovertarget="more-pop" aria-label="Más opciones del gráfico" title="Rango, escala, fecha y ajuste">${icon('sliders-horizontal', 'sm')}<span class="tb-label">Más</span></button>
             <div class="tb-tools">
               <button class="icon-btn sm" data-t="fullscreen" aria-label="Pantalla completa" title="Pantalla completa">${icon('maximize-2', 'sm')}</button>
+            </div>
             </div>
           </div>
           <div class="chart-box" id="t-chart"><div class="legend" id="t-legend"></div><div class="chart-msg" id="t-msg" hidden></div>
@@ -242,6 +245,11 @@ export function mount(el) {
     chart.setPeriods(el.dataset.period === 'maPeriod' ? { ma: v } : { ema: v });
   });
   on(root, 'click', '[data-seg="otype"] button', (_, b) => { orderType = b.dataset.value; renderTicket(); });
+  on(root, 'click', '[data-t="tb-settings"]', (_, b) => {
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', String(open));
+    $('.toolbar', root).classList.toggle('tools-open', open);
+  });
   on(root, 'click', '[data-t="explain"]', (_, b) => {
     const p = store.positions().find((x) => String(x.id) === b.dataset.id);
     if (!p) return;
@@ -338,7 +346,7 @@ function renderHead() {
     </button>
     <div class="sym-price">
       <strong data-px="${asset.symbol}" data-q="${asset.quote}" data-flash>${price(t?.price, asset.quote)}</strong>
-      <div class="gap-8">${liveChange(asset, 'span')} ${statusChip(asset)}</div>
+      <div class="gap-8">${liveChange(asset, 'span')} ${statusChip(asset)}${asset.type === 'stock' ? html` <span class="chip delay-chip" title="Las cotizaciones de bolsa pueden llegar con unos minutos de retraso (hasta unos 15 min en algunas bolsas).">con retraso</span>` : ''}</div>
     </div>
     <div class="sym-actions">
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
@@ -689,7 +697,8 @@ function renderTicket() {
           <div class="input-group"><input id="t-tp" inputmode="decimal" type="number" step="any" min="0" placeholder="${short ? 'Por debajo' : 'Por encima'}"><span>${asset.quote}</span></div></div>
       </div>` : ''}
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn ${short ? 'btn-down' : 'btn-primary'} btn-lg btn-block" data-t="submit">${short ? `Abrir Short en ${asset.symbol}` : orderType === 'market' ? `Comprar ${asset.symbol} (Long)` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>`
+      <button class="btn ${short ? 'btn-down' : 'btn-primary'} btn-lg btn-block" data-t="submit">${short ? `Abrir Short en ${asset.symbol}` : orderType === 'market' ? `Comprar ${asset.symbol} (Long)` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>
+      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
     : pos ? html`
       ${serverMode() ? html`${seg('otype', orderTypes(), currentType())}${orderHint()}` : ''}
       ${serverMode() && orderType !== 'market' ? levelField() : ''}
@@ -699,7 +708,8 @@ function renderTicket() {
         <div class="input-group"><input id="t-units" inputmode="decimal" type="number" step="any" min="0" max="${freeUnits(pos)}" value="${freeUnits(pos)}"><span>${asset.symbol}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Todo' : `${p}%`}</button>`)}</div>
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>`
+      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>
+      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
     : empty('wallet', `No tienes posición en ${asset.symbol}`, 'Abre una posición Long o Short (en Demo) para poder cerrarla aquí.')}
     <p class="hint">Disponible: <span class="money">${money(store.cash())}</span></p>
     ${serverMode() ? '' : html`<p class="hint demo-note">${icon('info', 'sm')} Demo: se guarda solo en este navegador. Si borras los datos del navegador, se pierde.</p>`}`);
