@@ -136,7 +136,7 @@ La plantilla completa y comentada está en [`.env.example`](.env.example). Todas
 | `TRADING_INITIAL_BALANCE_USD` · `TRADING_FEE_BPS` · `TRADING_SLIPPAGE_BPS` ⚙ | Saldo de respaldo, comisión y deslizamiento (en puntos básicos) | 10 000 · 10 · 5 |
 | `CHALLENGE_INITIAL_BALANCE_USD` · `COMMUNITY_MIN_TRADES` ⚙ | Saldo del reto mensual · operaciones mínimas para la clasificación | 10 000 · 5 |
 | `MARKET_ALERT_BTC_DROP_BPS` · `MARKET_ALERT_INDEX_DROP_BPS` ⚙ | Caída que enciende la luz roja de la cabecera: BTC en 24 h · IBEX 35 en la sesión (puntos básicos; 0 = desactivada) | 1000 · 400 |
-| `VISITS_ENABLED` ⚙ | Contador de visitas de la portada para el panel: anónimo, sin cookies ni IP | `false` |
+| `VISITS_ENABLED` ⚙ | Contador de visitas de la portada para el panel: sin cookies y sin guardar la IP (hash seudonimizado diario y recuentos) | `false` |
 | `STOCK_DATA_PROVIDER` · `FINNHUB_API_KEY` ⚙ | Proveedor de bolsa: `yfinance` (sin clave) o `finnhub` | `yfinance` |
 
 Para probar siempre con la base local, deja vacías `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`. Una variable nueva se documenta en `.env.example` y en `SCHEMA` de `backend/settings.py`.

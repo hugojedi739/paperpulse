@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { sendVisit, resetVisit } from '../frontend/js/lib/visit.js';
+import { sendVisit, sourceOf, resetVisit } from '../frontend/js/lib/visit.js';
 
 test('envía POST /api/visit una sola vez, sin cookies y con signedIn', async () => {
   resetVisit();
@@ -32,4 +32,14 @@ test('main.js lo envía tras el evento load y cuando ya se sabe si hay sesión; 
   const app = readFileSync(new URL('../backend/app.py', import.meta.url), 'utf8');
   const serve = app.slice(app.indexOf('async def serve_index'), app.indexOf('routes = ['));
   assert.ok(!serve.includes('visits'), 'serve_index no llama al contador');
+});
+
+test('sourceOf: ?ref=, página de procedencia y directo', () => {
+  assert.equal(sourceOf('?ref=Reddit', ''), 'reddit');
+  assert.equal(sourceOf('?ref=tiktok', 'https://www.reddit.com/'), 'tiktok', '?ref= manda sobre la procedencia');
+  assert.equal(sourceOf('', 'https://old.reddit.com/r/x'), 'reddit');
+  assert.equal(sourceOf('', 'https://t.co/abc'), 'x');
+  assert.equal(sourceOf('', 'https://blog.ejemplo.com/post'), 'otro');
+  assert.equal(sourceOf('', ''), 'direct');
+  assert.equal(sourceOf('?ref=' + 'a'.repeat(50), '').length, 20, 'se recorta: el servidor igualmente solo admite una lista cerrada');
 });

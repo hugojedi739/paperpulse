@@ -1,4 +1,4 @@
-// Contador de visitas: los textos legales lo explican (sin cookies ni IP) y el panel lo muestra.
+// Contador de visitas: los textos legales lo explican con exactitud (sin cookies, IP no guardada, identificador seudonimizado) y el panel lo muestra.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,6 +12,16 @@ test('privacidad: explica el contador, su base jurídica y cuánto se conserva',
   assert.match(p, /ni la IP ni el user-agent se guardan/);
   assert.match(p, /interés legítimo en conocer el uso del servicio/);
   assert.match(p, /se borra al día siguiente.*90 días/);
+});
+
+test('privacidad: no promete anonimato ni «sin IP» que no son ciertos y explica el origen de la visita', () => {
+  const p = text('privacidad') + text('cookies');
+  assert.doesNotMatch(p, /sin cookies ni IP/);
+  assert.doesNotMatch(p, /aviso anónimo/);
+  assert.match(p, /seudonimizado, no anónimo/);
+  assert.match(p, /Tu IP se usa en el momento de la petición \(y la registra Vercel/);
+  assert.match(p, /de dónde llega la visita/);
+  assert.match(p, /no se guarda la dirección completa de la página/);
 });
 
 test('cookies: ya no dice que no haya analítica y explica que el contador no usa cookies', () => {

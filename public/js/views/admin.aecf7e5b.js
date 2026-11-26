@@ -191,7 +191,7 @@ async function renderActivity() {
     <section class="card">
       <div class="card-head"><h2 class="card-title">${icon('users')} Visitantes: últimos 14 días</h2><span class="card-sub">${vis.enabled ? `${num(vis.history.reduce((a, d) => a + people(d), 0), 0)} visitantes (suma de cada día) · ${num(vis.history.reduce((a, d) => a + d.bot, 0), 0)} bots` : 'Contador desactivado en Integraciones'}</span></div>
       <div class="spark-bars" role="img" aria-label="Visitantes únicos por día">${vis.history.map((d) => html`<i data-w="${Math.max(4, (people(d) / maxPeople) * 100)}" title="${d.day}: ${d.anon} sin sesión · ${d.user} con sesión · ${d.bot} bots · ${d.views} cargas"></i>`)}</div>
-      <p class="hint">Visitantes únicos por día de la portada, sin cookies ni IP: un identificador anónimo que cambia cada día. Quien entra sin sesión y luego con sesión cuenta en los dos grupos.</p>
+      <p class="hint">Visitantes únicos por día de la portada, sin cookies y sin guardar la IP: un identificador seudonimizado (hash con una clave secreta y la fecha) que cambia cada día y se borra al día siguiente. Quien entra sin sesión y luego con sesión cuenta en los dos grupos.</p>
     </section>
     <section class="card">
       <div class="card-head"><h2 class="card-title">${icon('chart-candlestick')} Operaciones por día</h2><span class="card-sub">${fillsTotal} en 14 días (cuentas del servidor)</span></div>
