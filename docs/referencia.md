@@ -39,8 +39,21 @@ Hay dos cuentas, que se eligen con el **selector «Demo / Mi cuenta»** de la ca
   - Tocar el nivel cuenta como ejecución (en un mercado real la orden podría quedarse en la cola) y se supone liquidez infinita: la orden se ejecuta entera.
   - El tipo de cambio de las ejecuciones por vela es el actual, no el del momento de la vela.
   - Yahoo puede dar las cotizaciones de algunas bolsas (p. ej. BME) con unos 15 minutos de retraso.
-  - Solo se pueden operar los activos del catálogo (los encontrados con la búsqueda, solo en modo local). No hay ventas en corto.
+  - Solo se pueden operar los activos del catálogo (los encontrados con la búsqueda, solo en modo local). Las ventas en corto (Short) se explican en [Short en «Mi cuenta»](#short-en-mi-cuenta).
   - **No se abonan dividendos**: ninguna posición cobra dividendos (ni en la cuenta del servidor, ni en el modo local, ni en los retos) y las velas de Yahoo no se ajustan por ellos (`auto_adjust=False`), así que en la fecha ex-dividendo el precio baja sin compensación. La ficha y el Resumen solo informan de las fechas ([Próximos dividendos](#próximos-dividendos-y-luz-roja-de-mercado)).
+
+## Short en «Mi cuenta»
+Mismas reglas que el Short de la Demo, ejecutadas por el servidor (`backend/trading/`, migración `0017`). Sin apalancamiento.
+- **Cómo se opera**: `POST /api/orders` con `direction: "short"`. `side: "sell"` abre (vender para abrir) y `side: "buy"` cierra (comprar para cubrir); solo a mercado y con las mismas reglas de mercado cerrado, importe mínimo e idempotencia que un Long. Opcional al abrir (Long o Short): `stopLoss` y `takeProfit`.
+- **Garantía**: al abrir se aparta el **100 %** del importe (`short_positions.margin_cents`) y se cobra la comisión (0,1 % por defecto) al abrir y al cerrar. Sin saldo para garantía + comisión, se rechaza («Saldo insuficiente…»). `cost_cents` = garantía + comisión de apertura (base del P&L, como en un Long).
+- **P&L**: al cerrar se devuelve `max(0, 2·garantía − recompra − comisión)`; el resultado es `devuelto − cost_cents`. Gana si el precio baja y pierde si sube (signo contrario al Long). La pérdida máxima es la garantía más la comisión de apertura. El redondeo no favorece al usuario (la recompra se redondea hacia arriba).
+- **Cierre forzoso (liquidación)**: al llegar al doble del precio de entrada la pérdida alcanza la garantía y la posición se cierra sola **a ese precio** (nunca peor, aunque haya un hueco). Queda como una orden «auto-…» con `reason` («Cierre forzoso: la pérdida alcanzó el importe reservado…») y `fills.source = "liquidación"`.
+- **Stop Loss y Take Profit** (también en Long): el servidor valida el lado al abrir (Short: stop por encima del precio de entrada y por debajo de la liquidación, take por debajo; Long: al revés) y los vigila **a demanda con las velas cerradas**, como las órdenes límite y stop: en cada consulta de la cartera y en cada orden (`ledger.resolve` → `_resolve_exits`, hasta dónde se ha revisado en `position_exits.checked_until`). Si en una vela se tocan el stop y el take, gana el stop. Cierres automáticos: `fills.source` = «stop loss», «take profit» o «liquidación»; se avisa por notificación y no cuentan como «orden stop colocada» en logros ni en el onboarding.
+- **Un activo, una dirección**: no se puede tener a la vez un Long y un Short del mismo activo (ni dejar una compra pendiente con un Short abierto): mensaje claro y nada cambia.
+- **Patrimonio y clasificación**: un Short vale garantía ± resultado (`rules.short_value_cents`); lo cuentan la cartera, la clasificación y los retos (`community/ranking.py`). Sin precio se valora a su garantía.
+- **Migración 0017** (solo aditiva): tablas nuevas `short_positions` y `position_exits`, y columnas con valor por defecto `direction` (`'long'`), `stop_e8` y `take_e8` en `orders` y `direction` en `fills`. `positions` **no se toca**: el código anterior la inserta por posición de columna. Con el código anterior sobre el esquema nuevo todo sigue funcionando; un Short abierto antes de volver atrás no se vería (su garantía sale del efectivo y queda en `short_positions`).
+- **Ejecutor de migraciones** (`db.init_db`): `ALTER TABLE … ADD COLUMN` se salta si la columna ya existe y, si una migración falla porque otra instancia la aplicó a la vez (la versión ya la incluye), se sigue adelante en vez de fallar el arranque.
+- **Limitaciones**: un corto no puede ser una orden límite o stop pendiente; la liquidación y los cierres automáticos se aplican con velas, no al instante; en la vida real el Short tiene más riesgos y costes (préstamo de acciones, tipos, disponibilidad) que no se reflejan. El ticket lo avisa.
 
 ## Comunidad (`backend/community/`)
 - **Perfiles**: alias único (3-20 caracteres: letras, números y `_`; sin distinguir mayúsculas; hay alias reservados), bio de hasta 280 caracteres y perfil privado opcional. Sin perfil no se participa. Ninguna respuesta incluye emails. De un perfil privado solo se confirma que existe: no sale en la clasificación ni en las búsquedas y no se le puede seguir, aunque sus mensajes del foro siguen siendo públicos.
@@ -192,7 +205,7 @@ Precedencia de cada ajuste (`backend/settings.py`): valor guardado en el panel �
 | GET/PUT | `/api/data` | Copia de la Demo, alertas, favoritos y ajustes (al iniciar sesión se combina con la de este navegador) |
 | GET | `/api/portfolio` | Cuenta del servidor: saldo, posiciones, órdenes pendientes, operaciones cerradas y eventos (resuelve antes las pendientes). Sin cuenta: `{needsSetup: true, config}` |
 | POST | `/api/portfolio/start` | `{amount, currency: "EUR"}` crea la cuenta con el saldo elegido (50 a 1.000.000 €); 409 si ya existe |
-| GET/POST | `/api/orders?status=&limit=&before=` | Historial paginado · `{clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?}` |
+| GET/POST | `/api/orders?status=&limit=&before=` | Historial paginado · `{clientOrderId, symbol, side, type, quantity, triggerPrice?, journal?, direction?: "long"\|"short", stopLoss?, takeProfit?}` (ver [Short en «Mi cuenta»](#short-en-mi-cuenta)) |
 | DELETE/PATCH | `/api/orders/{id}` | Cancelar una orden pendiente · `{journal}` notas del diario |
 | GET/PUT | `/api/community/me` | Mi perfil `{alias, bio, isPrivate}` y si estoy suspendido |
 | GET | `/api/community/profiles?q=` · `/api/community/profiles/{alias}` | Buscar perfiles públicos · perfil público |
@@ -239,7 +252,7 @@ La identidad visual está al final de `frontend/css/app.css`, en el bloque «AUR
 
 ## Migraciones
 
-Ficheros SQL numerados en `backend/migrations/` (`0001_inicial.sql`... `0015_opiniones_activo.sql`), solo aditivos. Se aplican al arrancar o con `python -m backend.db migrate`; `status` muestra la versión. Cada tabla lleva encima un comentario que explica para qué sirve. Nunca edites la parte SQL de una migración ya aplicada: crea la siguiente.
+Ficheros SQL numerados en `backend/migrations/` (`0001_inicial.sql`... `0017_short_mi_cuenta.sql`), solo aditivos. Se aplican al arrancar o con `python -m backend.db migrate`; `status` muestra la versión. Cada tabla lleva encima un comentario que explica para qué sirve. Nunca edites la parte SQL de una migración ya aplicada: crea la siguiente.
 
 ## Producción (Docker y Vercel)
 

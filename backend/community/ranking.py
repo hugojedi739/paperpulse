@@ -26,7 +26,7 @@ from backend.community.common import CommunityError, now
 from backend.retention import achievements
 from backend.trading import prices
 from backend.trading.ledger import transaction
-from backend.trading.rules import notional_cents
+from backend.trading.rules import notional_cents, short_value_cents
 
 REFRESH_EVERY = 300
 PERIODS = {"7d": 7, "30d": 30, "total": None}
@@ -65,6 +65,8 @@ def compute(at: Optional[int] = None) -> int:
         positions: Dict[int, List[Dict]] = {}
         for r in conn.execute("SELECT user_id, symbol, qty_e8, cost_cents FROM positions"):
             positions.setdefault(r["user_id"], []).append(dict(r))
+        for r in conn.execute("SELECT user_id, symbol, qty_e8, margin_cents, cost_cents FROM short_positions"):  # cortos: valen garantía ± resultado
+            positions.setdefault(r["user_id"], []).append(dict(r, short=True))
         snaps: Dict[int, List[Dict]] = {}
         for r in conn.execute("SELECT user_id, day, equity_cents FROM equity_snapshots WHERE day >= ? ORDER BY day",
                               (day_of(at - 400 * 86400),)):
@@ -84,9 +86,10 @@ def compute(at: Optional[int] = None) -> int:
         for p in positions.get(uid, []):
             if p["symbol"] in px:
                 price, fx = px[p["symbol"]]
-                equity += notional_cents(p["qty_e8"], price, fx, round_up=False)
+                equity += (short_value_cents(p["margin_cents"], p["qty_e8"], price, fx) if p.get("short")
+                           else notional_cents(p["qty_e8"], price, fx, round_up=False))
             else:
-                equity += p["cost_cents"]
+                equity += p["margin_cents"] if p.get("short") else p["cost_cents"]
                 missing = True
         if acc["owner_id"]:  # cuenta de un reto: rentabilidad sobre su saldo inicial
             if uid in open_ledgers:

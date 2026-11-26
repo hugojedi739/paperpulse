@@ -3,7 +3,7 @@ import * as store from '../lib/store.js';
 import { priceOf } from '../lib/feed.js';
 import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.js';
-import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference, maskEmail } from '../lib/format.js';
+import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference, maskEmail, toUsd } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
 import * as auth from '../lib/auth.js';
@@ -98,7 +98,9 @@ export function closePositionDialog(id, amount) {
   if (!pos) return;
   const qty = Math.min(amount ?? pos.amount, pos.amount);
   const v = trading.valuePosition({ ...pos, amount: qty });
-  const fee = account.isActive() ? account.estimateFeeUsd(v.valueUsd) : 0; // con sesión el servidor cobra comisión
+  // Con Mi cuenta el servidor cobra comisión: sobre lo que se recibe al vender, o sobre la recompra al cerrar un Short
+  const base = pos.side === 'short' ? toUsd(qty * v.price, pos.quote) : v.valueUsd;
+  const fee = account.isActive() ? account.estimateFeeUsd(base) : 0;
   const pnl = v.valueUsd - fee - pos.investedUsd * (qty / pos.amount);
   const d = show(html`
     ${head(`Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${pos.symbol}`, qty < pos.amount ? `Venta parcial de ${units(qty, pos.symbol)} de ${units(pos.amount, pos.symbol)}` : 'Cierre completo de la posición')}

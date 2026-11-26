@@ -14,6 +14,7 @@ CLI:
   python -m backend.db admins               lista los administradores
 """
 import hashlib
+import re
 import hmac
 import json
 import os
@@ -263,6 +264,28 @@ def _set_version(conn, version: int) -> None:
         conn.execute(f"PRAGMA user_version = {version}")
 
 
+# Errores que produce una carrera de arranque entre instancias (la otra ya creó la columna o la tabla, o tiene la base bloqueada)
+RACE_MARKERS = ("duplicate column", "already exists", "database is locked", "sqlite_busy", "database table is locked")
+
+
+def is_migration_race(exc: Exception) -> bool:
+    return any(m in str(exc).lower() for m in RACE_MARKERS)
+
+
+_ADD_COLUMN = re.compile(r"^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\b", re.I)
+
+
+def _apply_statement(conn, statement: str) -> None:
+    """Ejecuta una sentencia de migración. `ALTER TABLE … ADD COLUMN` se salta si la columna ya existe (SQLite no tiene
+    IF NOT EXISTS para columnas), así una migración repetida o a medias en otra instancia no falla."""
+    m = _ADD_COLUMN.match(statement)
+    if m:
+        existing = {row[0] for row in conn.execute(f"SELECT name FROM pragma_table_info('{m.group(1)}')").fetchall()}
+        if m.group(2) in existing:
+            return
+    conn.execute(statement)
+
+
 def init_db() -> None:
     """Aplica las migraciones pendientes (PRAGMA user_version; tabla schema_version en Turso), cada una en su transacción."""
     if not USE_TURSO and (fs := unsafe_filesystem(DB_PATH)):
@@ -275,11 +298,22 @@ def init_db() -> None:
             conn.execute("BEGIN")
             try:
                 for statement in split_statements(sql):
-                    conn.execute(statement)
+                    _apply_statement(conn, statement)
                 _set_version(conn, i)
                 conn.execute("COMMIT")
-            except Exception:
-                conn.execute("ROLLBACK")
+            except Exception as exc:
+                try:
+                    conn.execute("ROLLBACK")
+                except Exception:  # Turso ya la canceló
+                    pass
+                # Carrera de arranque: otra instancia aplicó esta misma migración a la vez (el ejecutor no tiene bloqueo).
+                # Solo se tolera un error concreto de esa carrera Y que la versión ya incluya la migración; cualquier otro
+                # error (sintaxis, restricción, base caída...) sigue tumbando el arranque.
+                if not is_migration_race(exc):
+                    raise
+                time.sleep(0.3)
+                if _get_version(conn) >= i:
+                    continue
                 raise
     if not USE_TURSO:
         try:

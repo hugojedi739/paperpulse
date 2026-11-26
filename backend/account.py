@@ -49,6 +49,8 @@ def export_data(user_id: int) -> Dict:
 
         def trading(lid):
             return {"account": _rows(conn, "SELECT * FROM accounts WHERE user_id = ?", lid), "positions": _rows(conn, "SELECT * FROM positions WHERE user_id = ?", lid),
+                    "shortPositions": _rows(conn, "SELECT * FROM short_positions WHERE user_id = ?", lid),
+                    "positionExits": _rows(conn, "SELECT * FROM position_exits WHERE user_id = ?", lid),
                     "orders": _rows(conn, "SELECT * FROM orders WHERE user_id = ? ORDER BY id", lid), "fills": _rows(conn, "SELECT * FROM fills WHERE user_id = ? ORDER BY id", lid)}
 
         return {
@@ -96,6 +98,8 @@ def delete_account(user_id: int) -> None:
         run("DELETE FROM contact_messages WHERE user_id = ?", user_id)  # mensajes que envió con sesión
         run("DELETE FROM orders WHERE user_id = ?", user_id)  # y sus ejecuciones
         run("DELETE FROM positions WHERE user_id = ?", user_id)
+        run("DELETE FROM short_positions WHERE user_id = ?", user_id)
+        run("DELETE FROM position_exits WHERE user_id = ?", user_id)
         run("DELETE FROM accounts WHERE user_id = ?", user_id)
         # Sus votos a otros mensajes: se quita su efecto en la puntuación
         run("UPDATE posts SET score = score - (SELECT v.value FROM votes v WHERE v.post_id = posts.id AND v.user_id = ?) "

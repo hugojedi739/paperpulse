@@ -66,12 +66,12 @@ def evaluate(conn, user_id: int) -> None:
         grant(conn, user_id, "first_trade")
     if fills >= 10:
         grant(conn, user_id, "ten_trades")
-    pnls = [r[0] for r in conn.execute("SELECT pnl_cents FROM fills WHERE user_id = ? AND side = 'sell' ORDER BY executed_at DESC, id DESC LIMIT 200", (user_id,))]
+    pnls = [r[0] for r in conn.execute("SELECT pnl_cents FROM fills WHERE user_id = ? AND pnl_cents IS NOT NULL ORDER BY executed_at DESC, id DESC LIMIT 200", (user_id,))]
     if any(p > 0 for p in pnls):
         grant(conn, user_id, "first_win")
     if longest_win_run(list(reversed(pnls))) >= 5:
         grant(conn, user_id, "win_streak_5")
-    if one("SELECT COUNT(*) FROM orders WHERE user_id = ? AND type = 'stop'"):
+    if one("SELECT COUNT(*) FROM orders WHERE user_id = ? AND type = 'stop' AND client_order_id NOT LIKE 'auto-%'"):
         grant(conn, user_id, "first_stop")
     if streak.current(conn, user_id)["best"] >= 7:
         grant(conn, user_id, "trading_week")

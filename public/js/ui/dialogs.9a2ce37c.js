@@ -3,14 +3,14 @@ import * as store from '../lib/store.a368de54.js';
 import { priceOf } from '../lib/feed.14272b63.js';
 import { ASSETS, findAsset } from '../lib/catalog.847c7742.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.a575914e.js';
-import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference, maskEmail } from '../lib/format.df8faa5e.js';
-import * as trading from '../lib/trading.cd85fc1b.js';
-import * as account from '../lib/account.0d7687b0.js';
+import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference, maskEmail, toUsd } from '../lib/format.df8faa5e.js';
+import * as trading from '../lib/trading.c9a3be97.js';
+import * as account from '../lib/account.ffa87d33.js';
 import * as auth from '../lib/auth.79b9acc8.js';
 import { safeUrl } from '../lib/marketdata.96e24305.js';
 import { assetIcon, seg, pressSeg } from '../lib/ui.df413464.js';
 import { go } from '../lib/router.de30a562.js';
-import { openWelcome } from './welcome.fdc0285a.js';
+import { openWelcome } from './welcome.0d1375cc.js';
 import { startedWith, startedAmount, whatIfParts } from '../lib/starting-balance.4c6d23aa.js';
 import { demoSummary } from '../lib/cloud-merge.972072aa.js';
 import { isVisible } from '../lib/sections.b37aa67f.js';
@@ -98,7 +98,9 @@ export function closePositionDialog(id, amount) {
   if (!pos) return;
   const qty = Math.min(amount ?? pos.amount, pos.amount);
   const v = trading.valuePosition({ ...pos, amount: qty });
-  const fee = account.isActive() ? account.estimateFeeUsd(v.valueUsd) : 0; // con sesión el servidor cobra comisión
+  // Con Mi cuenta el servidor cobra comisión: sobre lo que se recibe al vender, o sobre la recompra al cerrar un Short
+  const base = pos.side === 'short' ? toUsd(qty * v.price, pos.quote) : v.valueUsd;
+  const fee = account.isActive() ? account.estimateFeeUsd(base) : 0;
   const pnl = v.valueUsd - fee - pos.investedUsd * (qty / pos.amount);
   const d = show(html`
     ${head(`Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${pos.symbol}`, qty < pos.amount ? `Venta parcial de ${units(qty, pos.symbol)} de ${units(pos.amount, pos.symbol)}` : 'Cierre completo de la posición')}

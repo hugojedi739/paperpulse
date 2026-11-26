@@ -4,8 +4,8 @@ import { html, icon, raw, render, on, $, debounce, confirmDialog, download, toas
 import { money, pct, price, units, num, duration, trendClass } from '../lib/format.df8faa5e.js';
 import { createEquityChart } from '../lib/charts.6e47b58d.js';
 import { assetIcon, empty, seg, pressSeg } from '../lib/ui.df413464.js';
-import { noteDialog } from '../ui/dialogs.33b7a75a.js';
-import { shareButton, shareDialog } from '../ui/share.abfd8cb7.js';
+import { noteDialog } from '../ui/dialogs.9a2ce37c.js';
+import { shareButton, shareDialog } from '../ui/share.9ed52f74.js';
 
 const FILTERS = [['all', 'Todas'], ['win', 'Ganadoras'], ['loss', 'Perdedoras'], ['crypto', 'Cripto'], ['stock', 'Acciones']];
 const DAY = 86400000;
@@ -137,7 +137,7 @@ function drawTable() {
   render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada → Salida</th><th class="r">Duración</th><th class="r">Resultado</th><th>Estrategia</th><th>Notas</th></tr></thead>
     <tbody>${list.map((t) => html`<tr>
       <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td>
-      <td><div class="asset-cell">${assetIcon(t.symbol, 'sm')}<strong>${t.symbol}</strong></div></td>
+      <td><div class="asset-cell">${assetIcon(t.symbol, 'sm')}<strong>${t.symbol}</strong>${t.side === 'short' ? html` <span class="chip down">Short</span>` : ""}</div></td>
       <td class="r">${units(t.amount)}</td>
       <td class="r">${price(t.entryPrice, t.quote)} → ${price(t.exitPrice, t.quote)}</td>
       <td class="r muted">${t.openedAt ? duration(Date.parse(t.date) - t.openedAt) : '—'}</td>
