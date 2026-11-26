@@ -49,6 +49,17 @@ class MigrationsTest(unittest.TestCase):
         db.init_db()  # una segunda pasada no reaplica nada (si lo hiciera, CREATE TABLE fallaría)
         self.assertEqual(db.schema_status()["current"], len(db.load_migrations()))
 
+    def test_0016_no_falla_si_su_tabla_ya_existe(self):
+        # Base al día a la que se le «quita» la versión de la 0016: la tabla visit_sources ya existe y se vuelve a aplicar
+        db.init_db()
+        with closing(db.connect()) as conn:
+            conn.execute("INSERT INTO visit_sources (day, source, views) VALUES ('2026-01-01', 'reddit', 3)")
+            conn.execute("PRAGMA user_version = 15")
+        db.init_db()
+        with closing(db.connect()) as conn:
+            self.assertEqual(conn.execute("SELECT views FROM visit_sources").fetchone()[0], 3, "no debe vaciar ni recrear la tabla")
+        self.assertEqual(db.schema_status()["current"], len(db.load_migrations()))
+
     def test_continua_desde_una_version_intermedia(self):
         # Simula una base creada cuando solo existía la 0001
         with closing(db.connect()) as conn:

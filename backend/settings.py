@@ -41,7 +41,7 @@ SCHEMA: Dict[str, tuple] = {
     # Reglas objetivas sobre cotizaciones que ya tenemos, sin IA ni predicciones (frontend/js/lib/market-alert.js)
     "market_alert_btc_drop_bps": ("MARKET_ALERT_BTC_DROP_BPS", 1000, int, False),  # BTC en 24 h
     "market_alert_index_drop_bps": ("MARKET_ALERT_INDEX_DROP_BPS", 400, int, False),  # IBEX 35 en la sesión, con la bolsa abierta
-    # Contador de visitas de la portada (Administración → Resumen): anónimo, sin cookies ni IP (backend/visits.py).
+    # Contador de visitas de la portada (Administración → Resumen): sin cookies y sin guardar la IP: solo un hash seudonimizado del día y recuentos (backend/visits.py).
     # Desactivado por defecto: en producción (función en iad1, base en Dublín) hacía esperar a la portada ~0,8 s.
     "visits_enabled": ("VISITS_ENABLED", False, bool, False),
 }

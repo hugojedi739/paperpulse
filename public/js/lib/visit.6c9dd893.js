@@ -1,6 +1,6 @@
-// Contador anónimo de visitas: un aviso por carga de la app, DESPUÉS de cargar, que nunca frena la portada.
-// Sin cookies (credentials 'omit'): el servidor solo ve la IP y el user-agent para calcular un identificador del día
-// que no guarda (backend/visits.py). Si falla o el contador está apagado, no pasa nada.
+// Contador de visitas sin cookies: un aviso por carga de la app, DESPUÉS de cargar, que nunca frena la portada.
+// Sin cookies (credentials 'omit'): el servidor solo ve la IP y el user-agent para calcular un identificador seudonimizado del día
+// (la IP no se guarda; backend/visits.py). Si falla o el contador está apagado, no pasa nada.
 import { api } from './api.fadcc3a8.js';
 
 let sent = false;

@@ -1,8 +1,11 @@
-"""Contador de visitas de la portada (backend/visits.py, migración 0014): anónimo, sin cookies y sin frenar la portada."""
+"""Contador de visitas de la portada (backend/visits.py, migraciones 0014 y 0016): sin cookies, sin guardar la IP y sin frenar la portada."""
 import asyncio
 import datetime
 import glob
+import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -293,3 +296,47 @@ class SourceTest(unittest.TestCase):
         self.assertEqual(visits.clean_source(""), "direct")
         self.assertEqual(visits.clean_source("<script>alert(1)</script>"), "otro")
         self.assertEqual(visits.clean_source(123), "direct")
+
+
+@unittest.skipUnless(shutil.which("node"), "hace falta Node para ejecutar el código real del navegador")
+class FlujoCompletoTest(EndpointTest):
+    """De punta a punta: el código real de la portada (frontend/js/lib/visit.js, ejecutado con Node) construye el aviso al
+    abrir `/?ref=reddit` y el servidor lo cuenta como Reddit en el resumen del panel."""
+
+    ROOT = os.path.join(os.path.dirname(__file__), "..")
+
+    def aviso_del_navegador(self, search, referrer=""):
+        script = (
+            "globalThis.location = { search: process.argv[1], hostname: 'localhost' };"
+            "globalThis.document = { referrer: process.argv[2], querySelector: () => null };"
+            "const { sendVisit } = await import(process.argv[3]);"
+            "let sent; await sendVisit({ signedIn: false, fetcher: async (path, opts) => { sent = { path, ...opts }; } });"
+            "console.log(JSON.stringify(sent));"
+        )
+        url = "file://" + os.path.abspath(os.path.join(self.ROOT, "frontend/js/lib/visit.js"))
+        out = subprocess.run(["node", "--input-type=module", "-e", script, search, referrer, url],
+                             capture_output=True, text=True, timeout=30, check=True).stdout
+        return json.loads(out)
+
+    def sources(self):
+        return {s["source"]: s["views"] for s in visits.summary(1)["sources"]}
+
+    def test_portada_con_ref_reddit_se_cuenta_como_reddit(self):
+        sent = self.aviso_del_navegador("?ref=reddit")
+        self.assertEqual(sent["path"], "/api/visit")
+        self.assertEqual(sent["credentials"], "omit")  # sin cookies
+        self.assertEqual(sent["body"], {"signedIn": False, "ref": "reddit"})
+        self.assertEqual(self.client.post(sent["path"], json=sent["body"]).status_code, 204)
+        self.assertEqual(self.sources(), {"reddit": 1})
+        self.assertEqual(self.days(), {"anon": (1, 1)})
+
+    def test_sin_ref_y_con_pagina_de_procedencia(self):
+        for search, referrer in (("", ""), ("", "https://www.tiktok.com/@x/video/1"), ("?ref=cosa-rara", "")):
+            sent = self.aviso_del_navegador(search, referrer)
+            self.client.post("/api/visit", json=sent["body"])
+        self.assertEqual(self.sources(), {"direct": 1, "tiktok": 1, "otro": 1})  # lo desconocido nunca se guarda como texto libre
+
+    def test_los_robots_no_cuentan_en_los_origenes(self):
+        sent = self.aviso_del_navegador("?ref=reddit")
+        self.client.post("/api/visit", json=sent["body"], headers={"user-agent": "Googlebot/2.1"})
+        self.assertEqual(self.sources(), {})
