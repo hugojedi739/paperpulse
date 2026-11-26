@@ -31,7 +31,8 @@ export const directionalPnl = (side, amount, entryPrice, exitPrice) =>
  */
 export function positionValueAt(p, px) {
   if (p.side !== 'short') return toUsd(p.amount * px, p.quote);
-  return Math.max(0, p.investedUsd + toUsd(directionalPnl('short', p.amount, p.entryPrice, px), p.quote));
+  // Garantía + resultado. Con Mi cuenta la garantía (marginUsd) no incluye la comisión de apertura, que sí está en investedUsd
+  return Math.max(0, (p.marginUsd ?? p.investedUsd) + toUsd(directionalPnl('short', p.amount, p.entryPrice, px), p.quote));
 }
 
 /** Precio al que un corto pierde toda su garantía y se cierra solo. */
@@ -96,7 +97,9 @@ export function validateExits(side, px, { stopLoss = null, takeProfit = null } =
 /** Compra a mercado (Long). `amount` en unidades del activo; `exits` = { stopLoss, takeProfit } opcionales (solo Demo). */
 export async function buyMarket(asset, amount, exits = {}) {
   if (server()) {
-    const o = await account.placeOrder({ symbol: asset.symbol, side: 'buy', type: 'market', quantity: amount });
+    const px = priceOf(asset.symbol);
+    const levels = px > 0 ? validateExits('long', px, exits) : {};
+    const o = await account.placeOrder({ symbol: asset.symbol, side: 'buy', type: 'market', quantity: amount, ...levels });
     return { amount: o.quantity, price: o.fill.price, costUsd: (o.fill.notionalCents + o.fill.feeCents) / 100, feeUsd: o.fill.feeCents / 100 };
   }
   requireAccount();
@@ -106,11 +109,17 @@ export async function buyMarket(asset, amount, exits = {}) {
 }
 
 /**
- * Abre o amplía un corto a mercado (solo Demo, sin apalancamiento): se aparta como garantía el 100 % del importe.
- * La pérdida máxima es esa garantía, así que el saldo nunca queda negativo.
+ * Abre o amplía un corto a mercado (Demo y Mi cuenta, sin apalancamiento): se aparta como garantía el 100 % del importe.
+ * La pérdida máxima es esa garantía, así que el saldo nunca queda negativo. Con Mi cuenta lo ejecuta el servidor
+ * (comisión incluida, y Stop Loss, Take Profit y liquidación vigilados allí); en Demo, este motor.
  */
 export async function shortMarket(asset, amount, exits = {}) {
-  if (server()) throw new TradeError('Las posiciones cortas solo están disponibles en la cuenta Demo.');
+  if (server()) {
+    const px = priceOf(asset.symbol);
+    const levels = px > 0 ? validateExits('short', px, exits) : {};
+    const o = await account.placeOrder({ symbol: asset.symbol, side: 'sell', type: 'market', quantity: amount, direction: 'short', ...levels });
+    return { amount: o.quantity, price: o.fill.price, costUsd: (o.fill.notionalCents + o.fill.feeCents) / 100, feeUsd: o.fill.feeCents / 100, side: 'short' };
+  }
   requireAccount();
   const px = priceOf(asset.symbol);
   if (!(px > 0)) throw new TradeError(`Sin cotización disponible para ${asset.symbol}.`);
@@ -186,7 +195,9 @@ export async function closePosition(id, { amount, setup = '', emotion = '', note
     const pos = store.positions().find((p) => p.id === id);
     if (!pos) throw new TradeError('La posición ya no existe.');
     const qty = Math.min(pos.amount, amount > 0 ? amount : pos.amount);
-    const o = await account.placeOrder({ symbol: pos.symbol, side: 'sell', type: 'market', quantity: qty, journal: { setup, emotion, notes } });
+    // Un Short se cierra comprando para cubrir; un Long, vendiendo
+    const o = await account.placeOrder({ symbol: pos.symbol, side: pos.side === 'short' ? 'buy' : 'sell', type: 'market', quantity: qty, journal: { setup, emotion, notes },
+      ...(pos.side === 'short' ? { direction: 'short' } : {}) });
     return { symbol: o.symbol, pnl: o.fill.pnlCents / 100, feeUsd: o.fill.feeCents / 100 };
   }
   requireAccount();

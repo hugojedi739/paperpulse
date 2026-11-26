@@ -2471,3 +2471,12 @@ a, button, .seg button, .card, .acct-opt, .mega-item, .mega-link { transition: b
   .legend .lg-toggle { position: absolute; right: 0; top: 0; margin-left: 0; }
   .legend .lg-row:first-child > strong { flex: 1 1 100%; }
 }
+
+/* ---- Short en Mi cuenta: aviso educativo del ticket ---- */
+.short-note { display: flex; gap: 6px; align-items: flex-start; margin: var(--s-2) 0 0; color: var(--warn); font-size: var(--fs-xs); text-align: left; }
+.short-note .icon { flex: none; margin-top: 1px; }
+.chip.warn { color: var(--warn); border-color: var(--warn); background: var(--warn-fill); }
+/* El botón de abrir un Short va en rojo, como el selector (solo en el ticket) */
+#t-ticket .btn-down { background: var(--down-strong); color: #fff; }
+#t-ticket .btn-down:hover { background: var(--down); }
+.exit-note { display: flex; gap: 6px; align-items: flex-start; margin: var(--s-1) 0 0; font-size: var(--fs-xs); color: var(--text-3); }

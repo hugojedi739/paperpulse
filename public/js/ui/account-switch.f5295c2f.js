@@ -2,7 +2,7 @@
 // Inicio y Fin cambian de opción) y etiqueta «… · dinero virtual» siempre visible en la barra de estado.
 // Sin sesión, «Mi cuenta» invita a iniciar sesión o registrarse. Texto con nodos (lib/el.js), sin innerHTML.
 import * as store from '../lib/store.a368de54.js';
-import * as account from '../lib/account.0d7687b0.js';
+import * as account from '../lib/account.ffa87d33.js';
 import { DEMO, SERVER, LABELS } from '../lib/account-mode.c78c079a.js';
 import { h, mount, svgIcon } from '../lib/el.71f9edc9.js';
 import { anchorPopover } from '../lib/dom.a575914e.js';

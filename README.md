@@ -9,7 +9,7 @@ Simulador de trading (*paper trading*) con **cotizaciones reales** de criptomone
 ## Funciones
 
 - **Mercados en vivo**: cripto y bolsa con precios en tiempo real, libro de órdenes, búsqueda (Ctrl+K), noticias financieras y estado de las bolsas (horarios y festivos).
-- **Operar**: órdenes a mercado, límite y stop, con comisión y deslizamiento configurables. Gráfico de velas de 1 minuto a 1 mes, con histórico infinito e indicadores (medias, Bollinger, RSI) y, con el interruptor «Análisis avanzado», MACD, volumen medio y soportes/resistencias simples.
+- **Operar**: órdenes a mercado, límite y stop, Long y Short (el Short aparta el 100 % del importe como garantía, también en «Mi cuenta»), con comisión y deslizamiento configurables. Gráfico de velas de 1 minuto a 1 mes, con histórico infinito e indicadores (medias, Bollinger, RSI) y, con el interruptor «Análisis avanzado», MACD, volumen medio y soportes/resistencias simples.
 - **Demo o Mi cuenta**: un selector en la cabecera elige entre la cuenta Demo del navegador (se puede reiniciar, no puntúa) y Mi cuenta en el servidor (con sesión; el servidor decide siempre el precio). Las dos son con dinero virtual y nunca se mezclan. El saldo inicial lo elige cada persona (de 50 a 1.000.000 €).
 - **Resumen**: patrimonio y tarjeta **Cartera** (coste, valor y ganancia o pérdida en importe y %, con total), **Distribución** por activo, tipo o divisa, y, según el estado, elegir saldo, órdenes pendientes o la primera compra.
 - **Al iniciar sesión**: tus favoritos y alertas se combinan con los de tu cuenta sin preguntar; solo si tienes dos Demos distintas se te deja elegir con cuál quedarte, sin perder ninguna.
@@ -60,7 +60,7 @@ backend/                  API y lógica del servidor (Starlette)
   trading/                Cuenta de práctica del servidor: reglas en enteros, precios, libro contable y API
   community/              Perfiles, foro, clasificación, pulso público, opinión por activo y moderación
   retention/              Notificaciones, logros, racha, reto mensual, onboarding y cron diario
-  migrations/             Migraciones SQL numeradas (0001_… a 0016_…); se aplican al arrancar
+  migrations/             Migraciones SQL numeradas (0001_… a 0017_…); se aplican al arrancar
   templates/index.html    index.html para Vercel, generado por npm run build:static (no editar)
 frontend/                 La aplicación web que se sirve en local y con Docker (sin build)
   index.html              Shell de la app, sin scripts ni estilos inline

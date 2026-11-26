@@ -4,27 +4,27 @@ import * as feed from './lib/feed.14272b63.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.847c7742.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.a575914e.js';
 import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference, maskEmail } from './lib/format.df8faa5e.js';
-import { portfolio, checkTriggers } from './lib/trading.cd85fc1b.js';
+import { portfolio, checkTriggers } from './lib/trading.c9a3be97.js';
 import { marketsInfo, fxRates } from './lib/marketdata.96e24305.js';
 import { setRules as setAlertRules } from './lib/market-alert.9ca18474.js';
 import { initMarketAlert } from './ui/market-alert.cdab3b46.js';
-import { initAccountSwitch } from './ui/account-switch.0dbe0df1.js';
+import { initAccountSwitch } from './ui/account-switch.f5295c2f.js';
 import { LABELS as ACCOUNT_LABELS } from './lib/account-mode.c78c079a.js';
 import { sendVisit } from './lib/visit.6c9dd893.js';
 import { updateLive, assetIcon } from './lib/ui.df413464.js';
 import { current, go } from './lib/router.de30a562.js';
-import * as dashboard from './views/dashboard.02c6b26c.js';
-import * as trade from './views/trade.45037910.js';
+import * as dashboard from './views/dashboard.99c39cee.js';
+import * as trade from './views/trade.7d202f75.js';
 import * as markets from './views/markets.ebac8054.js';
-import * as dialogs from './ui/dialogs.33b7a75a.js';
+import * as dialogs from './ui/dialogs.9a2ce37c.js';
 import * as auth from './lib/auth.79b9acc8.js';
-import * as account from './lib/account.0d7687b0.js';
+import * as account from './lib/account.ffa87d33.js';
 import * as notifs from './lib/notifications.4158ee83.js';
 import { h, svgIcon, mount as putNodes } from './lib/el.71f9edc9.js';
 import { maybeAskTerms } from './ui/terms.7f108032.js';
-import { openWelcome } from './ui/welcome.fdc0285a.js';
+import { openWelcome } from './ui/welcome.0d1375cc.js';
 import { initPalette, openPalette } from './ui/palette.78c6bad6.js';
-import { initChat, toggleChat } from './ui/chat.be814e49.js';
+import { initChat, toggleChat } from './ui/chat.86348dc5.js';
 import { startTour } from './ui/tour.0190f4c4.js';
 import { checkGoals } from './ui/celebrate.b58571f6.js';
 import { initMegaMenus, markMegaActive } from './ui/megamenu.6f39ad2d.js';
@@ -35,8 +35,8 @@ const VIEWS = { dashboard, trade, markets };
 // Vistas que no hacen falta para arrancar (la portada es el Resumen, y Operar y Mercados se abren a menudo desde él):
 // se descargan al entrar por primera vez
 const LAZY = {
-  news: () => import('./views/news.3f677735.js'),
-  journal: () => import('./views/journal.a47e1e01.js'),
+  news: () => import('./views/news.3287bbbb.js'),
+  journal: () => import('./views/journal.49ec8ef7.js'),
   community: () => import('./views/community.3a6fb025.js'),
   contact: () => import('./views/contact.4420eb88.js'),
   stats: () => import('./views/stats.ad666886.js'),

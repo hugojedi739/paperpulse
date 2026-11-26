@@ -45,6 +45,8 @@ function currentType() {
   if (!orderTypes().some(([v]) => v === orderType)) orderType = 'market'; // cambió el modo (inicio/cierre de sesión)
   return orderType;
 }
+const EXITS_NOTE = 'Stop Loss y Take Profit se revisan al abrir la cartera.';
+const SHORT_NOTE = 'En la vida real el short tiene más riesgos y costes que este simulador no refleja del todo.';
 const levelLabel = () => (orderType === 'stop' ? 'Precio de activación' : 'Precio límite');
 const ORDER_HINTS = {
   'buy-limit': 'Compra si el precio baja hasta tu nivel. Nunca pagarás más que el límite.',
@@ -667,7 +669,6 @@ function renderTicket() {
   }
   const pos = store.positions().find((p) => p.symbol === asset.symbol);
   const cur = currency();
-  if (serverMode()) direction = 'long'; // la cuenta del servidor no admite cortos
   const short = direction === 'short';
   render(box, html`
     <div class="side-tabs" role="group" aria-label="Lado de la orden">
@@ -675,13 +676,10 @@ function renderTicket() {
       <button type="button" data-t="side" data-side="sell" aria-pressed="${side === 'sell'}">Cerrar</button>
     </div>
     ${side === 'buy' ? html`
-      ${serverMode() ? html`<div class="seg seg-dir" role="group" data-seg="dir">
-          <button type="button" data-value="long" aria-pressed="true">Long</button>
-          <button type="button" data-value="short" disabled title="El Short en Mi cuenta llegará pronto. En Demo ya puedes probarlo, y con Stop Loss y Take Profit.">Short <small class="soon">Pronto</small></button></div>`
-        : html`<div class="seg seg-dir" role="group" data-seg="dir">
-          <button type="button" data-value="long" aria-pressed="${direction === 'long'}">Long</button>
-          <button type="button" data-value="short" aria-pressed="${direction === 'short'}">Short</button></div>
-        <p class="hint">${short ? 'Ganas si el precio baja. Se aparta el importe entero como garantía; se liquida si el precio llega al doble.' : 'Ganas si el precio sube.'}</p>`}
+      <div class="seg seg-dir" role="group" data-seg="dir">
+        <button type="button" data-value="long" aria-pressed="${direction === 'long'}">Long</button>
+        <button type="button" data-value="short" aria-pressed="${direction === 'short'}">Short</button></div>
+      <p class="hint">${short ? 'Ganas si el precio baja. Se aparta el importe entero como garantía (tu pérdida máxima); se liquida si el precio llega al doble.' : 'Ganas si el precio sube.'}</p>
       ${short ? '' : html`${seg('otype', orderTypes(), currentType())}
       ${orderHint()}`}
       ${orderType === 'stop-limit' ? html`<div class="field"><label for="t-stop">Precio de activación (${asset.quote})</label>
@@ -690,27 +688,29 @@ function renderTicket() {
       <div class="field"><label for="t-amount">Importe a invertir</label>
         <div class="input-group"><input id="t-amount" inputmode="decimal" type="number" step="any" min="0" placeholder="0,00"><span>${cur}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Máx' : `${p}%`}</button>`)}</div>
-      ${!serverMode() && orderType === 'market' ? html`<div class="exit-row">
+      ${orderType === 'market' ? html`<div class="exit-row">
         <div class="field"><label for="t-sl">Stop Loss <span class="muted">(opcional)</span></label>
           <div class="input-group"><input id="t-sl" inputmode="decimal" type="number" step="any" min="0" placeholder="${short ? 'Por encima' : 'Por debajo'}"><span>${asset.quote}</span></div></div>
         <div class="field"><label for="t-tp">Take Profit <span class="muted">(opcional)</span></label>
           <div class="input-group"><input id="t-tp" inputmode="decimal" type="number" step="any" min="0" placeholder="${short ? 'Por debajo' : 'Por encima'}"><span>${asset.quote}</span></div></div>
-      </div>` : ''}
+      </div>
+      ${serverMode() ? html`<p class="hint exit-note">${icon('info', 'sm')} ${EXITS_NOTE}</p>` : ''}` : ''}
       <dl class="summary" id="t-summary"></dl>
       <button class="btn ${short ? 'btn-down' : 'btn-primary'} btn-lg btn-block" data-t="submit">${short ? `Abrir Short en ${asset.symbol}` : orderType === 'market' ? `Comprar ${asset.symbol} (Long)` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>
-      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
+      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>
+      ${short ? html`<p class="hint short-note">${icon('triangle-alert', 'sm')} ${SHORT_NOTE}</p>` : ''}`
     : pos ? html`
-      ${serverMode() ? html`${seg('otype', orderTypes(), currentType())}${orderHint()}` : ''}
-      ${serverMode() && orderType !== 'market' ? levelField() : ''}
+      ${serverMode() && pos.side !== 'short' ? html`${seg('otype', orderTypes(), currentType())}${orderHint()}` : ''}
+      ${serverMode() && pos.side !== 'short' && orderType !== 'market' ? levelField() : ''}
       <div class="summary"><div><span>Tienes</span><strong>${sideChip(pos)} ${units(pos.amount, pos.symbol)}</strong></div>
         <div><span>Precio medio</span><strong>${price(pos.entryPrice, pos.quote)}</strong></div></div>
       <div class="field"><label for="t-units">Cantidad a cerrar</label>
         <div class="input-group"><input id="t-units" inputmode="decimal" type="number" step="any" min="0" max="${freeUnits(pos)}" value="${freeUnits(pos)}"><span>${asset.symbol}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Todo' : `${p}%`}</button>`)}</div>
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>
+      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && pos.side !== 'short' && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>
       <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
-    : empty('wallet', `No tienes posición en ${asset.symbol}`, 'Abre una posición Long o Short (en Demo) para poder cerrarla aquí.')}
+    : empty('wallet', `No tienes posición en ${asset.symbol}`, 'Abre una posición Long o Short para poder cerrarla aquí.')}
     <p class="hint">Disponible: <span class="money">${money(store.cash())}</span></p>
     ${serverMode() ? '' : html`<p class="hint demo-note">${icon('info', 'sm')} Demo: se guarda solo en este navegador. Si borras los datos del navegador, se pierde.</p>`}`);
   updateTicketSummary();
@@ -820,15 +820,15 @@ async function submitBuy() {
   const px = limitPrice ?? feed.priceOf(asset.symbol);
   if (!px) return toast(`Sin cotización de ${asset.symbol} ahora mismo.`, 'warning');
   const qty = +(convert(amount, currency(), asset.quote) / px).toFixed(8);
-  const short = direction === 'short' && !serverMode();
-  const exits = orderType === 'market' && !serverMode() ? { stopLoss: readNumber('t-sl'), takeProfit: readNumber('t-tp') } : {};
-  try { if (orderType === 'market' && !serverMode()) trading.validateExits(short ? 'short' : 'long', px, exits); } catch (err) { return toast(err.message, 'warning'); }
+  const short = direction === 'short';
+  const exits = orderType === 'market' ? { stopLoss: readNumber('t-sl'), takeProfit: readNumber('t-tp') } : {};
+  try { if (orderType === 'market') trading.validateExits(short ? 'short' : 'long', px, exits); } catch (err) { return toast(err.message, 'warning'); }
   const exitText = [exits.stopLoss && `Stop Loss ${price(exits.stopLoss, asset.quote)}`, exits.takeProfit && `Take Profit ${price(exits.takeProfit, asset.quote)}`].filter(Boolean).join(' · ');
 
   if (short) {
     const okShort = await confirmDialog({
       title: `Abrir Short en ${asset.symbol}`,
-      body: `${units(qty, asset.symbol)} a ${price(px, asset.quote)}. Ganas si baja y pierdes si sube. Se aparta ${money(amount, { from: currency() })} como garantía: es tu pérdida máxima, y la posición se liquida sola si el precio llega a ${price(px * 2, asset.quote)}.${exitText ? ` ${exitText}.` : ''} Operación simulada sin comisiones.`,
+      body: `${units(qty, asset.symbol)} a ${price(px, asset.quote)}. Ganas si baja y pierdes si sube. Se aparta ${money(amount, { from: currency() })} como garantía: es tu pérdida máxima, y la posición se liquida sola si el precio llega a ${price(px * 2, asset.quote)}.${exitText ? ` ${exitText}.` : ''} ${serverMode() ? `Comisión estimada ${feeText(convert(amount, currency(), 'USD'))} al abrir y otra al cerrar. El precio final lo decide el servidor.` : 'Operación simulada sin comisiones.'} ${SHORT_NOTE}`,
       confirm: 'Abrir Short',
     });
     if (!okShort) return;
@@ -848,7 +848,8 @@ async function submitBuy() {
     body: `${units(qty, asset.symbol)} por ${money(amount, { from: currency() })} a ${price(px, asset.quote)}${stopPrice ? `, se activa en ${price(stopPrice, asset.quote)}` : ''}. `
       + (serverMode()
         ? `Comisión estimada ${feeText(convert(amount, currency(), 'USD'))}. El precio final lo decide el servidor con la cotización real${orderType === 'market' ? ', con un pequeño deslizamiento' : ''}.`
-        : `Operación simulada sin comisiones.${exitText ? ` ${exitText}.` : ''}`),
+        : `Operación simulada sin comisiones.`)
+      + (exitText ? ` ${exitText}.` : ''),
     confirm: orderType === 'market' ? 'Comprar' : 'Colocar orden',
   });
   if (!ok) return;
@@ -872,7 +873,7 @@ async function submitSell() {
   const pos = store.positions().find((p) => p.symbol === asset.symbol);
   const qty = readNumber('t-units');
   if (!pos || !qty) return toast('Indica cuántas unidades quieres vender.', 'warning');
-  if (!serverMode() || currentType() === 'market') return closePositionDialog(pos.id, Math.min(qty, pos.amount));
+  if (!serverMode() || pos.side === 'short' || currentType() === 'market') return closePositionDialog(pos.id, Math.min(qty, pos.amount));
 
   // Venta límite o stop (solo con sesión): queda pendiente en el servidor
   const level = readNumber('t-limit');
@@ -1071,7 +1072,7 @@ function renderDock() {
     if (!trades.length) return render(box, empty('history', 'Tu historial empieza con tu primera venta', 'Cuando cierres una posición aparecerá aquí con su resultado.'));
     render(box, html`<table class="table"><thead><tr><th>Fecha</th><th>Activo</th><th class="r">Cantidad</th><th class="r">Entrada</th><th class="r">Salida</th><th class="r">Resultado</th><th></th></tr></thead>
       <tbody>${trades.map((t) => html`<tr data-href="/trade/${t.symbol}">
-        <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td><td><strong>${t.symbol}</strong> ${sideChip(t)}</td>
+        <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td><td><strong>${t.symbol}</strong> ${sideChip(t)}${t.closeReason ? html` <span class="chip warn" title="Cierre automático del servidor">${t.closeReason}</span>` : ''}</td>
         <td class="r">${units(t.amount)}</td><td class="r">${price(t.entryPrice, t.quote)}</td><td class="r">${price(t.exitPrice, t.quote)}</td>
         <td class="r money delta ${trendClass(t.pnl)}">${money(t.pnl, { signed: true })} · ${pct(t.pnlPct)}</td><td class="r"><button class="btn btn-ghost btn-sm" data-t="explain-trade" data-id="${t.id}" title="Pregunta al asistente por esta operación">${icon('sparkles', 'sm')}Explícame</button> ${raw(isVisible('community') ? shareButton(t) : '')}</td></tr>`)}</tbody></table>`);
   }

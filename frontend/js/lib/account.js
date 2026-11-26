@@ -40,6 +40,8 @@ export function choose(next) {
   return next === mode.SERVER && !active ? 'login' : store.activeAccount();
 }
 
+/** Cierres automáticos del servidor (fills.source): se enseñan en el historial. */
+export const CLOSE_REASONS = { 'stop loss': 'Stop Loss', 'take profit': 'Take Profit', 'liquidación': 'Cierre forzoso (liquidación)' };
 const cents = (c) => (Number(c) || 0) / 100;
 const iso = (s) => new Date(s * 1000).toISOString();
 
@@ -55,6 +57,9 @@ export function toStore(p) {
     cash: cents(p.account.availableCents), // libre; lo reservado va en cada orden
     positions: p.positions.map((x) => ({
       ...base(x), id: x.symbol, amount: x.quantity, entryPrice: x.avgPrice, investedUsd: cents(x.costCents), openedAt: x.openedAt * 1000,
+      // Short: lleva su garantía (se aparta el 100 %); Stop Loss y Take Profit los vigila el servidor
+      ...(x.direction === 'short' ? { side: 'short', marginUsd: cents(x.marginCents) } : {}),
+      ...(x.stopLoss ? { stopLoss: x.stopLoss } : {}), ...(x.takeProfit ? { takeProfit: x.takeProfit } : {}),
     })),
     orders: p.orders.map((o) => ({
       ...base(o), id: String(o.id), side: o.side, type: o.type, amount: o.quantity, limitPrice: o.triggerPrice, stopPrice: null,
@@ -67,6 +72,7 @@ export function toStore(p) {
         ...base(t), id: `f${t.id}`, orderId: t.orderId, amount: t.quantity, entryPrice: t.entryPrice, exitPrice: t.exitPrice,
         investedUsd: invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0, feeUsd: cents(t.feeCents),
         sharedThreadId: t.sharedThreadId ?? null,
+        ...(t.direction === 'short' ? { side: 'short' } : {}), closeReason: CLOSE_REASONS[t.source] ?? null,
         date: iso(t.executedAt), openedAt: t.openedAt ? t.openedAt * 1000 : null,
         setup: t.journal?.setup ?? '', emotion: t.journal?.emotion ?? '', notes: t.journal?.notes ?? '',
       };
@@ -132,8 +138,11 @@ export async function setUser(user) {
  * Envía una orden. El identificador de idempotencia se genera una vez y se reutiliza en los reintentos:
  * si la conexión se corta después de que el servidor la ejecute, reintentar no la duplica.
  */
-export async function placeOrder({ symbol, side, type, quantity, triggerPrice, journal }) {
+export async function placeOrder({ symbol, side, type, quantity, triggerPrice, journal, direction, stopLoss, takeProfit }) {
   const body = { clientOrderId: store.uuid(), symbol, side, type, quantity: String(quantity) };
+  if (direction === 'short') body.direction = 'short';
+  if (stopLoss > 0) body.stopLoss = String(stopLoss);
+  if (takeProfit > 0) body.takeProfit = String(takeProfit);
   if (type !== 'market') body.triggerPrice = String(triggerPrice);
   if (journal) body.journal = journal;
   let lastErr;

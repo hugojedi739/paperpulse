@@ -20,6 +20,7 @@ START_MIN_EUR = 50
 START_MAX_EUR = 1_000_000
 
 SIDES = ("buy", "sell")
+DIRECTIONS = ("long", "short")
 TYPES = ("market", "limit", "stop")
 
 
@@ -148,3 +149,68 @@ def parse_start_amount(value, currency) -> int:
     if d < START_MIN_EUR or d > START_MAX_EUR:
         raise OrderError(f"El saldo inicial debe estar entre {START_MIN_EUR} y {START_MAX_EUR:,} €.".replace(",", "."))
     return int(d * 100)
+
+
+# ---------------------------------------------------------------- posiciones cortas (Short) y salidas automáticas
+# Sin apalancamiento: al abrir un corto se aparta el 100 % del importe como garantía (margin). Con direction = 'short',
+# side 'sell' abre (vender para abrir) y side 'buy' cierra (comprar para cubrir). Las mismas reglas que la Demo:
+# gana si el precio baja, la pérdida máxima es la garantía y se liquida al llegar al doble del precio de entrada.
+def liquidation_price_e8(avg_price_e8: int) -> int:
+    """Precio al que un corto pierde toda su garantía (2 × la entrada) y se cierra solo."""
+    return 2 * avg_price_e8
+
+
+def short_payout_cents(margin_cents: int, buyback_notional_cents: int, fee: int) -> int:
+    """Lo que se devuelve al cerrar un corto: garantía + (valor de entrada − valor de recompra) − comisión, nunca por debajo de 0.
+    El valor de entrada es la propia garantía (se aparta el 100 %), así que queda 2·garantía − recompra − comisión."""
+    return max(0, 2 * margin_cents - buyback_notional_cents - fee)
+
+
+def short_value_cents(margin_cents: int, qty_e8: int, price_e8: int, fx_e8: int) -> int:
+    """Valor de un corto a un precio (sin comisión de cierre), para el patrimonio y la clasificación."""
+    return max(0, 2 * margin_cents - notional_cents(qty_e8, price_e8, fx_e8, round_up=True))
+
+
+def validate_exits(direction: str, price_e8: int, stop_e8: Optional[int], take_e8: Optional[int]) -> None:
+    """Stop Loss y Take Profit al abrir. Larga: el stop por debajo del precio y el take por encima. Corta, al revés
+    (el stop por encima del precio y el take por debajo); además el stop de un corto debe quedar por debajo de la liquidación."""
+    if direction == "short":
+        if stop_e8 is not None and stop_e8 <= price_e8:
+            raise OrderError("En un Short el Stop Loss debe estar por encima del precio de entrada.")
+        if stop_e8 is not None and stop_e8 >= liquidation_price_e8(price_e8):
+            raise OrderError("El Stop Loss de un Short debe estar por debajo del precio de liquidación (el doble de la entrada).")
+        if take_e8 is not None and take_e8 >= price_e8:
+            raise OrderError("En un Short el Take Profit debe estar por debajo del precio de entrada.")
+    else:
+        if stop_e8 is not None and stop_e8 >= price_e8:
+            raise OrderError("En un Long el Stop Loss debe estar por debajo del precio de entrada.")
+        if take_e8 is not None and take_e8 <= price_e8:
+            raise OrderError("En un Long el Take Profit debe estar por encima del precio de entrada.")
+
+
+def exit_fill(direction: str, avg_price_e8: int, stop_e8: Optional[int], take_e8: Optional[int],
+              candle: Dict[str, int], slippage_bps: int) -> Optional[tuple]:
+    """¿Cierra esta vela la posición? Devuelve (precio_e8, motivo) o None. Motivos: 'stop', 'take' o 'liquidation'.
+
+    Si en la misma vela se tocan el stop (o la liquidación) y el take profit, se supone que ocurrió primero lo peor para el usuario.
+    Larga: el stop vende a mercado (con deslizamiento; un hueco a la baja se ejecuta a la apertura) y el take es una orden límite.
+    Corta: el stop compra a mercado y el take es una límite; la liquidación (2 × la entrada) cierra a ese precio exacto, así
+    que la pérdida nunca pasa de la garantía.
+    """
+    o, h, low = candle["open"], candle["high"], candle["low"]
+    if direction == "short":
+        liq = liquidation_price_e8(avg_price_e8)
+        if o >= liq:
+            return liq, "liquidation"
+        if stop_e8 is not None and h >= stop_e8:
+            return min(apply_slippage(max(o, stop_e8), "buy", slippage_bps), liq), "stop"
+        if h >= liq:
+            return liq, "liquidation"
+        if take_e8 is not None and low <= take_e8:
+            return min(o, take_e8), "take"
+        return None
+    if stop_e8 is not None and low <= stop_e8:
+        return apply_slippage(min(o, stop_e8), "sell", slippage_bps), "stop"
+    if take_e8 is not None and h >= take_e8:
+        return max(o, take_e8), "take"
+    return None

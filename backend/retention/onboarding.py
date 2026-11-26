@@ -18,8 +18,8 @@ STEPS = [
 
 def _done(conn, user_id: int, state) -> Dict[str, bool]:
     return {
-        "first_buy": conn.execute("SELECT 1 FROM fills WHERE user_id = ? AND side = 'buy' LIMIT 1", (user_id,)).fetchone() is not None,
-        "first_stop": conn.execute("SELECT 1 FROM orders WHERE user_id = ? AND type = 'stop' LIMIT 1", (user_id,)).fetchone() is not None,
+        "first_buy": conn.execute("SELECT 1 FROM fills WHERE user_id = ? AND ((direction = 'long' AND side = 'buy') OR (direction = 'short' AND side = 'sell')) LIMIT 1", (user_id,)).fetchone() is not None,
+        "first_stop": conn.execute("SELECT 1 FROM orders WHERE user_id = ? AND type = 'stop' AND client_order_id NOT LIKE 'auto-%' LIMIT 1", (user_id,)).fetchone() is not None,
         "visit_forum": bool(state and state["forum_visited_at"]),
     }
 

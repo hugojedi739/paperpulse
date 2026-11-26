@@ -6,6 +6,7 @@ import sys
 
 from backend.retention import achievements, notifications, streak
 
+AUTO_CLOSE = ("stop loss", "take profit", "liquidación")  # fills de cierres automáticos (ledger._resolve_exits)
 IMMEDIATE = "cotización"  # fills ejecutados al recibir la orden (el usuario ya ve el resultado en pantalla)
 
 
@@ -23,7 +24,12 @@ def after_fill(conn, user_id: int, order: dict, price_e8: int, executed_at: int,
     owner = conn.execute("SELECT owner_id FROM users WHERE id = ?", (user_id,)).fetchone()
     if owner and not owner["owner_id"]:
         streak.record(conn, user_id, executed_at)
-    if source != IMMEDIATE:  # límite/stop resuelto con velas: el usuario no estaba delante
+    if source in AUTO_CLOSE:  # Stop Loss, Take Profit o liquidación de un corto: lo cierra el servidor
+        reason = order.get("reason") or "Cierre automático"
+        kind = "Short" if order.get("direction") == "short" else "Long"
+        notifications.notify(conn, user_id, "order", f"{reason.split(':')[0]}: {order['symbol']} ({kind})",
+                             f"{reason}. {kind} de {order['symbol']} cerrado a {price_e8 / 1e8:g}.", f"/trade/{order['symbol']}")
+    elif source != IMMEDIATE:  # límite/stop resuelto con velas: el usuario no estaba delante
         side = "Compra" if order["side"] == "buy" else "Venta"
         kind = "límite" if order["type"] == "limit" else "stop"
         notifications.notify(conn, user_id, "order", f"Orden {kind} ejecutada: {side.lower()} de {order['symbol']}",
