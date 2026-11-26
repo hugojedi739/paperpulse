@@ -60,7 +60,7 @@ backend/                  API y lógica del servidor (Starlette)
   trading/                Cuenta de práctica del servidor: reglas en enteros, precios, libro contable y API
   community/              Perfiles, foro, clasificación, pulso público, opinión por activo y moderación
   retention/              Notificaciones, logros, racha, reto mensual, onboarding y cron diario
-  migrations/             Migraciones SQL numeradas (0001_… a 0015_…); se aplican al arrancar
+  migrations/             Migraciones SQL numeradas (0001_… a 0016_…); se aplican al arrancar
   templates/index.html    index.html para Vercel, generado por npm run build:static (no editar)
 frontend/                 La aplicación web que se sirve en local y con Docker (sin build)
   index.html              Shell de la app, sin scripts ni estilos inline

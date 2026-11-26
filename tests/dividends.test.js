@@ -66,5 +66,6 @@ test('la ficha y el Resumen usan lib/el.js, y la tarjeta solo existe con la cuen
   const dash = readFileSync(new URL('../frontend/js/views/dashboard.js', import.meta.url), 'utf8');
   const card = dash.slice(dash.indexOf('async function renderDividends'), dash.indexOf('/* ---------- Con sesión'));
   assert.ok(card.includes('store.isServerMode()') && card.includes('account.openedAt()') && card.includes('put(') && !/\.innerHTML\s*=|insertAdjacentHTML/.test(card));
-  assert.match(dash, /<div id="d-compare"><\/div><div id="d-divs"><\/div>/);
+  assert.match(dash, /<div id="d-compare"><\/div>/);
+  assert.match(dash, /<div id="d-divs"><\/div>/);
 });

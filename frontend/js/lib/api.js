@@ -10,6 +10,13 @@ export function wsUrl(path) {
   return `${base.protocol === 'https:' ? 'wss:' : 'ws:'}//${base.host}${path}`;
 }
 
+/** Mensaje claro cuando el servidor (o el CDN) responde sin JSON: nunca una pantalla rota ni un «HTTP 429» a secas. */
+export function httpMessage(status) {
+  if (status === 429) return 'Demasiadas peticiones seguidas. Espera un minuto e inténtalo de nuevo.';
+  if (status === 502 || status === 503 || status === 504) return 'El servicio no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.';
+  return `Error del servidor (HTTP ${status}). Inténtalo de nuevo.`;
+}
+
 /** GET/POST/... con JSON. Lanza Error con el mensaje del servidor y `status`. */
 export async function api(path, { method = 'GET', body, signal, credentials = 'same-origin' } = {}) {
   let res;
@@ -26,7 +33,7 @@ export async function api(path, { method = 'GET', body, signal, credentials = 's
     throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.'); // el mensaje del navegador sale en inglés
   }
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(json.error || `Error del servidor (HTTP ${res.status}). Inténtalo de nuevo.`), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(json.error || httpMessage(res.status)), { status: res.status });
   return json;
 }
 

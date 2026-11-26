@@ -10,10 +10,10 @@ test('envía POST /api/visit una sola vez, sin cookies y con signedIn', async ()
   const fetcher = async (path, opts) => { calls.push([path, opts]); return {}; };
   assert.equal(await sendVisit({ signedIn: true, fetcher }), true);
   assert.equal(await sendVisit({ signedIn: true, fetcher }), false, 'solo una vez por carga');
-  assert.deepEqual(calls, [['/api/visit', { method: 'POST', body: { signedIn: true }, credentials: 'omit' }]]);
+  assert.deepEqual(calls, [['/api/visit', { method: 'POST', body: { signedIn: true, ref: 'direct' }, credentials: 'omit' }]]);
   resetVisit();
   await sendVisit({ signedIn: 'sí', fetcher });
-  assert.deepEqual(calls[1][1].body, { signedIn: false }, 'solo true cuenta como con sesión');
+  assert.deepEqual(calls[1][1].body, { signedIn: false, ref: 'direct' }, 'solo true cuenta como con sesión');
 });
 
 test('si falla, no lanza: es una estadística', async () => {

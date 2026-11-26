@@ -135,7 +135,7 @@ const cleanInput = (x) => (x && Number(x.amount) > 0 && x.currency === 'EUR' ? {
 
 const safeMap = (list, fn) => (Array.isArray(list) ? list : []).flatMap((x) => { try { return [fn(x)]; } catch { return []; } });
 
-const DEFAULT_SETTINGS = { theme: null, currency: 'auto', privacyMode: false, interval: '1h', chartType: 'candles', indicators: ['volume'], advanced: false, tourDone: false, maPeriod: 20, emaPeriod: 50, logScale: false, accent: 'neutral' };
+const DEFAULT_SETTINGS = { theme: null, currency: 'auto', privacyMode: false, hideIdentity: false, interval: '1h', chartType: 'candles', indicators: ['volume'], advanced: false, tourDone: false, maPeriod: 20, emaPeriod: 50, logScale: false, accent: 'neutral' };
 
 /* ---------- Estado ---------- */
 const state = {

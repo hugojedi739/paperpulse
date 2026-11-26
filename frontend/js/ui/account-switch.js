@@ -40,7 +40,8 @@ export function draw() {
   if (focused) box.querySelector('[aria-checked="true"]')?.focus();
   const tag = document.getElementById('acct-tag');
   if (tag) {
-    mount(tag, svgIcon(current === DEMO ? 'graduation-cap' : 'wallet', 'sm'), h('span', {}, LABELS[current].tag));
+    // Insignia sobria «Virtual»; el texto completo («Demo · dinero virtual») queda para lectores de pantalla y tooltip
+    mount(tag, h('span', { 'aria-hidden': 'true' }, 'Virtual'), h('span', { class: 'sr-only' }, LABELS[current].tag));
     tag.dataset.mode = current;
     tag.title = LABELS[current].hint;
   }

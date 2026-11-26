@@ -10,15 +10,16 @@ import { assetCell, empty, seg, pressSeg, liveChange } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 
 const CATEGORIES = [['all', 'Todos'], ['crypto', 'Cripto'], ['es', 'España'], ['us', 'EE. UU.'], ['fav', 'Favoritos']];
+const MOVERS = [['all', 'Todos'], ['up', 'Mayores subidas'], ['down', 'Mayores bajadas']];
 const COLUMNS = [
   ['rank', '#'], ['name', 'Activo'], ['price', 'Precio', 'r'], ['change', '24 h', 'r hide-sm'], ['change7d', '7 d', 'r hide-sm'],
-  ['cap', 'Capitalización', 'r hide-sm'], ['volume', 'Vol. 24 h · mercado global', 'r hide-sm'], [null, 'Tendencia', 'hide-sm'], [null, '', 'hide-sm'],
+  ['cap', 'Capitalización', 'r hide-sm'], ['volume', 'Vol. 24 h (global)', 'r hide-sm', 'Volumen agregado de todo el mercado (CoinGecko). En Operar, el volumen es solo el de Binance, por eso las cifras no coinciden.'], [null, 'Tendencia', 'hide-sm'], [null, '', 'hide-sm'],
 ];
 
 /** Precio en vivo que parpadea al cambiar (data-flash); vacío = esqueleto hasta la primera cotización. */
 const livePrice = (a) => html`<span class="num" data-px="${a.symbol}" data-q="${a.quote}" data-flash>${tick(a.symbol)?.price ? price(tick(a.symbol).price, a.quote) : ''}</span>`;
 
-let root, category = 'all', query = '', sortKey = 'rank', sortDir = 1, cg = new Map(), sparks = new Map();
+let root, category = 'all', movers = 'all', query = '', sortKey = 'rank', sortDir = 1, cg = new Map(), sparks = new Map();
 
 export const title = 'Mercados';
 
@@ -27,14 +28,21 @@ export function mount(el) {
   render(root, html`
     <div class="toolbar-row">
       ${seg('cat', CATEGORIES, category)}
+      ${seg('movers', MOVERS, movers)}
       <label class="input-group"><span>${icon('search', 'sm')}</span><input id="m-search" type="search" placeholder="Filtrar por nombre o símbolo" aria-label="Filtrar mercados"></label>
     </div>
     <section class="card flush"><div class="table-wrap"><table class="table markets-table">
-      <thead><tr>${COLUMNS.map(([key, label, cls]) => html`<th class="${cls ?? ''}" ${key === sortKey ? html`aria-sort="${sortDir > 0 ? 'ascending' : 'descending'}"` : ''}>
+      <thead><tr>${COLUMNS.map(([key, label, cls, tip]) => html`<th class="${cls ?? ''}" ${tip ? html`title="${tip}"` : ''} ${key === sortKey ? html`aria-sort="${sortDir > 0 ? 'ascending' : 'descending'}"` : ''}>
         ${key ? html`<button class="th-sort" data-sort="${key}">${label}</button>` : label}</th>`)}</tr></thead>
       <tbody id="m-body"></tbody></table></div></section>`);
 
   on(root, 'click', '[data-seg="cat"] button', (_, b) => { category = b.dataset.value; pressSeg(root, 'cat', category); draw(); });
+  on(root, 'click', '[data-seg="movers"] button', (_, b) => {
+    movers = b.dataset.value; pressSeg(root, 'movers', movers);
+    sortKey = 'change'; sortDir = movers === 'down' ? 1 : -1; // subidas: de mayor a menor; bajadas: de la peor a la mejor
+    root.querySelectorAll('th').forEach((th) => th.removeAttribute('aria-sort'));
+    draw();
+  });
   on(root, 'input', '#m-search', debounce((e) => { query = e.target.value.trim().toLowerCase(); draw(); }, 150));
   on(root, 'click', '[data-sort]', (_, b) => {
     const key = b.dataset.sort;
@@ -50,7 +58,10 @@ export function mount(el) {
   on(root, 'keydown', 'tr[data-href]', (e, tr) => { if (e.key === 'Enter' && e.target === tr) go(tr.dataset.href); });
 }
 
-export async function show() {
+const CATEGORY_IDS = new Set(CATEGORIES.map(([id]) => id));
+
+export async function show(param = '') {
+  if (CATEGORY_IDS.has(param)) { category = param; pressSeg(root, 'cat', category); } // #/markets/crypto, /us, /es, /fav
   // Primero lo último guardado (capitalización, 7 d, minigráficas) y después lo nuevo, por detrás
   if (!cg.size) cg = savedCryptoMarkets() ?? cg;
   if (!sparks.size) for (const [sym, v] of Object.entries(savedStockSparks())) sparks.set(sym, v);
@@ -83,6 +94,7 @@ function draw() {
   const body = $('#m-body', root);
   let list = rows().filter((r) => category === 'all'
     || (category === 'fav' ? r.fav : category === 'crypto' ? r.a.type === 'crypto' : r.a.market === category));
+  if (movers !== 'all') list = list.filter((r) => (tick(r.a.symbol)?.change24h ?? r.change ?? 0) * (movers === 'up' ? 1 : -1) > 0);
   if (query) list = list.filter((r) => r.a.name.toLowerCase().includes(query) || r.a.symbol.toLowerCase().includes(query));
   list.sort((x, y) => {
     const a = x[sortKey], b = y[sortKey];
@@ -90,6 +102,11 @@ function draw() {
     if (b == null) return -1;
     return (typeof a === 'string' ? a.localeCompare(b) : a - b) * sortDir;
   });
+  // Columnas sin dato en esta lista (p. ej. capitalización en bolsa o con CoinGecko caído): se ocultan en vez de llenarse de «—»
+  const table = body.closest('table');
+  for (const [cls, key] of [['no-7d', 'change7d'], ['no-cap', 'cap'], ['no-vol', 'volume'], ['no-spark', 'spark']]) {
+    table.classList.toggle(cls, list.length > 0 && !list.some((r) => (key === 'spark' ? r.spark?.length : r[key] != null)));
+  }
   if (!list.length) return render(body, html`<tr><td colspan="9">${empty('search', category === 'fav' && !query ? 'Sin favoritos todavía' : 'Sin resultados', category === 'fav' && !query ? 'Pulsa la estrella de cualquier activo para seguirlo aquí.' : 'Prueba con otro filtro o busca cualquier activo con Ctrl + K.')}</td></tr>`);
   render(body, list.map((r, i) => html`<tr data-href="/trade/${r.a.symbol}" tabindex="0">
     <td class="muted"><button class="icon-btn sm star" data-star="${r.a.symbol}" aria-pressed="${r.fav}" aria-label="Favorito ${r.a.symbol}">${icon('star')}</button> <span class="hide-sm">${i + 1}</span></td>

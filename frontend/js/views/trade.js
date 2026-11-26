@@ -16,10 +16,11 @@ import { shareButton, shareDialog } from '../ui/share.js';
 import { isVisible } from '../lib/sections.js';
 import { afterBuy } from '../ui/celebrate.js';
 import { bookPressure, bookLevels } from '../lib/book.js';
-import { can, COMING_SOON, LOCKED_TEXT } from '../lib/capabilities.js';
+import { can, LOCKED_TEXT } from '../lib/capabilities.js';
 import { upcomingDividends, dividendLine, EX_DATE_NOTE, SIMULATION_NOTE } from '../lib/dividends.js';
 import { h, svgIcon, mount as put } from '../lib/el.js';
 import { currentUser, onAuth } from '../lib/auth.js';
+import { ask } from '../ui/chat.js';
 import { loadSentiment, castVote, nextVote, shares, votesLabel, SENTIMENT_NOTE } from '../lib/sentiment.js';
 
 const TYPES = [['candles', 'Velas'], ['bars', 'Barras'], ['area', 'Área'], ['line', 'Línea']];
@@ -74,11 +75,14 @@ export function mount(el) {
         <section class="card chart-card" id="t-chart-card">
           <div class="toolbar">
             <div class="gap-4" id="t-intervals"></div>
+            <button type="button" class="btn btn-ghost btn-sm tb-settings" data-t="tb-settings" aria-expanded="false" aria-controls="t-tools">${icon('sliders-horizontal', 'sm')} Ajustes del gráfico ${icon('chevron-down', 'sm')}</button>
+            <div class="tb-group" id="t-tools">
             ${seg('ctype', TYPES, store.settings().chartType)}
             <button class="btn btn-ghost btn-sm" popovertarget="ind-pop" aria-label="Indicadores" title="Indicadores">${icon('chart-line', 'sm')}<span class="tb-label">Indicadores</span></button>
             <button class="btn btn-ghost btn-sm" popovertarget="more-pop" aria-label="Más opciones del gráfico" title="Rango, escala, fecha y ajuste">${icon('sliders-horizontal', 'sm')}<span class="tb-label">Más</span></button>
             <div class="tb-tools">
               <button class="icon-btn sm" data-t="fullscreen" aria-label="Pantalla completa" title="Pantalla completa">${icon('maximize-2', 'sm')}</button>
+            </div>
             </div>
           </div>
           <div class="chart-box" id="t-chart"><div class="legend" id="t-legend"></div><div class="chart-msg" id="t-msg" hidden></div>
@@ -241,6 +245,22 @@ export function mount(el) {
     chart.setPeriods(el.dataset.period === 'maPeriod' ? { ma: v } : { ema: v });
   });
   on(root, 'click', '[data-seg="otype"] button', (_, b) => { orderType = b.dataset.value; renderTicket(); });
+  on(root, 'click', '[data-t="tb-settings"]', (_, b) => {
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', String(open));
+    $('.toolbar', root).classList.toggle('tools-open', open);
+  });
+  on(root, 'click', '[data-t="explain"]', (_, b) => {
+    const p = store.positions().find((x) => String(x.id) === b.dataset.id);
+    if (!p) return;
+    const v = trading.valuePosition(p);
+    ask(`Explícame esta operación: ${p.side === 'short' ? 'Short' : 'Long'} en ${p.symbol}, entrada a ${price(p.entryPrice, p.quote)}, precio actual ${price(feed.priceOf(p.symbol), p.quote)}, resultado ${money(v.pnlUsd, { signed: true })} (${pct(v.pnlPct)}). ¿Qué ha pasado y qué riesgos tiene? Sin darme recomendaciones de inversión.`);
+  });
+  on(root, 'click', '[data-t="explain-trade"]', (_, b) => {
+    const t = store.trades().find((x) => String(x.id) === b.dataset.id);
+    if (!t) return;
+    ask(`Explícame esta operación cerrada: ${t.side === 'short' ? 'Short' : 'Long'} en ${t.symbol}, entrada ${price(t.entryPrice, t.quote)}, salida ${price(t.exitPrice, t.quote)}, resultado ${money(t.pnl, { signed: true })} (${pct(t.pnlPct)}). ¿Qué se puede aprender de ella? Sin recomendaciones de inversión.`);
+  });
   on(root, 'click', '[data-seg="dir"] button', (_, b) => { direction = b.dataset.value; if (direction === 'short') orderType = 'market'; renderTicket(); });
   on(root, 'click', 'tr[data-href]', (e, tr) => { if (!e.target.closest('button')) go(tr.dataset.href); });
   on(root, 'click', '[data-share]', (_, b) => shareDialog(store.trades().find((t) => t.id === `f${b.dataset.share}`)));
@@ -257,7 +277,25 @@ export function mount(el) {
   });
 }
 
-export function show(param) {
+/** «Practícalo» de Aprender: `#/trade/BTC:stop` abre Operar con el tipo de orden y un importe de ejemplo ya puestos. */
+function applyPreset(preset) {
+  if (!preset || !store.hasPractice()) return;
+  side = 'buy'; direction = 'long';
+  orderType = preset === 'limit' ? 'limit' : 'market';
+  renderTicket();
+  const px = feed.priceOf(asset.symbol);
+  const set = (id, v) => { const el = $(`#${id}`, root); if (el && Number.isFinite(v) && v > 0) el.value = String(Math.round(v * 100) / 100); };
+  set('t-amount', Math.max(10, Math.min(100, Math.floor(convert(store.cash(), 'USD', currency()) * 0.1))));
+  if (px) {
+    if (preset === 'limit') set('t-limit', px * 0.97);
+    if ((preset === 'stop' || preset === 'bracket') && !serverMode()) set('t-sl', px * 0.95);
+    if (preset === 'bracket' && !serverMode()) set('t-tp', px * 1.15);
+  }
+  updateTicketSummary();
+}
+
+export function show(rawParam) {
+  const [param, preset] = String(rawParam ?? '').split(':');
   const next = findAsset(param) ?? asset ?? findAsset('BTC');
   if (param && !findAsset(param)) toast(`No se encontró «${param}». Mostrando ${next.symbol}.`, 'warning');
   if (!param) history.replaceState(null, '', `#/trade/${next.symbol}`);
@@ -272,6 +310,7 @@ export function show(param) {
   if (sideTab !== 'order') showSideTab(sideTab);
   clearInterval(dockTimer);
   dockTimer = setInterval(updateDockValues, 2000);
+  if (preset) { applyPreset(preset); history.replaceState(null, '', `#/trade/${asset.symbol}`); }
 }
 
 export function hide() {
@@ -307,7 +346,7 @@ function renderHead() {
     </button>
     <div class="sym-price">
       <strong data-px="${asset.symbol}" data-q="${asset.quote}" data-flash>${price(t?.price, asset.quote)}</strong>
-      <div class="gap-8">${liveChange(asset, 'span')} ${statusChip(asset)}</div>
+      <div class="gap-8">${liveChange(asset, 'span')} ${statusChip(asset)}${asset.type === 'stock' ? html` <span class="chip delay-chip" title="Las cotizaciones de bolsa pueden llegar con unos minutos de retraso (hasta unos 15 min en algunas bolsas).">con retraso</span>` : ''}</div>
     </div>
     <div class="sym-actions">
       <button class="icon-btn" data-t="star" aria-pressed="${starred}" aria-label="${starred ? 'Quitar de favoritos' : 'Añadir a favoritos'}" title="Favorito">${icon('star')}</button>
@@ -593,7 +632,7 @@ function decorate() {
   const c = chart.colors();
   const lines = [];
   for (const p of store.positions().filter((x) => x.symbol === asset.symbol)) {
-    lines.push({ price: p.entryPrice, color: c.accent, title: `${p.side === 'short' ? 'Short' : 'Long'} ${units(p.amount)}`, lineStyle: 0 });
+    lines.push({ price: p.entryPrice, color: c.text, title: `${p.side === 'short' ? 'Short' : 'Long'} ${units(p.amount)}`, lineStyle: 0 });
     if (p.stopLoss) lines.push({ price: p.stopLoss, color: c.down, title: 'SL', lineStyle: 2 });
     if (p.takeProfit) lines.push({ price: p.takeProfit, color: c.up, title: 'TP', lineStyle: 2 });
     if (p.side === 'short') lines.push({ price: trading.liquidationPrice(p), color: c.down, title: 'Liquidación', lineStyle: 1 });
@@ -603,7 +642,7 @@ function decorate() {
     if (o.stopPrice) lines.push({ price: o.stopPrice, color: c.muted, title: 'Stop', lineStyle: 2 });
   }
   for (const a of store.alerts().filter((x) => x.symbol === asset.symbol && !x.triggered)) {
-    lines.push({ price: a.target, color: c.text, title: 'Alerta', lineStyle: 1 });
+    lines.push({ price: a.target, color: c.muted, title: 'Alerta', lineStyle: 1 });
   }
   chart.setLines(lines);
   const marks = [];
@@ -636,11 +675,13 @@ function renderTicket() {
       <button type="button" data-t="side" data-side="sell" aria-pressed="${side === 'sell'}">Cerrar</button>
     </div>
     ${side === 'buy' ? html`
-      ${serverMode() ? html`<div class="seg" role="group" data-seg="dir-server"><button type="button" aria-pressed="true">Long · alcista</button>
-          <button type="button" disabled aria-disabled="true" title="${COMING_SOON.serverShort}">Short · próximamente</button></div>
-        <p class="hint">${icon('info', 'sm')} ${can('serverShort', true) ? '' : `${COMING_SOON.serverShort}. `}Los cortos, el Stop Loss y el Take Profit automáticos ya funcionan en la cuenta Demo.</p>`
-        : html`${seg('dir', [['long', 'Long · alcista'], ['short', 'Short · bajista']], direction)}
-        <p class="hint">${short ? 'Ganas si el precio baja. Sin apalancamiento: se aparta como garantía el importe entero, que es tu pérdida máxima (se liquida si el precio llega al doble).' : 'Ganas si el precio sube.'}</p>`}
+      ${serverMode() ? html`<div class="seg seg-dir" role="group" data-seg="dir">
+          <button type="button" data-value="long" aria-pressed="true">Long</button>
+          <button type="button" data-value="short" disabled title="El Short en Mi cuenta llegará pronto. En Demo ya puedes probarlo, y con Stop Loss y Take Profit.">Short <small class="soon">Pronto</small></button></div>`
+        : html`<div class="seg seg-dir" role="group" data-seg="dir">
+          <button type="button" data-value="long" aria-pressed="${direction === 'long'}">Long</button>
+          <button type="button" data-value="short" aria-pressed="${direction === 'short'}">Short</button></div>
+        <p class="hint">${short ? 'Ganas si el precio baja. Se aparta el importe entero como garantía; se liquida si el precio llega al doble.' : 'Ganas si el precio sube.'}</p>`}
       ${short ? '' : html`${seg('otype', orderTypes(), currentType())}
       ${orderHint()}`}
       ${orderType === 'stop-limit' ? html`<div class="field"><label for="t-stop">Precio de activación (${asset.quote})</label>
@@ -656,7 +697,8 @@ function renderTicket() {
           <div class="input-group"><input id="t-tp" inputmode="decimal" type="number" step="any" min="0" placeholder="${short ? 'Por debajo' : 'Por encima'}"><span>${asset.quote}</span></div></div>
       </div>` : ''}
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn ${short ? 'btn-down' : 'btn-primary'} btn-lg btn-block" data-t="submit">${short ? `Abrir Short en ${asset.symbol}` : orderType === 'market' ? `Comprar ${asset.symbol} (Long)` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>`
+      <button class="btn ${short ? 'btn-down' : 'btn-primary'} btn-lg btn-block" data-t="submit">${short ? `Abrir Short en ${asset.symbol}` : orderType === 'market' ? `Comprar ${asset.symbol} (Long)` : `Colocar orden ${orderType === 'limit' ? 'límite' : 'stop'}`}</button>
+      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
     : pos ? html`
       ${serverMode() ? html`${seg('otype', orderTypes(), currentType())}${orderHint()}` : ''}
       ${serverMode() && orderType !== 'market' ? levelField() : ''}
@@ -666,7 +708,8 @@ function renderTicket() {
         <div class="input-group"><input id="t-units" inputmode="decimal" type="number" step="any" min="0" max="${freeUnits(pos)}" value="${freeUnits(pos)}"><span>${asset.symbol}</span></div></div>
       <div class="pct-row">${[25, 50, 75, 100].map((p) => html`<button type="button" data-t="pct" data-pct="${p}">${p === 100 ? 'Todo' : `${p}%`}</button>`)}</div>
       <dl class="summary" id="t-summary"></dl>
-      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>`
+      <button class="btn btn-primary btn-lg btn-block" data-t="submit">${serverMode() && orderType !== 'market' ? `Colocar venta ${orderType === 'limit' ? 'límite' : 'stop'}` : `Cerrar ${pos.side === 'short' ? 'Short' : 'Long'} de ${asset.symbol}`}</button>
+      <p class="hint edu-note">Simulador educativo, no es asesoramiento.</p>`
     : empty('wallet', `No tienes posición en ${asset.symbol}`, 'Abre una posición Long o Short (en Demo) para poder cerrarla aquí.')}
     <p class="hint">Disponible: <span class="money">${money(store.cash())}</span></p>
     ${serverMode() ? '' : html`<p class="hint demo-note">${icon('info', 'sm')} Demo: se guarda solo en este navegador. Si borras los datos del navegador, se pierde.</p>`}`);
@@ -687,11 +730,15 @@ function updateTicketSummary() {
     const amount = readNumber('t-amount');
     const execPx = orderType === 'market' ? px : readNumber('t-limit');
     const qty = amount && execPx ? convert(amount, currency(), asset.quote) / execPx : 0;
+    const equityUsd = trading.portfolio().equityUsd;
+    const share = amount && equityUsd > 0 ? (convert(amount, currency(), 'USD') / equityUsd) * 100 : null;
     render(box, html`
       <div><dt>${direction === 'short' ? 'Tamaño del corto' : 'Recibirás aprox.'}</dt><dd>${qty ? units(qty, asset.symbol) : '—'}</dd></div>
       <div><dt>${orderType === 'market' ? 'Precio de mercado' : levelLabel()}</dt><dd>${price(execPx, asset.quote)}</dd></div>
       ${direction === 'short' ? html`<div><dt>Liquidación a</dt><dd>${execPx ? price(execPx * 2, asset.quote) : '—'}</dd></div>` : ''}
-      <div><dt>Comisión</dt><dd>${feeText(amount ? convert(amount, currency(), 'USD') : 0)}</dd></div>`);
+      <div><dt>Comisión</dt><dd>${feeText(amount ? convert(amount, currency(), 'USD') : 0)}</dd></div>
+      ${share != null ? html`<div><dt>% de tu cuenta</dt><dd class="${share > 25 ? 'delta down' : ''}">${share.toLocaleString('es-ES', { maximumFractionDigits: 1 })} %</dd></div>` : ''}
+      ${share > 25 ? html`<div class="warn-note"><dd>${icon('triangle-alert', 'sm')} Supera el 25 % de tu cuenta: una sola posición concentra mucho riesgo.</dd></div>` : ''}`);
   } else {
     const pos = store.positions().find((p) => p.symbol === asset.symbol);
     const qty = readNumber('t-units');
@@ -1009,7 +1056,7 @@ function renderDock() {
         <td class="r col-x muted">${p.stopLoss ? price(p.stopLoss, p.quote) : '—'} / ${p.takeProfit ? price(p.takeProfit, p.quote) : '—'}</td>
         <td class="r money col-x" data-pv="${p.id}"></td>
         <td class="r money" data-pp="${p.id}"></td>
-        <td class="r"><button class="btn btn-ghost btn-sm" data-t="close" data-id="${p.id}">Cerrar</button></td></tr>`)}</tbody></table>`);
+        <td class="r"><div class="pos-actions"><button class="btn btn-ghost btn-sm" data-t="explain" data-id="${p.id}" aria-label="Explícame esta posición" title="Pregunta al asistente por esta posición">${icon('sparkles', 'sm')}<span class="explain-label">Explícame</span></button> <button class="btn btn-ghost btn-sm" data-t="close" data-id="${p.id}">Cerrar</button></div></td></tr>`)}</tbody></table>`);
     updateDockValues();
   } else if (dockTab === 'orders') {
     if (!orders.length) return render(box, empty('clock', 'Nada en la cola', 'Las órdenes límite y stop esperan aquí, con su saldo reservado, hasta ejecutarse o cancelarse.'));
@@ -1026,7 +1073,7 @@ function renderDock() {
       <tbody>${trades.map((t) => html`<tr data-href="/trade/${t.symbol}">
         <td class="muted">${new Date(t.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td><td><strong>${t.symbol}</strong> ${sideChip(t)}</td>
         <td class="r">${units(t.amount)}</td><td class="r">${price(t.entryPrice, t.quote)}</td><td class="r">${price(t.exitPrice, t.quote)}</td>
-        <td class="r money delta ${trendClass(t.pnl)}">${money(t.pnl, { signed: true })} · ${pct(t.pnlPct)}</td><td class="r">${raw(isVisible('community') ? shareButton(t) : '')}</td></tr>`)}</tbody></table>`);
+        <td class="r money delta ${trendClass(t.pnl)}">${money(t.pnl, { signed: true })} · ${pct(t.pnlPct)}</td><td class="r"><button class="btn btn-ghost btn-sm" data-t="explain-trade" data-id="${t.id}" title="Pregunta al asistente por esta operación">${icon('sparkles', 'sm')}Explícame</button> ${raw(isVisible('community') ? shareButton(t) : '')}</td></tr>`)}</tbody></table>`);
   }
 }
 

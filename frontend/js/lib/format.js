@@ -153,3 +153,10 @@ export function duration(ms) {
   if (h < 48) return `${h} h ${m % 60} min`;
   return `${Math.floor(h / 24)} d ${h % 24} h`;
 }
+
+/** «hu•••@gmail.com»: abrevia el email para no enseñarlo entero (menús y capturas). */
+export function maskEmail(email) {
+  const [user = '', domain = ''] = String(email ?? '').split('@');
+  if (!domain) return user;
+  return `${user.slice(0, Math.min(2, user.length))}•••@${domain}`;
+}

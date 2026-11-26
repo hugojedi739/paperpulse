@@ -3,7 +3,7 @@ import * as store from '../lib/store.js';
 import { priceOf } from '../lib/feed.js';
 import { ASSETS, findAsset } from '../lib/catalog.js';
 import { html, icon, raw, render, openDialog, toast, confirmDialog, download, $ } from '../lib/dom.js';
-import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference } from '../lib/format.js';
+import { money, price, units, pct, currency, trendClass, timeAgo, setCurrencyPreference, maskEmail } from '../lib/format.js';
 import * as trading from '../lib/trading.js';
 import * as account from '../lib/account.js';
 import * as auth from '../lib/auth.js';
@@ -219,7 +219,7 @@ export function settingsDialog() {
       ${signedIn ? html`<div class="gap-8">
         <button class="btn btn-ghost btn-sm" data-act="my-data">${icon('download', 'sm')} Descargar mis datos (JSON)</button>
       </div>
-      <p class="hint">Sesión iniciada como ${auth.currentUser().email}. «Mi cuenta» vive en el servidor, y tu Demo, favoritos, alertas y ajustes se guardan también en tu cuenta. «Descargar mis datos» incluye todo lo que el servidor guarda de ti.</p>` : html`<div class="gap-8">
+      <p class="hint">Sesión iniciada como ${store.settings().hideIdentity ? 'una cuenta oculta' : maskEmail(auth.currentUser().email)}. «Mi cuenta» vive en el servidor, y tu Demo, favoritos, alertas y ajustes se guardan también en tu cuenta. «Descargar mis datos» incluye todo lo que el servidor guarda de ti.</p>` : html`<div class="gap-8">
         <button class="btn btn-ghost btn-sm" data-act="export">${icon('download', 'sm')} Exportar copia (JSON)</button>
         <label class="btn btn-ghost btn-sm">${icon('upload', 'sm')} Importar copia<input type="file" accept="application/json,.json" hidden id="imp-file"></label>
       </div>

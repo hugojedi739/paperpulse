@@ -140,6 +140,22 @@ export function createTradingChart(container, legendEl) {
   let markers = null;
   let watermark = null;
   let lines = [];
+  /** Evita etiquetas del eje solapadas: una línea cuyo precio queda a menos de 18 px del último precio (o de otra
+   *  línea ya visible) pierde la etiqueta del eje y conserva la línea y su título. */
+  const declutter = () => {
+    const place = () => {
+      if (!main || !data.length) return;
+      const taken = [main.priceToCoordinate(data[data.length - 1].close)].filter((y) => y != null);
+      for (const { opts, line } of [...lines].sort((a, b) => a.opts.price - b.opts.price)) {
+        const y = main.priceToCoordinate(opts.price);
+        const clash = y == null || taken.some((t) => Math.abs(t - y) < 18);
+        line.applyOptions({ axisLabelVisible: !clash });
+        if (!clash) taken.push(y);
+      }
+    };
+    requestAnimationFrame(place);
+    setTimeout(place, 700);
+  };
   let srLines = []; // soportes y resistencias (líneas de precio de la serie principal)
   let markTips = new Map(); // vela → textos de sus marcadores (compra, venta), para la leyenda
   const ind = {};
@@ -375,6 +391,7 @@ export function createTradingChart(container, legendEl) {
     setLines(list) {
       lines.forEach((l) => { try { main?.removePriceLine(l.line); } catch { /* serie recreada */ } });
       lines = main ? list.map((opts) => ({ opts, line: main.createPriceLine({ lineWidth: 1, axisLabelVisible: true, ...opts }) })) : [];
+      declutter();
     },
     setMarkers(list) {
       if (!markers) return;
@@ -459,6 +476,13 @@ export function createEquityChart(container, { formatter }) {
     const last = xy.at(-1);
     if (last) drawHalo(scope, last.x, last.y, pts.at(-1).value >= base ? c.up : c.down, 24, c.light ? 0.2 : 0.34);
   }));
+  // Saltos de la curva (ventas cerradas): un punto sobre la línea y, al pasar por encima, su explicación como tooltip
+  const marks = createSeriesMarkers(series, []);
+  let tips = new Map();
+  chart.subscribeCrosshairMove((param) => {
+    const tip = param.time != null ? tips.get(param.time) : null;
+    if (tip) container.title = tip; else container.removeAttribute('title');
+  });
   return {
     setData(points, baseValue) {
       base = baseValue;
@@ -466,6 +490,20 @@ export function createEquityChart(container, { formatter }) {
       series.applyOptions(seriesOpts(base));
       series.setData(points);
       chart.timeScale().fitContent();
+    },
+    /** events: [{ time (s), text }]; cada uno se pega a la muestra más cercana de la curva. */
+    setEvents(events) {
+      tips = new Map();
+      const list = [];
+      for (const e of events) {
+        let best = null;
+        for (const p of pts) if (best == null || Math.abs(p.time - e.time) < Math.abs(best.time - e.time)) best = p;
+        if (!best || Math.abs(best.time - e.time) > 3600 * 6) continue;
+        tips.set(best.time, [tips.get(best.time), e.text].filter(Boolean).join(' · '));
+        list.push({ time: best.time, position: 'inBar', shape: 'circle', color: c.text, size: 1 });
+      }
+      const seen = new Set();
+      marks.setMarkers(list.filter((m) => !seen.has(m.time) && seen.add(m.time)).sort((a, b) => a.time - b.time));
     },
     theme() { c = palette(); chart.applyOptions(opts()); series.applyOptions(seriesOpts(base)); },
     destroy: () => chart.remove(),

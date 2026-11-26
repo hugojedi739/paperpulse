@@ -2,6 +2,7 @@
 // noticias, estado de los mercados, divisas y búsqueda.
 import { CRYPTO, findAsset } from './catalog.js';
 import { getJson } from './api.js';
+import { reportSource } from './feed.js';
 
 const cache = new Map();
 
@@ -42,8 +43,9 @@ export function cryptoMarkets() {
   return cached('cg', 5 * 60_000, async () => {
     const rows = (await getJson(`/api/crypto/markets?ids=${ids}`)).data ?? [];
     if (rows.length) save('cg', rows);
+    reportSource('coingecko', rows.length > 0);
     return marketsMap(rows);
-  }).catch(() => new Map());
+  }).catch(() => { reportSource('coingecko', false); return new Map(); });
 }
 /** Lo último guardado de CoinGecko (o null), para pintar Mercados antes de que llegue lo nuevo. */
 export function savedCryptoMarkets() {

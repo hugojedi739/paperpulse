@@ -1877,9 +1877,9 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--text-1); }
 .top-brand .brand-mark { width: 26px; height: 24px; }
 .topbar .page-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .top-nav { display: flex; gap: 2px; }
-.top-nav a { padding: 6px 12px; border-radius: var(--r-md); color: var(--text-2); font-weight: 500; }
-.top-nav a:hover { background: var(--surface-2); color: var(--text-1); }
-.top-nav a[aria-current='page'] { background: var(--selected); color: var(--text-1); }
+.top-nav > a { padding: 6px 12px; border-radius: var(--r-md); color: var(--text-2); font-weight: 500; }
+.top-nav > a:hover { background: var(--surface-2); color: var(--text-1); }
+.top-nav > a[aria-current='page'] { background: var(--selected); color: var(--text-1); }
 .topbar .search-trigger { margin-left: auto; margin-right: 0; flex: 0 1 320px; height: 34px; }
 .statusbar { border-bottom: 1px solid var(--border); }
 @media (max-width: 767px) {
@@ -2231,3 +2231,235 @@ section.cta[aria-labelledby='d-cta-title'] .hero-actions { margin-bottom: var(--
   .home-equity .hero-chart { height: 220px; }
   section.cta[aria-labelledby='d-cta-title'] { padding: var(--s-4); }
 }
+
+/* =============================================================================
+   Navegación y vistas (sobrio, como una plataforma de trading): menús de la cabecera de dos columnas, insignia
+   «Virtual», tira de mercados, Mercados con columnas condicionales, progreso de Aprender y barra lateral del panel.
+   Sin degradados, sin desenfoque y solo con los tokens de arriba.
+   ============================================================================= */
+
+/* ---- Menús desplegables de la cabecera (ui/megamenu.js) ---- */
+.mega { position: relative; }
+.mega-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px 6px 12px; border: 0; border-radius: var(--r-md); background: none; color: var(--text-2); font: inherit; font-weight: 500; cursor: pointer; }
+.mega-btn:hover, .mega-btn[aria-expanded='true'] { background: var(--surface-2); color: var(--text-1); }
+.mega-btn[aria-current='page'] { background: var(--selected); color: var(--text-1); }
+.mega-btn .icon { width: 14px; height: 14px; transition: transform 0.15s var(--ease); }
+.mega-btn[aria-expanded='true'] .icon { transform: rotate(180deg); }
+.mega-btn:focus-visible, .mega-item:focus-visible, .mega-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.mega-panel { position: absolute; z-index: 60; top: 100%; left: 0; display: grid; grid-template-columns: minmax(280px, 1.3fr) minmax(200px, 1fr); width: min(620px, 92vw);
+  margin-top: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-pop); overflow: hidden; }
+.mega-panel[hidden] { display: none; }
+.mega-col { display: grid; align-content: start; gap: 2px; padding: var(--s-2); }
+.mega-side { background: var(--surface-2); border-left: 1px solid var(--border); }
+.mega-item { display: flex; gap: var(--s-3); align-items: flex-start; padding: 10px; border-radius: var(--r-md); color: var(--text-1); text-decoration: none; }
+.mega-item:hover { background: var(--surface-2); }
+.mega-ic { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-md); background: var(--surface-3); color: var(--text-1); }
+.mega-tx { display: grid; gap: 2px; min-width: 0; }
+.mega-tx strong { font-weight: 600; }
+.mega-tx small { color: var(--text-3); font-size: var(--fs-sm); text-wrap: pretty; }
+.mega-title { margin: 6px 10px 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); }
+.mega-link { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: var(--r-md); color: var(--text-2); text-decoration: none; font-size: var(--fs-sm); }
+.mega-link:hover { background: var(--surface-3); color: var(--text-1); }
+.mega-all { margin-top: 4px; color: var(--text-1); font-weight: 600; }
+
+/* ---- Barra inferior del móvil: 3 pestañas planas, sin globo ---- */
+.tabbar { backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+.tabbar a { font-weight: 500; }
+
+/* ---- Cuenta: un solo selector y la insignia «Virtual» ---- */
+.acct-tag { height: 22px; padding: 0 var(--s-2); border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.02em; }
+.acct-tag .icon { display: none; }
+
+/* ---- Portada: sin degradado en el hero y tira de mercados ---- */
+.cta { background: var(--surface-1); }
+.market-strip { display: flex; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; margin-bottom: var(--s-4); }
+.strip-item { flex: 1 0 150px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-1); color: var(--text-1); text-decoration: none; font-variant-numeric: tabular-nums; }
+.strip-item:hover { background: var(--surface-2); }
+.strip-sym { font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); }
+.strip-px { grid-column: 1; font-weight: 600; }
+.strip-item [data-chg] { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: var(--fs-sm); }
+
+/* ---- Operar: el ticket se queda fijo a la derecha al desplazar ---- */
+@media (min-width: 1081px) {
+  .trade > .side { position: sticky; top: calc(var(--top-h) + var(--s-3)); max-height: calc(100dvh - var(--top-h) - var(--s-5)); overflow-y: auto; }
+}
+@media (max-width: 767px) {
+  /* Temporalidades sin cortarse: la barra de controles salta de línea en vez de desplazarse, y el gráfico gana altura */
+  .chart-card .toolbar { flex-wrap: wrap; overflow: visible; row-gap: var(--s-1); }
+  .chart-card .toolbar > #t-intervals { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: var(--s-1); }
+  .chart-card .toolbar > #t-intervals .seg { flex-wrap: wrap; }
+  .chart-box { height: clamp(260px, calc(100dvh - 300px), 66vh); }
+}
+
+/* ---- Mercados: columnas sin dato fuera (columnas: 1 #, 2 activo, 3 precio, 4 24 h, 5 7 d, 6 capitalización, 7 volumen, 8 tendencia) ---- */
+.markets-table.no-7d :is(th, td):nth-child(5),
+.markets-table.no-cap :is(th, td):nth-child(6),
+.markets-table.no-vol :is(th, td):nth-child(7),
+.markets-table.no-spark :is(th, td):nth-child(8) { display: none; }
+.th-sort { cursor: pointer; }
+.th-sort:hover { color: var(--text-1); }
+th[aria-sort] .th-sort { color: var(--text-1); }
+th[aria-sort='ascending'] .th-sort::after { content: ' ↑'; }
+th[aria-sort='descending'] .th-sort::after { content: ' ↓'; }
+
+/* ---- Aprender: progreso y «Practícalo» ---- */
+.learn-progress { display: grid; gap: 6px; margin: var(--s-3) 0; }
+.progress { width: 100%; height: 6px; border: 0; border-radius: 999px; overflow: hidden; background: var(--surface-3); accent-color: var(--text-1); appearance: none; -webkit-appearance: none; }
+.progress::-webkit-progress-bar { background: var(--surface-3); }
+.progress::-webkit-progress-value { background: var(--text-1); border-radius: 999px; }
+.progress::-moz-progress-bar { background: var(--text-1); border-radius: 999px; }
+.practice-btn { justify-self: start; margin: var(--s-3) 0; }
+
+/* ---- Administración: barra lateral y misma estética sobria ---- */
+.admin-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.admin-nav { position: sticky; top: calc(var(--top-h) + var(--s-3)); display: grid; gap: 2px; padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-1); }
+.admin-nav-group { margin: var(--s-3) var(--s-2) 2px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); }
+.admin-nav-group:first-child { margin-top: var(--s-1); }
+.admin-nav button { display: flex; align-items: center; gap: var(--s-2); width: 100%; padding: 8px 10px; border: 0; border-radius: var(--r-md); background: none; color: var(--text-2); font: inherit; font-weight: 500; text-align: left; cursor: pointer; }
+.admin-nav button:hover { background: var(--surface-2); color: var(--text-1); }
+.admin-nav button[aria-current='page'] { background: var(--selected); color: var(--text-1); }
+.admin-nav .count { margin-left: auto; }
+.admin-main { display: grid; gap: var(--s-4); min-width: 0; }
+.health-list { display: grid; gap: 0; }
+.health-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--s-3); align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.health-row:last-child { border-bottom: 0; }
+.health-row small { color: var(--text-3); }
+@media (max-width: 900px) {
+  .admin-layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-nav { position: static; display: flex; overflow-x: auto; scrollbar-width: none; padding: var(--s-1); }
+  .admin-nav button { width: auto; white-space: nowrap; }
+  .admin-nav-group { display: none; }
+}
+@media (max-width: 767px) {
+  .mega-panel { width: 92vw; grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Long / Short: control segmentado de dos mitades iguales ---- */
+.seg-dir { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.seg-dir button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; }
+.seg-dir button[data-value='long'][aria-pressed='true'] { background: var(--up); color: #fff; box-shadow: none; }
+.seg-dir button[data-value='short'][aria-pressed='true'] { background: var(--down); color: #fff; box-shadow: none; }
+.seg-dir button:disabled { opacity: 1; color: var(--text-3); }
+.seg-dir .soon { font-size: var(--fs-xs); padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-2); }
+
+/* ---- Fase 2: sistema visual sobrio (radios 6–8 px, sin degradados, separación en claro, movimiento breve) ---- */
+:root { --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --dur: 150ms; }
+:root[data-theme='light'] {
+  --bg: #f4f4f6;               /* el fondo se separa de las tarjetas blancas */
+  --surface-1: #ffffff;
+  --surface-2: #f4f4f6;
+  --surface-3: #e8e8ec;
+  --border: #dcdce1;
+  --border-strong: #c6c6cd;
+  --card-shadow: 0 1px 2px rgb(24 24 27 / 0.05);
+}
+.card, .chart-card { box-shadow: var(--card-shadow); }
+/* Demo / Mi cuenta: la opción activa es un gris con borde, no un bloque negro (en claro y en oscuro) */
+.acct-opt[aria-checked='true'] { background: var(--selected); color: var(--text-1); box-shadow: inset 0 0 0 1px var(--border-strong); }
+:root[data-theme='light'] .acct-opt[aria-checked='true'] { background: var(--surface-3); }
+/* Sin degradados: hero plano y esqueleto con parpadeo de opacidad */
+.cta { background: var(--surface-1); box-shadow: none; }
+.skeleton { background: var(--surface-3); background-size: auto; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+/* Cifras tabulares en todo lo numérico y transiciones cortas */
+.money, [data-px], [data-chg], .metric-value, td, .mono, .summary dd { font-variant-numeric: tabular-nums; }
+a, button, .seg button, .card, .acct-opt, .mega-item, .mega-link { transition: background-color var(--dur) ease, color var(--dur) ease, border-color var(--dur) ease; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+
+/* ---- Portada: tres ventajas en una línea ---- */
+.why-line { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2) var(--s-5); margin: 0; padding: var(--s-3) 0; list-style: none; }
+.why-line a { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); text-decoration: none; font-weight: 500; }
+.why-line a:hover { color: var(--text-1); }
+
+/* ---- Operar: aviso de concentración y botón «Explícame» ---- */
+.summary .warn-note { grid-column: 1 / -1; color: var(--warn); }
+.summary .warn-note dd { display: flex; align-items: center; gap: 6px; margin: 0; font-size: var(--fs-sm); text-align: left; }
+.pos-table .btn-sm .icon { margin-right: 4px; }
+
+/* ---- Aprender: mini-cuestionario ---- */
+.quiz { display: grid; gap: var(--s-3); margin: var(--s-4) 0; padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
+.quiz-title { margin: 0; font-size: var(--fs-md); }
+.quiz-q { display: grid; gap: var(--s-2); margin: 0; padding: 0; border: 0; min-width: 0; }
+.quiz-q legend { padding: 0; font-weight: 600; margin-bottom: var(--s-2); }
+.quiz-opts { display: grid; gap: var(--s-1); }
+.quiz-opt { padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface-1); color: var(--text-1); font: inherit; text-align: left; cursor: pointer; }
+.quiz-opt:hover:not(:disabled) { background: var(--surface-3); }
+.quiz-opt:disabled { cursor: default; opacity: 1; }
+.quiz-opt.is-right { border-color: var(--up); background: var(--up-fill); }
+.quiz-opt.is-wrong { border-color: var(--down); background: var(--down-fill); }
+.quiz-why { margin: 0; }
+.quiz-result { margin: 0; font-weight: 600; }
+
+/* ---- Administración: Okta plegado si no se usa ---- */
+.okta-card > summary { cursor: pointer; padding: var(--s-1) 0; }
+.okta-card[open] > summary { margin-bottom: var(--s-3); }
+.okta-card > form > .card-head { display: none; }
+
+/* ---- Portada: hero con el mini-gráfico en vivo al lado (escritorio) ---- */
+.hero-row { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-4); margin-bottom: var(--s-4); align-items: stretch; }
+.hero-row > .card { margin: 0; }
+@media (max-width: 1000px) { .hero-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Posiciones en móvil: «Explícame» solo con icono para que la fila no se salga ---- */
+@container (max-width: 560px) {
+  .pos-table .explain-label { display: none; }
+  .pos-table td:last-child { white-space: normal; }
+}
+@media (max-width: 767px) {
+  .dock .table-wrap, .dock { overflow-x: auto; max-width: 100%; }
+}
+
+@media (max-width: 767px) {
+  /* Barra del gráfico compacta: temporalidades en una fila y el resto en la siguiente, para dejar altura al gráfico */
+  .chart-card .toolbar .seg button { min-width: 0; padding-inline: 8px; }
+  .chart-card .toolbar > #t-intervals .seg { gap: 0; }
+  .chart-card .toolbar > #t-intervals .seg button { padding-inline: 7px; }
+  .chart-card .toolbar { gap: var(--s-1); padding: var(--s-2); }
+}
+
+.pos-actions { display: inline-flex; gap: var(--s-1); justify-content: flex-end; }
+@container (max-width: 560px) {
+  .pos-actions { flex-direction: column; align-items: stretch; }
+  .pos-actions .btn { width: 100%; justify-content: center; }
+}
+.home-solo { grid-template-columns: minmax(0, 1fr); }
+.home-solo > .home-main { display: none; }
+@container (max-width: 560px) {
+  .pos-asset { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .pos-table .asset-cell { gap: 6px; }
+  .pos-table .asset-cell strong { max-width: 11ch; overflow: hidden; text-overflow: ellipsis; }
+  .pos-actions .btn { padding-inline: 8px; }
+}
+
+/* ---- Tarjeta del S&P 500 sin sesión: vista previa borrosa de la comparativa ---- */
+.compare-locked { display: grid; gap: var(--s-3); }
+.compare-preview { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
+.compare-sample { display: grid; gap: var(--s-2); padding: var(--s-4); filter: blur(5px); opacity: 0.7; user-select: none; pointer-events: none; }
+.compare-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 70px; gap: var(--s-3); align-items: center; font-variant-numeric: tabular-nums; }
+.compare-row i { display: block; height: 10px; border-radius: 999px; background: var(--text-3); }
+.compare-row i.up { background: var(--up); }
+.compare-row strong { text-align: right; }
+.compare-cta { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s-2) var(--s-4); padding: var(--s-3); background: color-mix(in srgb, var(--surface-1) 55%, transparent); text-align: center; }
+.compare-cta p { margin: 0; max-width: 46ch; color: var(--text-1); font-size: var(--fs-sm); }
+
+/* ---- Barra del gráfico: «Ajustes del gráfico» agrupa las herramientas (en móvil se despliega) ---- */
+.tb-group { display: contents; }
+.tb-settings { display: none; }
+@media (max-width: 767px) {
+  .chart-card .toolbar .tb-settings { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+  .tb-settings[aria-expanded='true'] .icon:last-child { transform: rotate(180deg); }
+  .chart-card .toolbar .tb-group { display: none; }
+  .chart-card .toolbar.tools-open .tb-group { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+  .chart-card .toolbar > #t-intervals { flex: 1 1 100%; }
+  .chart-card .toolbar .tb-label { display: inline; }
+}
+
+/* ---- Avisos: simulador educativo junto al botón y «con retraso» en bolsa ---- */
+.edu-note { margin: var(--s-2) 0 0; text-align: center; font-size: var(--fs-xs); color: var(--text-3); }
+.delay-chip { color: var(--warn); border-color: var(--warn); background: var(--warn-fill); }
+.delay-banner { display: flex; align-items: center; gap: var(--s-2); padding: 6px var(--s-4); border-bottom: 1px solid var(--border); background: var(--warn-fill); color: var(--text-1); font-size: var(--fs-sm); }
+.delay-banner[hidden] { display: none; }
+.delay-banner .icon { flex: none; color: var(--warn); }
+.compare-cta { flex-direction: column; background: color-mix(in srgb, var(--surface-1) 78%, transparent); }
