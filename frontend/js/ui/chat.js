@@ -175,6 +175,12 @@ function context() {
   };
 }
 
+/** Abre el asistente y le envía una pregunta (p. ej. «Explícame esta operación»). */
+export function ask(question) {
+  toggleChat(true);
+  return send(question);
+}
+
 async function send(raw) {
   const message = raw.trim().slice(0, 2000);
   if (!message || busy) return;

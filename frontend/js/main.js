@@ -3,7 +3,7 @@ import * as store from './lib/store.js';
 import * as feed from './lib/feed.js';
 import { ASSETS, findAsset, toAsset, register } from './lib/catalog.js';
 import { html, icon, render, on, $, $$, toast, announce, confirmDialog } from './lib/dom.js';
-import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference } from './lib/format.js';
+import { money, price, pct, trendClass, timeAgo, setRates, setCurrencyPreference, maskEmail } from './lib/format.js';
 import { portfolio, checkTriggers } from './lib/trading.js';
 import { marketsInfo, fxRates } from './lib/marketdata.js';
 import { setRules as setAlertRules } from './lib/market-alert.js';
@@ -27,7 +27,7 @@ import { initPalette, openPalette } from './ui/palette.js';
 import { initChat, toggleChat } from './ui/chat.js';
 import { startTour } from './ui/tour.js';
 import { checkGoals } from './ui/celebrate.js';
-import { initTabbar } from './ui/tabbar.js';
+import { initMegaMenus, markMegaActive } from './ui/megamenu.js';
 import { initDismiss } from './ui/dismiss.js';
 import { VISIBLE_SECTIONS, isVisible, isReachable } from './lib/sections.js';
 
@@ -63,13 +63,15 @@ applyPrivacy();
 
 /* ---------- Secciones visibles (lib/sections.js) ---------- */
 // Se quitan del menú, de la barra inferior y del menú de perfil los enlaces a secciones ocultas (antes de initTabbar,
-// que mide las pestañas). Administración sale del menú pero sigue abriéndose por URL con sus permisos de siempre.
+// que mide las pestañas). Los enlaces de Administración se conservan (data-admin-only) y solo se enseñan a quien tiene rol admin.
 $$('.nav a[data-route], .top-nav a[data-route], .tabbar a[data-route], #user-pop a[href^="#/"]').forEach((a) => {
   const target = a.dataset.route ?? a.getAttribute('href').replace(/^#\/?/, '').split('/')[0];
+  if (a.hasAttribute('data-admin-only') || a.hasAttribute('data-keep')) return; // Administración: la enseña u oculta auth.onAuth según el rol (el servidor lo vuelve a comprobar)
   if (!isVisible(target)) a.remove();
 });
 
 /* ---------- Enrutado ---------- */
+let viewTransition = null; // transición de vista en curso (solo una a la vez)
 async function route() {
   const { route: name, param } = current();
   const view = VIEWS[name] || LAZY[name] ? name : 'dashboard';
@@ -101,12 +103,21 @@ async function route() {
     active = view;
     feed.setPollRate(view === 'trade'); // 5 s en Operar, 10 s en el resto (solo afecta al respaldo REST)
     $$('[data-route]').forEach((a) => (a.dataset.route === view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+    markMegaActive(view);
     $('#page-title').textContent = VIEWS[view].title;
     announce(`${VIEWS[view].title}`);
   };
   const changing = active !== view;
-  if (changing && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(swap);
-  else swap();
+  // «Transition was aborted… Prepaint layout check failed»: pasa si empieza otra transición mientras la anterior sigue
+  // en curso o con la pestaña oculta. Es solo cosmética: se omite en esos casos y se silencian sus promesas de fin.
+  if (changing && document.startViewTransition && document.visibilityState === 'visible' && !viewTransition
+    && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const t = document.startViewTransition(swap);
+    viewTransition = t;
+    const done = () => { if (viewTransition === t) viewTransition = null; };
+    t.ready.catch(() => {});
+    t.finished.then(done, done);
+  } else swap();
   if (changing) scrollTo({ top: 0 });
 }
 addEventListener('hashchange', route);
@@ -133,6 +144,7 @@ store.on('settings', (detail) => {
     if (key) for (const v of mounted) VIEWS[v].theme?.(); // los gráficos leen los colores al pintarse
   }
   if (!key || key === 'privacyMode') applyPrivacy();
+  if (key === 'hideIdentity') renderAuth(auth.currentUser());
   if (!key) setCurrencyPreference(s.currency);
   if (!key || key === 'currency') { renderAccountChip(); if (active) VIEWS[active].show(current().param); }
 });
@@ -156,12 +168,19 @@ function renderAccountChip() {
 }
 
 function renderAuth(user) {
+  const hidden = store.settings().hideIdentity;
+  render($('#user-id'), user
+    ? html`<div class="menu-head"><strong>${hidden ? 'Cuenta oculta' : user.name}</strong><small>${hidden ? 'Identidad oculta' : maskEmail(user.email)}${auth.lastSyncAt() ? ` · guardado ${timeAgo(auth.lastSyncAt())}` : ''}</small></div><hr>` : '');
   render($('#user-auth'), user
-    ? html`<div class="menu-head"><strong>${user.name}</strong><small>${user.email}${auth.lastSyncAt() ? ` · guardado ${timeAgo(auth.lastSyncAt())}` : ''}</small></div>
-      <button type="button" data-action="export-data">${icon('download')}Descargar mis datos</button>
-      <button type="button" data-action="logout">${icon('log-out')}Cerrar sesión</button><hr>`
+    ? html`<button type="button" data-action="export-data">${icon('download')}Descargar mis datos</button>
+      <button type="button" data-action="logout">${icon('log-out')}Cerrar sesión</button>`
     : html`<button type="button" data-action="login">${icon('log-in')}Iniciar sesión</button>
-      <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button><hr>`);
+      <button type="button" data-action="register">${icon('cloud-upload')}Crear cuenta y guardar en la nube</button>`);
+  const idBtn = $('[data-action="identity"]');
+  idBtn?.setAttribute('aria-pressed', String(hidden));
+  const lbl = $('#identity-label');
+  if (lbl) lbl.textContent = hidden ? 'Mostrar mi identidad' : 'Ocultar mi identidad';
+  if (idBtn) idBtn.hidden = !user;
 }
 auth.onAuth(renderAuth);
 auth.onAuth(renderAccountChip);
@@ -277,6 +296,7 @@ const ACTIONS = {
   // Móvil: la campana vive en el menú de perfil; se abre bajo la cabecera
   notifications: () => { $('#user-pop')?.hidePopover?.(); $('#notif-pop')?.showPopover?.(); },
   privacy: () => store.setSetting('privacyMode', !store.settings().privacyMode),
+  identity: () => store.setSetting('hideIdentity', !store.settings().hideIdentity),
   'read-all': () => (notifs.active() ? notifs.markRead('all').catch(() => {}) : store.markNotificationsRead()),
   'collapse-nav': () => {
     const collapsed = document.documentElement.classList.toggle('nav-collapsed');
@@ -303,12 +323,12 @@ initPalette([
   { label: 'Alertas de precio', icon: 'bell-ring', run: ACTIONS.alerts },
   { label: 'Cambiar tema claro/oscuro', icon: 'sun', keywords: 'theme modo', run: ACTIONS.theme },
   { label: 'Ajustes y copia de seguridad', icon: 'settings', keywords: 'exportar importar divisa', run: ACTIONS.settings },
-  { section: 'admin', label: 'Panel de administración', icon: 'shield-check', keywords: 'admin usuarios google okta claves', run: () => go('/admin') },
+  { label: 'Administración', icon: 'shield-check', keywords: 'admin panel usuarios salud apis mensajes', when: () => auth.isAdmin(), run: () => go('/admin') },
   { label: 'Abrir asistente', icon: 'sparkles', keywords: 'chat ia ayuda', run: () => toggleChat(true) },
   { label: 'Manual de operativa', icon: 'graduation-cap', keywords: 'guia ayuda', run: ACTIONS.guide },
 ].filter((c) => !c.section || isVisible(c.section)));
 initChat({ getAsset: () => trade.currentAsset() ?? findAsset('BTC') });
-initTabbar(); // globo de cristal arrastrable de la barra inferior (solo se ve en móvil)
+initMegaMenus(); // menús desplegables de Mercados y Aprender en la cabecera
 // Franja de estado: en el móvil el estado de las bolsas se pliega (recordado en este navegador); en escritorio, siempre a la vista
 {
   const bar = $('#statusbar');

@@ -14,7 +14,7 @@ import { cryptoMarkets, stockSpark, news, savedNews, safeUrl, candles, savedCryp
 import { assetIcon, changeChip, empty, seg, pressSeg, liveChange, moneyHtml, lockedNote } from '../lib/ui.js';
 import { go } from '../lib/router.js';
 import { mountCard } from '../ui/retention-card.js';
-import { whatIfParts } from '../lib/starting-balance.js';
+import { whatIfParts, startedAmount } from '../lib/starting-balance.js';
 import { goalsCard } from '../ui/goals-card.js';
 import { isVisible } from '../lib/sections.js';
 import { can } from '../lib/capabilities.js';
@@ -93,6 +93,7 @@ export function mount(el) {
   store.on('trades', () => { const box = $('#d-goals', root); if (box && !root.hidden) render(box, goalsCard({ compact: true })); });
   store.on('watchlist', () => !root.hidden && renderWatchlist());
   store.on('markets', () => !root.hidden && renderSessions());
+  document.addEventListener('account:loaded', () => { if (root.isConnected && !root.hidden) renderAll(); });
 }
 
 export function show() {
@@ -114,31 +115,40 @@ function renderAll() {
   feat = null;
   const focus = dashboardFocus({ signedIn: Boolean(user), practice, positions: store.positions().length, orders: store.orders().length });
   const steps = practice ? firstSteps({ practice, trades: store.trades().length, positions: store.positions().length, orders: store.orders().length,
-    lessonsDone: lessonsRead().size }) : null;
+    lessonsDone: lessonsRead().size, nextLessonId: 'que-es-paper-trading' }) : null;
   render(root, html`
-    ${!practice && !user ? html`
-    <section class="card cta" aria-labelledby="d-cta-title">
+    ${!practice && !user ? html`<div class="hero-row">    <section class="card cta" aria-labelledby="d-cta-title">
       <span class="chip accent">Simulador educativo</span>
       <h2 id="d-cta-title">Aprende trading en español, con euros y el IBEX 35. <span>Sin registrarte.</span></h2>
       <p class="hero-sub">Saldo virtual en euros, cotizaciones reales y lecciones en tu idioma, pensado para quien empieza en España y sin dinero real.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" data-action="account">Probar sin registrarme</button>
-        <button class="btn btn-ghost" data-action="register">Crear cuenta gratis</button>
+        <button class="btn btn-primary" data-action="account">Elegir mi saldo</button>
+        <a class="btn btn-ghost" href="#/trade">Probar la demo</a>
       </div>
       <p class="hero-note muted" role="note">${icon('info', 'sm')} Simulador educativo con dinero virtual. No es asesoramiento financiero.</p>
-    </section>` : ''}
-    ${focus.setupFirst ? html`
+    </section>
+    ${featureCard()}</div>` : ''}
+    ${!practice && !user ? marketStrip() : ''}
+    ${focus.setupFirst && account.pending() ? html`
+    <section class="card cta focus-card" aria-busy="true" aria-label="Cargando tu cuenta">
+      <div class="skeleton sk-line w-60"></div><div class="skeleton sk-line"></div><div class="skeleton sk-line w-60"></div>
+    </section>` : focus.setupFirst ? html`
     <section class="card cta focus-card" aria-labelledby="d-start-title">
       <h2 id="d-start-title">Crea tu cuenta de práctica</h2>
       <p class="hero-sub">Elige tu saldo virtual en euros (de 50 a 1.000.000 €) y practica con cotizaciones reales, sin arriesgar dinero.</p>
       <div class="hero-actions"><button class="btn btn-primary" data-action="account">Elegir mi saldo y empezar</button></div>
     </section>` : ''}
-    <div class="home${focus.minimal ? ' home-minimal' : ''}">
+    <div class="home${focus.minimal ? ' home-minimal' : ''}${!practice && !user ? ' home-solo' : ''}">
       ${practice ? html`<section class="home-metrics" aria-label="Tu cuenta">
         ${metric('d-m-eq', 'Patrimonio')}${metric('d-m-day', 'P&L de hoy')}${metric('d-m-total', 'P&L total')}${metric('d-m-cash', 'Disponible')}
       </section>` : ''}
       <div class="home-main">
         ${practice ? html`
+        ${user ? html`<div id="d-compare"></div>` : ''}
+        ${can('compareSp500', Boolean(user)) ? '' : html`<section class="card compare-locked" aria-label="Comparación con el S&amp;P 500">
+            <h2 class="card-title">¿Te ha compensado operar?</h2>
+            <p class="muted">Compara tu rentabilidad, ya con comisiones, con no invertir y con el S&amp;P 500 desde el día en que empezaste.</p>
+            ${lockedNote('Comparación con el S&P 500')}</section>`}
         <section class="card home-equity" aria-labelledby="d-eq-title">
           <div class="card-head"><h2 class="card-title" id="d-eq-title">Patrimonio</h2>${seg('range', RANGES, range)}</div>
           <p class="whatif" id="d-whatif" hidden></p>
@@ -151,11 +161,7 @@ function renderAll() {
           <div id="d-pos"></div>
         </section>
         <section class="card home-learn" id="d-learn" aria-labelledby="d-learn-title"></section>
-          ${user ? html`<div id="d-compare"></div><div id="d-divs"></div>` : ''}
-          ${can('compareSp500', Boolean(user)) ? '' : html`<section class="card compare-locked" aria-label="Comparación con el S&amp;P 500">
-            <h2 class="card-title">¿Te ha compensado operar?</h2>
-            <p class="muted">Compara tu rentabilidad, ya con comisiones, con no invertir y con el S&amp;P 500 desde el día en que empezaste.</p>
-            ${lockedNote('Comparación con el S&P 500')}</section>`}` : focus.minimal ? '' : featureCard()}
+          ${user ? html`<div id="d-divs"></div>` : ''}` : focus.minimal || (!practice && !user) ? '' : featureCard()}
       </div>
       <aside class="home-side" ${focus.minimal ? 'hidden' : ''}>
         <section class="card home-list" aria-labelledby="d-watch-title">
@@ -187,11 +193,12 @@ function renderAll() {
         </section>
       </div>
       ${!practice && !user ? html`
-      <section class="home-why" aria-labelledby="d-why-title">
-        <h2 class="features-title" id="d-why-title">Por qué PaperPulse</h2>
-        <a class="card feature" href="#/learn"><h3>Todo en español</h3><p>Interfaz, lecciones y glosario en tu idioma.</p></a>
-        <a class="card feature" href="#/markets"><h3>En euros, con el IBEX 35</h3><p>Bolsa española junto a Bitcoin y Wall Street, con tu saldo en euros.</p></a>
-        <a class="card feature" href="#/trade"><h3>Empieza sin registrarte</h3><p>Sin email ni tarjeta: la Demo se guarda solo en tu navegador.</p></a>
+      <section class="home-why" aria-label="Por qué PaperPulse">
+        <ul class="why-line">
+          <li><a href="#/learn">${icon('graduation-cap', 'sm')} Todo en español</a></li>
+          <li><a href="#/markets">${icon('coins', 'sm')} En euros, con el IBEX 35</a></li>
+          <li><a href="#/trade">${icon('play', 'sm')} Empieza sin registrarte</a></li>
+        </ul>
       </section>` : ''}
     </div>`);
 
@@ -302,6 +309,15 @@ let featSym = 'BTC';
 let feat = null;
 let featLoad = 0;
 
+/** Tira de mercados de la portada: precio y variación en vivo (los refresca el feed por data-px y data-chg). */
+function marketStrip() {
+  return html`<section class="market-strip" aria-label="Mercados en vivo">${['BTC', 'ETH', 'IBEX', 'NVDA', 'SAN'].map((sym) => {
+    const a = findAsset(sym);
+    return a ? html`<a class="strip-item" href="#/trade/${a.symbol}"><span class="strip-sym">${a.symbol}</span>
+      <span class="num strip-px" data-px="${a.symbol}" data-q="${a.quote}">${tick(a.symbol)?.price ? price(tick(a.symbol).price, a.quote) : '—'}</span>${liveChange(a, 'span')}</a>` : '';
+  })}</section>`;
+}
+
 function featureCard() {
   const a = findAsset(featSym);
   const t = tick(a.symbol);
@@ -353,6 +369,11 @@ function drawEquity() {
       points.length < 2 ? 'Se añade un punto cada minuto mientras tienes la app abierta.' : 'Cuando abras una posición, aquí verás cómo sube o baja.')));
   }
   equity.setData(points, store.initialCapital());
+  // Los saltos de la curva suelen ser ventas: se marcan con un punto y su resultado como tooltip
+  equity.setEvents(points.length < 2 ? [] : store.trades().map((t) => ({
+    time: Date.parse(t.date) / 1000,
+    text: `Venta de ${t.symbol}: ${money(t.pnl, { signed: true })}`,
+  })).filter((e) => e.time >= points[0].time));
 }
 
 function renderSummary() {
@@ -373,7 +394,7 @@ function renderSummary() {
   set('d-m-eq', null, html`<span class="delta ${trendClass(p.returnPct)}">${pct(p.returnPct)}</span> desde el inicio`);
   const dayPct = p.equityUsd - p.change24hUsd > 0 ? (p.change24hUsd / (p.equityUsd - p.change24hUsd)) * 100 : 0;
   set('d-m-day', money(p.change24hUsd, { signed: true }), p.rows.length ? html`<span class="delta ${trendClass(p.change24hUsd)}">${pct(dayPct)}</span> en 24 h` : 'Sin posiciones abiertas', p.change24hUsd);
-  set('d-m-total', money(total, { signed: true }), html`<span class="delta ${trendClass(total)}">${pct(p.returnPct)}</span> sobre ${money(store.initialCapital())}`, total);
+  set('d-m-total', money(total, { signed: true }), html`<span class="delta ${trendClass(total)}">${pct(p.returnPct)}</span> sobre ${startedAmount(store.initialInput()) || money(store.initialCapital())}`, total);
   set('d-m-cash', money(p.cashUsd), p.reservedUsd ? html`${money(p.reservedUsd)} en órdenes` : 'Listo para operar');
   renderWhatIf(p, store.trades().length > 0);
 }

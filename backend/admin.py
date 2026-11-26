@@ -157,6 +157,66 @@ async def oauth_test(request):
                "configured": bool(auth.provider_config(pid))})
 
 
+def _probe(name: str, fn) -> dict:
+    """Mide una comprobación de salud: {name, ok, ms, detail}. Nunca lanza ni devuelve trazas."""
+    t0 = time.perf_counter()
+    try:
+        detail = fn()
+        ok_ = True
+    except Exception as exc:  # el detalle es solo el tipo de error: sin trazas ni URLs
+        detail, ok_ = type(exc).__name__, False
+    return {"name": name, "ok": ok_, "ms": int((time.perf_counter() - t0) * 1000), "detail": detail or ""}
+
+
+def api_health() -> list:
+    """Comprueba en paralelo las APIs de las que depende la app. Bloqueante: llámala con run_in_threadpool."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    import requests
+
+    from backend.market import crypto, stocks
+
+    def database():
+        from contextlib import closing
+        with closing(db.connect()) as conn:
+            conn.execute("SELECT 1").fetchone()
+
+    def binance():
+        crypto.binance_get("/api/v3/ping", {}, timeout=(3, 4))
+
+    def coingecko():
+        r = crypto.HTTP.get("https://api.coingecko.com/api/v3/ping", timeout=(3, 4))
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}")
+
+    def frankfurter():
+        r = requests.get("https://api.frankfurter.app/latest?from=USD", timeout=4)
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}")
+
+    def bolsa():
+        if not stocks.fetch_live_stock_quotes():
+            raise RuntimeError("sin cotizaciones")
+        return settings.get("stock_data_provider")
+
+    def anthropic():
+        if not settings.get("anthropic_api_key"):
+            raise RuntimeError("sin clave")
+        return "clave configurada (no se hace ninguna llamada de pago)"
+
+    checks = [("Base de datos", database), ("Binance", binance), ("CoinGecko", coingecko),
+              ("Bolsa (cotizaciones)", bolsa), ("Divisas (Frankfurter)", frankfurter), ("Asistente (Anthropic)", anthropic)]
+    with ThreadPoolExecutor(max_workers=len(checks)) as pool:
+        return list(pool.map(lambda c: _probe(*c), checks))
+
+
+async def health_apis(request):
+    _, err = await require_admin(request)
+    if err:
+        return err
+    return ok({"checks": await run_in_threadpool(api_health), "checkedAt": int(time.time())})
+
+
 async def badges(request):
     _, err = await require_admin(request)
     if err:
@@ -176,6 +236,7 @@ async def audit(request):
 
 routes = [
     Route("/api/admin/audit", audit, methods=["GET"]),
+    Route("/api/admin/health", health_apis, methods=["GET"]),
     Route("/api/admin/badges", badges, methods=["GET"]),
     Route("/api/admin/overview", overview, methods=["GET"]),
     Route("/api/admin/users", users, methods=["GET"]),

@@ -187,7 +187,7 @@ test('la bandeja de mensajes del panel pinta el texto de usuarios solo con nodos
   const view = read('frontend/js/views/messages.js');
   assert.doesNotMatch(view, /innerHTML|html`|\braw\(/);
   assert.match(view, /userText\(m\.message\)/);
-  assert.match(read('frontend/js/views/admin.js'), /\['messages', 'Mensajes'/);
+  assert.match(read('frontend/js/views/admin.js'), /\['messages', 'Mensajes de contacto'/);
 });
 
 test('ningún fichero del frontend propio contiene una dirección de correo', () => {

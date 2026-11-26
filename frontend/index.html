@@ -11,10 +11,17 @@
   <meta property="og:title" content="PaperPulse — Aprende trading en español, con euros y el IBEX 35">
   <meta property="og:description" content="Practica en español, con euros y el IBEX 35, sin registrarte y sin dinero real.">
   <meta property="og:image" content="https://app-domain.invalid/img/brand/og-preview.png">
+  <meta property="og:site_name" content="PaperPulse">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PaperPulse: simulador de trading en español con saldo virtual y cotizaciones reales">
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#070a1c" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f1f0fb" media="(prefers-color-scheme: light)">
+  <meta name="twitter:title" content="PaperPulse — Aprende trading en español, con euros y el IBEX 35">
+  <meta name="twitter:description" content="Practica en español, con euros y el IBEX 35, sin registrarte y sin dinero real.">
+  <meta name="twitter:image" content="https://app-domain.invalid/img/brand/og-preview.png">
+  <meta name="theme-color" content="#131316" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f4f6" media="(prefers-color-scheme: light)">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/img/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/brand/apple-touch-icon.png">
@@ -64,13 +71,11 @@
         </a>
         <h1 class="page-title" id="page-title">Resumen</h1>
         <nav class="top-nav" aria-label="Secciones">
+          <a href="#/dashboard" data-route="dashboard" data-keep>Cuenta</a>
           <a href="#/trade" data-route="trade">Operar</a>
-          <a href="#/markets" data-route="markets">Mercados</a>
-          <a href="#/news" data-route="news">Noticias</a>
-          <a href="#/journal" data-route="journal">Diario</a>
-          <a href="#/stats" data-route="stats">Estadísticas</a>
-          <a href="#/community" data-route="community">Comunidad</a>
-          <a href="#/learn" data-route="learn">Aprender</a>
+          <div class="mega" data-mega="markets"><button type="button" class="mega-btn" aria-expanded="false" aria-controls="mega-markets" aria-haspopup="true"></button><div class="mega-panel" id="mega-markets" role="group" aria-label="Mercados" hidden></div></div>
+          <div class="mega" data-mega="learn"><button type="button" class="mega-btn" aria-expanded="false" aria-controls="mega-learn" aria-haspopup="true"></button><div class="mega-panel" id="mega-learn" role="group" aria-label="Aprender" hidden></div></div>
+          <a href="#/admin" data-route="admin" data-admin-only hidden>Administración</a>
         </nav>
         <button type="button" class="search-trigger" data-action="palette" aria-keyshortcuts="Control+K">
           <svg class="icon"><use href="/img/icons.svg#search"/></svg>
@@ -146,30 +151,29 @@
 
   <!-- Barra inferior móvil -->
   <nav class="tabbar" aria-label="Navegación móvil">
-    <a href="#/dashboard" data-route="dashboard"><svg class="icon"><use href="/img/icons.svg#layout-dashboard"/></svg>Resumen</a>
     <a href="#/trade" data-route="trade"><svg class="icon"><use href="/img/icons.svg#chart-candlestick"/></svg>Operar</a>
     <a href="#/markets" data-route="markets"><svg class="icon"><use href="/img/icons.svg#coins"/></svg>Mercados</a>
-    <a href="#/news" data-route="news"><svg class="icon"><use href="/img/icons.svg#newspaper"/></svg>Noticias</a>
-    <a href="#/journal" data-route="journal"><svg class="icon"><use href="/img/icons.svg#book-open"/></svg>Diario</a>
-    <a href="#/community" data-route="community"><svg class="icon"><use href="/img/icons.svg#users"/></svg>Comunidad</a>
     <a href="#/learn" data-route="learn"><svg class="icon"><use href="/img/icons.svg#graduation-cap"/></svg>Aprender</a>
   </nav>
 
   <!-- Popovers -->
   <div popover id="user-pop" class="menu">
     <div class="menu-head" id="user-pop-head"></div>
-    <div id="user-auth"></div>
+    <div id="user-id"></div>
     <button type="button" data-action="account"><svg class="icon"><use href="/img/icons.svg#wallet"/></svg>Cuenta de práctica</button>
     <button type="button" data-action="alerts"><svg class="icon"><use href="/img/icons.svg#bell-ring"/></svg>Alertas de precio</button>
     <button type="button" class="only-sm" data-action="notifications"><svg class="icon"><use href="/img/icons.svg#bell"/></svg>Notificaciones<span class="count alert" id="menu-notif-count" hidden></span></button>
     <button type="button" data-action="theme"><svg class="icon"><use href="/img/icons.svg#moon"/></svg>Cambiar tema</button>
     <button type="button" data-action="privacy"><svg class="icon"><use href="/img/icons.svg#eye-off"/></svg>Ocultar importes</button>
+    <button type="button" data-action="identity" aria-pressed="false"><svg class="icon"><use href="/img/icons.svg#eye-off"/></svg><span id="identity-label">Ocultar mi identidad</span></button>
     <button type="button" data-action="settings"><svg class="icon"><use href="/img/icons.svg#settings"/></svg>Ajustes y datos</button>
     <a class="menu-item" href="#/admin" data-admin-only hidden><svg class="icon"><use href="/img/icons.svg#shield-check"/></svg>Administración</a>
     <hr>
     <button type="button" data-action="guide"><svg class="icon"><use href="/img/icons.svg#graduation-cap"/></svg>Manual de operativa</button>
     <button type="button" data-action="tour"><svg class="icon"><use href="/img/icons.svg#sparkles"/></svg>Visita guiada</button>
     <button type="button" data-action="shortcuts"><svg class="icon"><use href="/img/icons.svg#keyboard"/></svg>Atajos de teclado</button>
+    <hr>
+    <div id="user-auth"></div>
   </div>
 
   <!-- Qué es «dinero virtual» y en qué se diferencian Demo y Mi cuenta (se abre desde la etiqueta de la barra de estado) -->

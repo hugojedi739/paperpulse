@@ -86,7 +86,7 @@ class RecordTest(Base):
             visits.secret()  # el secreto se lee una vez por instancia (fuera de la cuenta)
             seen.clear()
             visits.record("203.0.113.9", BROWSER, False)
-        self.assertEqual(seen, ["INSERT", "INSERT"])  # visit_seen y visit_days; ni BEGIN ni COMMIT
+        self.assertEqual(seen, ["INSERT", "INSERT", "INSERT"])  # visit_seen, visit_days y visit_sources; ni BEGIN ni COMMIT
 
     def test_no_guarda_ip_ni_user_agent(self):
         ip, ua = "203.0.113.77", "Mozilla/5.0 PruebaUnicaNavegador/9.9.9"
@@ -269,7 +269,7 @@ class AdminOverviewTest(Base):
         with mock.patch("backend.admin.is_market_open", return_value=(False, "Cerrado")):
             res = client.get("/api/admin/overview")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(set(res.json()["visits"]), {"today", "history", "enabled"})
+        self.assertEqual(set(res.json()["visits"]), {"today", "history", "enabled", "sources"})
 
 
 class SettingTest(unittest.TestCase):
@@ -281,3 +281,15 @@ class SettingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SourceTest(unittest.TestCase):
+    """Origen de la visita (migración 0016): lista cerrada; nunca se guarda texto libre del navegador."""
+
+    def test_solo_origenes_de_la_lista(self):
+        self.assertEqual(visits.clean_source("Reddit"), "reddit")
+        self.assertEqual(visits.clean_source(" tiktok "), "tiktok")
+        self.assertEqual(visits.clean_source(None), "direct")
+        self.assertEqual(visits.clean_source(""), "direct")
+        self.assertEqual(visits.clean_source("<script>alert(1)</script>"), "otro")
+        self.assertEqual(visits.clean_source(123), "direct")

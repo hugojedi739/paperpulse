@@ -1,5 +1,6 @@
 // Vista Administración: métricas, usuarios, métodos de inicio de sesión (Google, Okta) e integraciones.
 // Solo visible para usuarios con rol admin; el backend vuelve a comprobarlo en cada petición.
+import { isVisible } from '../lib/sections.js';
 import { html, icon, render, on, $, $$, toast, confirmDialog, debounce } from '../lib/dom.js';
 import { num, timeAgo } from '../lib/format.js';
 import { api } from '../lib/api.js';
@@ -12,7 +13,13 @@ import { parseParam, buildPath, nonDefault, pickAllowed } from '../lib/admin-url
 
 export const title = 'Administración';
 
-const TABS = [['overview', 'Resumen', 'activity'], ['users', 'Usuarios', 'users'], ['login', 'Inicio de sesión', 'log-in'], ['integrations', 'Integraciones', 'zap'], ['moderation', 'Moderación', 'flag'], ['messages', 'Mensajes', 'message-square'], ['audit', 'Auditoría', 'scroll-text']];
+// Barra lateral: [id, etiqueta, icono, grupo]. «Contenido» es la moderación del foro; «Mensajes» los de contacto.
+const SOURCE_NAMES = { direct: 'Directo', reddit: 'Reddit', tiktok: 'TikTok', x: 'X (Twitter)', instagram: 'Instagram', youtube: 'YouTube', google: 'Google', otro: 'Otro' };
+const TABS = [
+  ['overview', 'Resumen', 'layout-dashboard', 'Panel'], ['users', 'Usuarios', 'users', 'Panel'], ['activity', 'Actividad', 'activity', 'Panel'],
+  ['messages', 'Mensajes de contacto', 'message-square', 'Panel'], ['moderation', 'Contenido', 'flag', 'Panel'], ['health', 'Salud de APIs', 'zap', 'Panel'],
+  ['login', 'Inicio de sesión', 'log-in', 'Sistema'], ['integrations', 'Integraciones', 'settings', 'Sistema'], ['audit', 'Auditoría', 'scroll-text', 'Sistema'],
+];
 const PAGE = 25;
 let root, tab = 'overview';
 let usersOffset = 0;
@@ -29,7 +36,7 @@ let badges = { openReports: 0, unreadMessages: 0 }; // pendientes que se muestra
 
 export function mount(el) {
   root = el;
-  render(root, html`<div class="tabs admin-tabs" role="tablist" id="ad-tabs"></div><div id="ad-body" class="stack"></div>`);
+  render(root, html`<div class="admin-layout"><nav class="admin-nav" id="ad-tabs" aria-label="Secciones del panel"></nav><div id="ad-body" class="admin-main"></div></div>`);
   on(root, 'click', '[data-tab]', (_, b) => { tab = b.dataset.tab; show(); });
   on(root, 'click', '[data-ad]', (e, b) => {
     if (b.getAttribute('aria-disabled') === 'true') return; // opción del menú no disponible: su motivo ya se ve debajo
@@ -50,22 +57,24 @@ export function mount(el) {
   document.addEventListener('admin-badges', refreshBadges); // moderación y mensajes avisan al resolver algo
 }
 
-const BADGE_TAB = { moderation: 'openReports', messages: 'unreadMessages' };
-
-function renderTabs() {
-  render($('#ad-tabs', root), TABS.map(([id, label, ic]) => {
-    const n = badges[BADGE_TAB[id]] ?? 0;
-    return html`<button role="tab" data-tab="${id}" aria-selected="${tab === id}">${icon(ic, 'sm')} ${label}${n ? html` <span class="count alert" aria-label="${n} pendientes">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
-  }));
-}
-
 async function refreshBadges() {
   if (!auth.isAdmin() || !root || root.hidden) return;
   try { badges = await api('/api/admin/badges'); } catch { return; } // un fallo aquí no debe molestar: los contadores son un extra
   renderTabs();
 }
 
-/** Coloca el menú bajo su botón, alineado a la derecha; si no cabe debajo, lo abre hacia arriba. */
+const BADGE_TAB = { moderation: 'openReports', messages: 'unreadMessages' };
+
+function renderTabs() {
+  let group = '';
+  render($('#ad-tabs', root), TABS.filter(([id]) => id !== 'moderation' || isVisible('community')).map(([id, label, ic, g]) => {
+    const n = badges[BADGE_TAB[id]] ?? 0;
+    const head = g !== group ? html`<span class="admin-nav-group">${g}</span>` : '';
+    group = g;
+    return html`${head}<button type="button" data-tab="${id}" ${tab === id ? 'aria-current="page"' : ''}>${icon(ic, 'sm')} ${label}${n ? html` <span class="count alert" aria-label="${n} pendientes">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
+  }));
+}
+
 function placeMenu(pop) {
   const btn = root.querySelector(`[popovertarget="${pop.id}"]`);
   if (!btn) return;
@@ -103,6 +112,7 @@ function restoreState(t, st) {
   else if (t === 'messages') messages.restore(st);
 }
 
+
 export function show(param) {
   const parsed = parseParam(param);
   if (parsed.tab) { tab = parsed.tab; restoreState(tab, parsed.state); } // sin parámetro se conserva la pestaña y los filtros actuales
@@ -116,41 +126,65 @@ export function show(param) {
     auth.currentUser() ? '' : html`<button class="btn btn-primary" data-action="login">${icon('log-in', 'sm')} Iniciar sesión</button>`)}</section>`);
   }
   render(body, html`<section class="card">${empty('refresh-cw', 'Cargando…')}</section>`);
-  ({ overview: renderOverview, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body, syncUrl), messages: () => messages.render(body, syncUrl), audit: () => audit.render(body) })[tab]();
+  ({ overview: renderOverview, activity: renderActivity, health: renderHealth, users: renderUsers, login: renderLogin, integrations: renderIntegrations, moderation: () => moderation.render(body, syncUrl), messages: () => messages.render(body, syncUrl), audit: () => audit.render(body) })[tab]();
   syncUrl();
 }
 
 const fail = (err) => render($('#ad-body', root), html`<section class="card">${empty('triangle-alert', 'No se pudo cargar', err.message)}</section>`);
 
-/* ---------- Resumen ---------- */
+/* ---------- Resumen: usuarios, nuevos, activos y operaciones ---------- */
+const last30 = (u) => {
+  const days = Array.from({ length: 30 }, (_, i) => new Date(Date.now() - (29 - i) * 86400_000).toISOString().slice(0, 10));
+  const counts = new Map(u.signups30d.map((d) => [d.date, d.count]));
+  return { days, counts, max: Math.max(1, ...counts.values()) };
+};
+
 async function renderOverview() {
   let o;
   try { o = await api('/api/admin/overview'); } catch (err) { return fail(err); }
   if (tab !== 'overview') return;
+  const u = o.users, act = o.activity, vis = o.visits;
+  const { days, counts, max } = last30(u);
+  render($('#ad-body', root), html`
+    <div class="kpis">
+      <div class="card kpi"><span>Usuarios</span><strong>${num(u.users, 0)}</strong><small>${u.admins} admin · ${u.disabled} desactivados</small></div>
+      <div class="card kpi"><span>Nuevos (7 días)</span><strong>${num(u.newUsers7d, 0)}</strong><small>${num(vis.today.signups, 0)} hoy</small></div>
+      <div class="card kpi"><span>Activos (7 días)</span><strong>${num(u.activeUsers7d, 0)}</strong><small>${num(u.activeSessions, 0)} sesiones abiertas</small></div>
+      <div class="card kpi"><span>Operaciones hoy</span><strong>${num(act.trading.fillsToday, 0)}</strong><small>${act.trading.tradersToday} cuentas · ${act.trading.ordersToday} órdenes · ${act.trading.openOrders} pendientes</small></div>
+    </div>
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('calendar')} Altas en los últimos 30 días</h2><span class="card-sub">${u.signups30d.reduce((a, d) => a + d.count, 0)} en total</span></div>
+      <div class="spark-bars" role="img" aria-label="Altas por día">${days.map((d) => html`<i data-w="${Math.max(4, ((counts.get(d) ?? 0) / max) * 100)}" title="${d}: ${counts.get(d) ?? 0}"></i>`)}</div>
+    </section>
+    <div class="kpis">
+      <div class="card kpi"><span>Denuncias abiertas</span><strong>${num(act.community.openReports, 0)}</strong><small>en Contenido</small></div>
+      <div class="card kpi"><span>Mensajes de contacto</span><strong>${num(o.unreadMessages, 0)}</strong><small>sin leer</small></div>
+    </div>`);
+}
+
+/* ---------- Actividad: visitas, foro, asistente y servicios ---------- */
+async function renderActivity() {
+  let o;
+  try { o = await api('/api/admin/overview'); } catch (err) { return fail(err); }
+  if (tab !== 'activity') return;
   const u = o.users, use = o.usage, st = o.stream, int = o.integrations, act = o.activity, hist = o.aiHistory, vis = o.visits;
   const people = (d) => d.anon + d.user; // visitantes únicos (personas): sin sesión + con sesión; los bots aparte
   const maxPeople = Math.max(1, ...vis.history.map(people));
   const maxTokens = Math.max(1, ...hist.map((d) => d.tokens));
-  const days = Array.from({ length: 30 }, (_, i) => new Date(Date.now() - (29 - i) * 86400_000).toISOString().slice(0, 10));
-  const counts = new Map(u.signups30d.map((d) => [d.date, d.count]));
-  const max = Math.max(1, ...counts.values());
+  const days14 = vis.history.map((d) => d.day);
+  const fillMap = new Map((act.fillsByDay ?? []).map((d) => [d.day, d.count]));
+  const fillDays = days14.map((day) => ({ day, count: fillMap.get(day) ?? 0 }));
+  const maxFills = Math.max(1, ...fillDays.map((d) => d.count));
+  const fillsTotal = fillDays.reduce((a, d) => a + d.count, 0);
+  const sources = vis.sources ?? [];
+  const sourcesTotal = Math.max(1, sources.reduce((a, x) => a + x.views, 0));
   const ok = (v, yes = 'Activo', no = 'Inactivo') => html`<span class="chip ${v ? 'up' : ''}">${v ? html`<span class="dot"></span>${yes}` : no}</span>`;
   render($('#ad-body', root), html`
     <div class="kpis">
-      <div class="card kpi"><span>Usuarios</span><strong>${num(u.users, 0)}</strong><small>${u.admins} admin · ${u.disabled} desactivados</small></div>
-      <div class="card kpi"><span>Activos 7 días</span><strong>${num(u.activeUsers7d, 0)}</strong><small>${u.newUsers7d} altas nuevas</small></div>
-      <div class="card kpi"><span>Sesiones abiertas</span><strong>${num(u.activeSessions, 0)}</strong><small>${u.withData} con datos en la nube</small></div>
-      <div class="card kpi"><span>IA hoy</span><strong>${num(use.tokensToday, 0)}</strong><small>tokens · ${use.percentUsed}% del límite · ${use.costTodayUsd} $</small></div>
-    </div>
-    <div class="kpis">
-      <div class="card kpi"><span>Operaciones hoy</span><strong>${num(act.trading.fillsToday, 0)}</strong><small>${act.trading.tradersToday} cuentas · ${act.trading.ordersToday} órdenes · ${act.trading.openOrders} pendientes</small></div>
-      <div class="card kpi"><span>Foro hoy</span><strong>${num(act.community.postsToday, 0)}</strong><small>mensajes · ${act.community.threadsToday} hilos nuevos</small></div>
-      <div class="card kpi"><span>Denuncias abiertas</span><strong>${num(act.community.openReports, 0)}</strong><small>mensajes por revisar</small></div>
-      <div class="card kpi"><span>Mensajes de contacto</span><strong>${num(o.unreadMessages, 0)}</strong><small>sin leer</small></div>
-    </div>
-    <div class="kpis">
       <div class="card kpi"><span>Visitantes hoy</span><strong>${num(people(vis.today), 0)}</strong><small>${vis.today.anon} sin sesión · ${vis.today.user} con sesión</small></div>
       <div class="card kpi"><span>Cargas de la portada hoy</span><strong>${num(vis.today.views, 0)}</strong><small>sin contar bots</small></div>
+      <div class="card kpi"><span>Foro hoy</span><strong>${num(act.community.postsToday, 0)}</strong><small>mensajes · ${act.community.threadsToday} hilos nuevos</small></div>
+      <div class="card kpi"><span>IA hoy</span><strong>${num(use.tokensToday, 0)}</strong><small>tokens · ${use.percentUsed}% del límite · ${use.costTodayUsd} $</small></div>
       <div class="card kpi"><span>Bots hoy</span><strong>${num(vis.today.bot, 0)}</strong><small>buscadores, previsualizaciones y monitores</small></div>
       <div class="card kpi"><span>Registros hoy</span><strong>${num(vis.today.signups, 0)}</strong><small>cuentas nuevas (día UTC)</small></div>
     </div>
@@ -160,33 +194,47 @@ async function renderOverview() {
       <p class="hint">Visitantes únicos por día de la portada, sin cookies ni IP: un identificador anónimo que cambia cada día. Quien entra sin sesión y luego con sesión cuenta en los dos grupos.</p>
     </section>
     <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('chart-candlestick')} Operaciones por día</h2><span class="card-sub">${fillsTotal} en 14 días (cuentas del servidor)</span></div>
+      <div class="spark-bars" role="img" aria-label="Operaciones por día">${fillDays.map((d) => html`<i data-w="${Math.max(4, (d.count / maxFills) * 100)}" title="${d.day}: ${d.count} operaciones"></i>`)}</div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('globe')} Origen de las visitas</h2><span class="card-sub">últimos 14 días · parámetro ?ref=</span></div>
+      ${sources.length ? html`<div class="status-list">${sources.map((x) => html`<div><span>${SOURCE_NAMES[x.source] ?? x.source}</span><strong>${num(x.views, 0)} <small class="muted">· ${Math.round((x.views / sourcesTotal) * 100)} %</small></strong></div>`)}</div>`
+        : html`<p class="hint">Aún no hay visitas con origen. Comparte enlaces con <code>?ref=reddit</code> o <code>?ref=tiktok</code>; sin parámetro se mira la página de procedencia y, si no hay, cuenta como «Directo».</p>`}
+    </section>
+    <section class="card">
       <div class="card-head"><h2 class="card-title">${icon('sparkles')} Asistente: últimos 14 días</h2><span class="card-sub">${num(hist.reduce((a, d) => a + d.tokens, 0), 0)} tokens · ${hist.reduce((a, d) => a + d.aiRequests, 0)} con IA · ${hist.reduce((a, d) => a + d.fixedAnswers, 0)} respuestas fijas</span></div>
       <div class="spark-bars" role="img" aria-label="Tokens de IA por día">${hist.map((d) => html`<i data-w="${Math.max(4, (d.tokens / maxTokens) * 100)}" title="${d.day}: ${num(d.tokens, 0)} tokens · ${d.aiRequests} con IA · ${d.fixedAnswers} fijas"></i>`)}</div>
     </section>
-    <div class="admin-grid">
-      <section class="card">
-        <div class="card-head"><h2 class="card-title">${icon('calendar')} Altas en los últimos 30 días</h2><span class="card-sub">${u.signups30d.reduce((a, d) => a + d.count, 0)} en total</span></div>
-        <div class="spark-bars" role="img" aria-label="Altas por día">${days.map((d) => html`<i data-w="${Math.max(4, ((counts.get(d) ?? 0) / max) * 100)}" title="${d}: ${counts.get(d) ?? 0}"></i>`)}</div>
-        <hr>
-        <div class="status-list">
-          ${Object.entries(u.byProvider).length ? Object.entries(u.byProvider).map(([p, n]) => html`<div><span>Cuentas vinculadas con ${p}</span><strong>${n}</strong></div>`) : html`<div><span>Cuentas vinculadas con Google/Okta</span><strong>0</strong></div>`}
-        </div>
-      </section>
-      <section class="card">
-        <div class="card-head"><h2 class="card-title">${icon('activity')} Servicios</h2><span class="card-sub">Estado de las integraciones</span></div>
-        <div class="status-list">
-          <div><span>Relay de Binance (solo esta instancia)</span>${st.clients ? ok(st.upstreamConnected, 'Conectado', 'Desconectado') : html`<span class="chip">Sin clientes</span>`}</div>
-          <div><span>Asistente (${int.anthropic.model})</span>${ok(int.anthropic.configured, 'Configurado', 'Sin clave')}</div>
-          <div><span>Bolsa</span><strong>${int.stocks.provider}</strong></div>
-          <div><span>Google</span>${ok(int.oauth.google)}</div>
-          <div><span>Okta</span>${ok(int.oauth.okta)}</div>
-          <div><span>Wall Street</span>${ok(o.markets.us.open, 'Abierto', 'Cerrado')}</div>
-          <div><span>Bolsa de Madrid</span>${ok(o.markets.es.open, 'Abierta', 'Cerrada')}</div>
-          <div><span>Chat hoy: con IA · respuestas fijas</span><strong>${use.aiRequests} · ${use.fixedAnswers}</strong></div>
-          <div><span>Media por pregunta con IA</span><strong>${num(use.avgTokensPerAiRequest, 0)} tokens</strong></div>
-        </div>
-      </section>
-    </div>`);
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">${icon('activity')} Servicios</h2><span class="card-sub">Configuración de las integraciones</span></div>
+      <div class="status-list">
+        <div><span>Relay de Binance (solo esta instancia)</span>${st.clients ? ok(st.upstreamConnected, 'Conectado', 'Desconectado') : html`<span class="chip" title="Ningún navegador está conectado a esta instancia ahora mismo; es normal. Los precios en vivo siguen llegando por el relay en cuanto alguien abre la app, y si cae, la app pasa a consultar por REST cada 5 s.">Sin navegadores conectados</span>`}</div>
+        <div><span>Asistente (${int.anthropic.model})</span>${ok(int.anthropic.configured, 'Configurado', 'Sin clave')}</div>
+        <div><span>Bolsa</span><strong>${int.stocks.provider}</strong></div>
+        <div><span>Google</span>${ok(int.oauth.google)}</div>
+        <div><span>Okta</span>${ok(int.oauth.okta)}</div>
+        <div><span>Wall Street</span>${ok(o.markets.us.open, 'Abierto', 'Cerrado')}</div>
+        <div><span>Bolsa de Madrid</span>${ok(o.markets.es.open, 'Abierta', 'Cerrada')}</div>
+        <div><span>Cuentas vinculadas</span><strong>${Object.entries(u.byProvider).map(([p, n]) => `${p} ${n}`).join(' · ') || '0'}</strong></div>
+        <div><span>Chat hoy: con IA · respuestas fijas</span><strong>${use.aiRequests} · ${use.fixedAnswers}</strong></div>
+      </div>
+    </section>`);
+}
+
+/* ---------- Salud de APIs: sondeo en vivo de las dependencias (solo admin; el servidor no devuelve trazas) ---------- */
+async function renderHealth() {
+  let r;
+  try { r = await api('/api/admin/health'); } catch (err) { return fail(err); }
+  if (tab !== 'health') return;
+  render($('#ad-body', root), html`<section class="card">
+    <div class="card-head"><h2 class="card-title">${icon('zap')} Salud de APIs</h2>
+      <button type="button" class="btn btn-ghost btn-sm" data-ad="recheck">${icon('refresh-cw', 'sm')} Volver a comprobar</button></div>
+    <div class="health-list">${r.checks.map((c) => html`<div class="health-row">
+      <div><strong>${c.name}</strong>${c.detail ? html`<br><small>${c.detail}</small>` : ''}</div>
+      <small class="num">${c.ms} ms</small>
+      <span class="chip ${c.ok ? 'up' : 'down'}">${c.ok ? 'Responde' : 'Falla'}</span></div>`)}</div>
+    <p class="hint">Comprobado ${timeAgo(r.checkedAt * 1000)}. No se hace ninguna llamada de pago (el asistente solo comprueba que haya clave).</p></section>`);
 }
 
 /* ---------- Usuarios ---------- */
@@ -315,7 +363,7 @@ async function renderLogin() {
         ${secret('oauth_google_client_secret', 'Client secret')}
         <div class="actions"><button type="button" class="btn btn-ghost" data-ad="test" data-provider="google">${icon('refresh-cw', 'sm')} Probar conexión</button><button class="btn btn-primary">${icon('circle-check', 'sm')} Guardar</button></div>
       </form></section>
-      <section class="card"><form class="admin-form" data-form>
+      <details class="card okta-card" ${cfg.settings.oauth_okta_enabled.value ? 'open' : ''}><summary class="card-title">Okta <span class="muted">${cfg.settings.oauth_okta_enabled.value ? '' : '· sin usar'}</span></summary><form class="admin-form" data-form>
         <div class="card-head"><h2 class="card-title">Okta</h2>${cfg.settings.oauth_okta_enabled.value ? html`<span class="chip up"><span class="dot"></span>Activo</span>` : ''}</div>
         ${toggle('oauth_okta_enabled', 'Mostrar «Continuar con Okta»')}
         <p class="hint">En Okta Admin → Applications → Create App Integration → OIDC → Web Application. Usa el issuer de tu servidor de autorización (p. ej. <code>https://tu-org.okta.com/oauth2/default</code>) y añade esta URI de redirección:</p>
@@ -324,7 +372,7 @@ async function renderLogin() {
         ${text('oauth_okta_client_id', 'Client ID', '0oa1b2c3d4…')}
         ${secret('oauth_okta_client_secret', 'Client secret')}
         <div class="actions"><button type="button" class="btn btn-ghost" data-ad="test" data-provider="okta">${icon('refresh-cw', 'sm')} Probar conexión</button><button class="btn btn-primary">${icon('circle-check', 'sm')} Guardar</button></div>
-      </form></section>
+      </form></details>
     </div>`);
 }
 
@@ -393,9 +441,15 @@ async function saveForm(form, extra = {}) {
 
 const actions = {
   page(b) { usersOffset = Math.max(0, usersOffset + Number(b.dataset.dir) * PAGE); renderUsers(); },
-  role(b) { patchUser(b.dataset.id, { role: b.dataset.role }, b.dataset.role === 'admin' ? 'Ahora es administrador.' : 'Ya no es administrador.'); },
-  toggle(b) {
+  async role(b) {
+    const admin = b.dataset.role === 'admin';
+    if (!(await confirmDialog({ title: admin ? 'Dar el rol de administrador' : 'Quitar el rol de administrador',
+      body: admin ? 'Esta cuenta podrá ver y cambiar todo el panel. Solo se admite con el email verificado.' : 'Esta cuenta perderá el acceso al panel.', confirm: 'Confirmar', danger: !admin }))) return;
+    patchUser(b.dataset.id, { role: b.dataset.role }, admin ? 'Ahora es administrador.' : 'Ya no es administrador.');
+  },
+  async toggle(b) {
     const disabled = b.dataset.disabled === 'true';
+    if (disabled && !(await confirmDialog({ title: 'Desactivar usuario', body: 'Se cerrarán todas sus sesiones y no podrá entrar hasta que lo actives de nuevo.', confirm: 'Desactivar', danger: true }))) return;
     patchUser(b.dataset.id, { disabled }, disabled ? 'Usuario desactivado: se han cerrado sus sesiones.' : 'Usuario activado.');
   },
   async delete(b) {
@@ -406,6 +460,7 @@ const actions = {
     } catch (err) { toast(err.message, 'error'); }
     renderUsers();
   },
+  recheck() { show(); },
   'clear-filters'() {
     usersState = { ...USERS_DEFAULT };
     usersOffset = 0;

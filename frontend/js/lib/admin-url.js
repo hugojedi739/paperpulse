@@ -2,7 +2,7 @@
 // Sin DOM, para probarla con node --test. Los valores se codifican dos veces porque el enrutador (router.js) ya decodifica
 // el parámetro una vez antes de entregarlo: así un «&», un «=» o un «%» escritos en una búsqueda no rompen el estado.
 
-export const TABS = ['overview', 'users', 'login', 'integrations', 'moderation', 'messages', 'audit'];
+export const TABS = ['overview', 'users', 'activity', 'health', 'login', 'integrations', 'moderation', 'messages', 'audit'];
 
 const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 

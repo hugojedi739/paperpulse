@@ -8,6 +8,7 @@ import * as notifications from './notifications.js';
 import * as mode from './account-mode.js';
 
 let active = false; // hay sesión (la cuenta del servidor existe para esta persona)
+let loaded = false; // ¿ya se resolvió la primera descarga de la cuenta tras la sesión? Hasta entonces la interfaz enseña un esqueleto
 let needs = false; // con sesión pero sin cuenta de práctica: hay que elegir el saldo inicial (ui/welcome.js)
 let opened = null; // fecha de apertura de la cuenta del servidor (epoch en segundos), para el comparador del Resumen
 let timer = null;
@@ -18,6 +19,8 @@ export const hasSession = () => active;
 /** ¿Se opera con la cuenta del servidor? Sesión Y «Mi cuenta» elegida en el selector. Con Demo, todo va al motor local
  *  (lib/trading.js) aunque haya sesión; con Mi cuenta, nada se ejecuta en el navegador. */
 export const isActive = () => active && store.activeAccount() === 'server';
+/** Hay sesión pero aún no se sabe si existe la cuenta de práctica (evita el parpadeo de «Crea tu cuenta»). */
+export const pending = () => active && !loaded;
 export const needsSetup = () => isActive() && needs;
 export const config = () => cfg;
 /** Cuándo se abrió la cuenta del servidor (segundos), o null sin Mi cuenta activa o sin cuenta todavía. */
@@ -111,14 +114,18 @@ function poll() {
 export async function setUser(user) {
   active = Boolean(user);
   needs = false;
+  loaded = false;
   if (!active) {
     clearInterval(timer);
     store.leaveServerMode();
+    loaded = true;
     return;
   }
   applyMode(); // con sesión: Mi cuenta si es la preferencia (por defecto), o Demo si se eligió
   poll();
   await refresh().catch((err) => console.warn('[account] No se pudo cargar la cuenta del servidor:', err.message));
+  loaded = true;
+  globalThis.document?.dispatchEvent?.(new Event('account:loaded'));
 }
 
 /**

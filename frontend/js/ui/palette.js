@@ -12,6 +12,9 @@ const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 
 let dialog, input, list, items = [], active = 0, abort, commands = [];
 
+/** Un comando con `when` solo se ofrece si devuelve true (p. ej. Administración, solo para el rol admin). */
+const visibleCmd = (c) => !c.when || c.when();
+
 /** `cmds`: [{ label, icon, keywords, run }] */
 export function initPalette(cmds) {
   commands = cmds;
@@ -64,10 +67,10 @@ async function update(q) {
     return draw([
       ['Recientes', recent.slice(0, 5).map(assetItem)],
       ['Favoritos', fav.filter((a) => !recent.includes(a)).slice(0, 6).map(assetItem)],
-      ['Acciones', commands.map((c) => ({ kind: 'cmd', ...c, run: () => { dialog.close(); c.run(); } }))],
+      ['Acciones', commands.filter(visibleCmd).map((c) => ({ kind: 'cmd', ...c, run: () => { dialog.close(); c.run(); } }))],
     ]);
   }
-  const cmdHits = commands.filter((c) => norm(`${c.label} ${c.keywords ?? ''}`).includes(norm(query)))
+  const cmdHits = commands.filter(visibleCmd).filter((c) => norm(`${c.label} ${c.keywords ?? ''}`).includes(norm(query)))
     .map((c) => ({ kind: 'cmd', ...c, run: () => { dialog.close(); c.run(); } }));
   const local = localMatches(query).map(assetItem);
   draw([['Activos', local], ['Acciones', cmdHits]], query.length >= 2);

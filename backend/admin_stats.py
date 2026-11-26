@@ -23,6 +23,9 @@ def activity() -> dict:
                 "threadsToday": one("SELECT COUNT(*) FROM threads WHERE created_at >= ? AND author_id IS NOT NULL AND status != 'deleted'", start),
                 "openReports": one("SELECT COUNT(DISTINCT post_id) FROM reports WHERE status = 'open'"),
             },
+            "fillsByDay": [{"day": r[0], "count": r[1]} for r in conn.execute(
+                "SELECT date(executed_at, 'unixepoch') AS d, COUNT(*) FROM fills WHERE executed_at >= ? GROUP BY d ORDER BY d",
+                (start - 13 * 86400,)).fetchall()],
             "generatedAt": int(time.time()),
         }
 
